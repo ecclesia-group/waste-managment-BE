@@ -48,7 +48,7 @@ return [
 
         'district_assembly'     => [
             'driver'   => 'passport',
-            'provider' => 'district_assembly',
+            'provider' => 'district_assemblies',
         ],
 
         'facility' => [
