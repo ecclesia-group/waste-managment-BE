@@ -46,7 +46,7 @@ trait Helpers
 
     protected static function apiToken(Actor $actor, string $oauth_name): Actor
     {
-        dd($oauth_name);
+        // dd($oauth_name);
         $accessToken  = $actor->createToken($oauth_name)->accessToken;
         $actor->token = $accessToken;
 
