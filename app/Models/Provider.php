@@ -14,7 +14,7 @@ class Provider extends Actor
         'password',
         'email_verified_at',
         'business_certificate_image',
-        'mmda_contract_image',
+        'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
         'zone_id',

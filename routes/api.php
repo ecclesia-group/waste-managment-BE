@@ -41,7 +41,7 @@ Route::prefix("admin")->group(function () {
         Route::post("logout", [AdminAuthenticationController::class, "logout"]);
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
-        // Provider, Facility, MMDA Onboarding Management
+        // Provider, Facility, District  Onboarding Management
         Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
     });
