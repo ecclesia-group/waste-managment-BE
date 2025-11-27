@@ -110,14 +110,14 @@ trait AppNotifications
             if ($channel == "phone") {
                 $actor->phone_number_verified_at = now();
                 $actor->save();
-                $actor = self::apiToken($actor);
+                $actor = self::apiToken($actor, $guard);
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Phone number verified successfully", status_code: self::API_SUCCESS, data: $actor->toArray());
             }
 
             if ($channel == "email") {
                 $actor->email_verified_at = now();
                 $actor->save();
-                $actor = self::apiToken($actor);
+                $actor = self::apiToken($actor, $guard);
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Email Verified successfully", status_code: self::API_SUCCESS, data: $actor->toArray());
             }
 
@@ -140,7 +140,7 @@ trait AppNotifications
                 $actor->phone_number_verified_at = now();
                 $actor->save();
 
-                $actor = self::apiToken($actor);
+                $actor = self::apiToken($actor, $guard);
 
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Phone number verified successfully", status_code: self::API_SUCCESS, data: $actor->toArray());
             }
@@ -149,7 +149,7 @@ trait AppNotifications
                 $actor->email_verified_at = now();
                 $actor->save();
 
-                $actor = self::apiToken($actor);
+                $actor = self::apiToken($actor, $guard);
 
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Email Verified successfully", status_code: self::API_SUCCESS, data: $actor->toArray());
             }

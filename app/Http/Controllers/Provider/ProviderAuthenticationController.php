@@ -24,7 +24,7 @@ class ProviderAuthenticationController extends Controller
             // If password matches
             if ($bool) {
                 // Generate API token for the admin
-                $provider = self::apiToken($provider);
+                $provider = self::apiToken($provider, "provider");
                 // Return success response
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider logged in successful", status_code: self::API_SUCCESS, data: $provider->toArray());
             }
