@@ -44,9 +44,9 @@ trait Helpers
         return $token;
     }
 
-    protected static function apiToken(Actor $actor): Actor
+    protected static function apiToken(Actor $actor, string $oauth_name): Actor
     {
-        $accessToken  = $actor->createToken('Laravel Password Grant Client')->accessToken;
+        $accessToken  = $actor->createToken($oauth_name)->accessToken;
         $actor->token = $accessToken;
 
         return $actor;
