@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('size')->nullable();
             $table->longText('images')->nullable();
             $table->timestamps();
+
+            $table->softDeletes();
         });
     }
 
