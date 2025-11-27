@@ -29,5 +29,4 @@ class DistrictAssembly extends Model
         'updated_at' => 'datetime',
         'profile_image' => 'array',
     ];
-
 }
