@@ -24,7 +24,7 @@ class AdminAuthenticationController extends Controller
             // If password matches
             if ($bool) {
                 // Generate API token for the admin
-                $admin = self::apiToken($admin, "admin");
+                $admin = self::apiToken($admin, "admins");
                 // Return success response
                 return self::apiResponse(in_error: false, message: "Action Successful", reason: "Admin logged in successful", status_code: self::API_SUCCESS, data: $admin->toArray());
             }
