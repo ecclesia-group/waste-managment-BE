@@ -36,11 +36,6 @@ return [
     */
 
     'guards'           => [
-        'web'      => [
-            'driver'   => 'session',
-            'provider' => 'users',
-        ],
-
         'client'   => [
             'driver'   => 'passport',
             'provider' => 'clients',
@@ -51,9 +46,9 @@ return [
             'provider' => 'providers',
         ],
 
-        'mmda'     => [
+        'district_assembly'     => [
             'driver'   => 'passport',
-            'provider' => 'mmdas',
+            'provider' => 'district_assembly',
         ],
 
         'facility' => [
@@ -105,9 +100,9 @@ return [
             'model'  => App\Models\Provider::class,
         ],
 
-        'mmdas'      => [
+        'district_assemblies'      => [
             'driver' => 'eloquent',
-            'model'  => App\Models\Mmda::class,
+            'model'  => App\Models\DistrictAssembly::class,
         ],
 
         'admins'     => [
@@ -118,11 +113,6 @@ return [
         'facilities' => [
             'driver' => 'eloquent',
             'model'  => App\Models\Facility::class,
-        ],
-
-        'admins'     => [
-            'driver' => 'eloquent',
-            'model'  => App\Models\Admin::class,
         ],
     ],
 

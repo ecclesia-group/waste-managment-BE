@@ -2,14 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Mmda extends Model
+class DistrictAssembly extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
+     protected $fillable = [
         'mmda_slug',
         'region',
         'district',
@@ -32,4 +29,5 @@ class Mmda extends Model
         'updated_at' => 'datetime',
         'profile_image' => 'array',
     ];
+
 }

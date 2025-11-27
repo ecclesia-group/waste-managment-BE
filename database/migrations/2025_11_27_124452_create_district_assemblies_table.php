@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mmdas', function (Blueprint $table) {
+        Schema::create('district_assemblies', function (Blueprint $table) {
             $table->id();
             $table->string('mmda_slug')->unique();
             $table->string('region');
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mmdas');
+        Schema::dropIfExists('district_assemblies');
     }
 };
