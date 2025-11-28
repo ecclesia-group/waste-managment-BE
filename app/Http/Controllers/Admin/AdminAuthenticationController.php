@@ -34,7 +34,7 @@ class AdminAuthenticationController extends Controller
         }
 
         // If admin does not exist, return failure response
-        return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "Admin cannot be found", status_code: self::API_FAIL, data: []);
+        return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "Admin cannot be found", status_code: self::API_NOT_FOUND, data: []);
     }
 
     // Handles admin logout

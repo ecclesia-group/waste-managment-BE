@@ -1,9 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Admin\AdminOnboardingController;
 use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Admin\AdminProviderManagementController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
@@ -45,7 +43,7 @@ Route::prefix("admin")->group(function () {
 
         // Provider, Facility, District Assembly Onboarding Management
         Route::post("register_provider", [ProviderController::class, "register"]);
-       // Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
+        // Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
         // Provider Management
         Route::get("all_providers", [ProviderController::class, "index"]);

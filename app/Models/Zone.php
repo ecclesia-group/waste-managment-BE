@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +10,7 @@ class Zone extends Model
 
     protected $fillable = [
         'name',
+        'region',
         'description',
         'locations',
     ];
