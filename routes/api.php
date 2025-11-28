@@ -26,6 +26,7 @@ Route::prefix("provider")->group(function () {
 
     // Route::middleware(["auth:user", "verified"])->group(function () {
     //     Route::apiResource("deals", UserDealController::class);
+    // Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProfile"]);
     // });
 });
 
@@ -50,7 +51,7 @@ Route::prefix("admin")->group(function () {
         Route::get("all_providers", [ProviderController::class, "index"]);
         Route::get("get_single_provider/{provider_slug}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
-        Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProfile"]);
+        Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProviderProfile"]);
 
         // Zone Management
         Route::get('all_zones', [AdminZoneManagementController::class, 'listZones']);

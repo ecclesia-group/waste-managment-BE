@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
@@ -13,7 +12,7 @@ class ProviderController extends Controller
 {
     public function register(StoreProviderRegisterRequest $request)
     {
-        $password = Str::random(8);
+        $password              = Str::random(8);
         $data                  = $request->validated();
         $data['provider_slug'] = Str::uuid();
         $data['password']      = $password;
@@ -27,7 +26,7 @@ class ProviderController extends Controller
             'profile_image',
         ];
 
-        $data = static::processImage($image_fields, $data);
+        $data     = static::processImage($image_fields, $data);
         $provider = Provider::create($data);
 
         self::sendEmail(
@@ -103,7 +102,7 @@ class ProviderController extends Controller
 
     public function updateProfile(UpdateProviderProfileRequest $request)
     {
-        $data     = $request->validated();
+        $data = $request->validated();
 
         $image_fields = [
             'business_certificate_image',
@@ -122,6 +121,29 @@ class ProviderController extends Controller
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
             data: request()->user()->toArray()
+        );
+    }
+
+    public function updateProviderProfile(UpdateProviderProfileRequest $request)
+    {
+        $data         = $request->validated();
+        $provider     = Provider::find($data['provider_slug']);
+        $image_fields = [
+            'business_certificate_image',
+            'district_assembly_contract_image',
+            'tax_certificate_image',
+            'epa_permit_image',
+            'profile_image',
+        ];
+
+        $data = static::processImage($image_fields, $data);
+        $provider->update($data);
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Provider details updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $provider->toArray()
         );
     }
 }
