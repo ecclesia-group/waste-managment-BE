@@ -20,7 +20,7 @@ class AdminPasswordController extends Controller
             "password" => $validated_password['password'],
         ]);
         // Return success response
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Password changed successfully", status_code: 200, data: []);
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Password changed successfully", status_code: self::API_SUCCESS, data: []);
     }
 
     // Sends password reset notification to admin

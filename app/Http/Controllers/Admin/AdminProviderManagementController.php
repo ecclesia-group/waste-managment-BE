@@ -13,18 +13,18 @@ class AdminProviderManagementController extends Controller
         $provider = Provider::all();
 
         if (! $provider) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No providers found", status_code: 404);
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No providers found", status_code: self::API_FAIL);
         }
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Providers retrieved successfully", status_code: 200, data: $provider->toArray());
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Providers retrieved successfully", status_code: self::API_SUCCESS, data: $provider->toArray());
     }
 
     public function getProviderDetails($provider_slug)
     {
         $provider = Provider::where('provider_slug', $provider_slug)->first();
         if (! $provider) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: 404);
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: self::API_FAIL);
         }
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider details retrieved successfully", status_code: 200, data: $provider->toArray());
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider details retrieved successfully", status_code: self::API_SUCCESS, data: $provider->toArray());
     }
 
     public function updateProviderStatus(AdminProviderAccountStatusRequest $request)
@@ -33,13 +33,13 @@ class AdminProviderManagementController extends Controller
         $provider = Provider::where('provider_slug', $data['provider_slug'])->first();
 
         if (! $provider) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: 404);
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: self::API_FAIL);
         }
 
         $provider->status = $data['status'];
         $provider->save();
 
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider status updated successfully", status_code: 200, data: $provider->toArray());
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider status updated successfully", status_code: self::API_SUCCESS, data: $provider->toArray());
     }
 
     public function updateProviderDetails(AdminProviderUpdateProfileRequest $request, $provider_slug)
@@ -68,6 +68,6 @@ class AdminProviderManagementController extends Controller
 
         $provider->update($data);
 
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider details updated successfully", status_code: 200, data: $provider->toArray());
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider details updated successfully", status_code: self::API_SUCCESS, data: $provider->toArray());
     }
 }

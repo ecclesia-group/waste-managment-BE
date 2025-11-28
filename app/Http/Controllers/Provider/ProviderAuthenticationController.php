@@ -36,7 +36,7 @@ class ProviderAuthenticationController extends Controller
             message: "Action Unsuccessful",
             reason: "Provider cannot be found",
             status_code:
-            self::API_NOT_FOUND,
+           self::API_FAIL,
             data: []
         );
     }
@@ -52,5 +52,14 @@ class ProviderAuthenticationController extends Controller
             status_code: self::API_SUCCESS,
             data: []
         );
+    }
+
+    // Verifies vendor's account using OTP
+    public function verifyAccount()
+    {
+        $otp   = request("otp");
+        $admin = Provider::where("provider_slug", request("provider_slug"))->first();
+
+        return self::verifyActorAccount($otp, $admin, "admin");
     }
 }

@@ -44,6 +44,7 @@ Route::prefix("admin")->group(function () {
 
         // Provider, Facility, District Assembly Onboarding Management
         Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
+        Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
         // Provider Management
         Route::get("all_providers", [AdminProviderManagementController::class, "listProviders"]);

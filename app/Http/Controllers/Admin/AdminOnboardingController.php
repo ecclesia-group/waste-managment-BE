@@ -45,6 +45,6 @@ class AdminOnboardingController extends Controller
             ]
         );
 
-        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider registered successfully", status_code: 200, data: $provider->toArray());
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Provider registered successfully", status_code: self::API_SUCCESS, data: $provider->toArray());
     }
 }
