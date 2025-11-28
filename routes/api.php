@@ -2,11 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminPasswordController;
-<<<<<<< Updated upstream
-=======
-use App\Http\Controllers\Admin\AdminProviderManagementController;
 use App\Http\Controllers\Admin\AdminZoneManagementController;
->>>>>>> Stashed changes
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;

@@ -2,13 +2,7 @@
 namespace App\Traits;
 
 use App\Models\Actor;
-use App\Models\Category;
 use App\Models\OtpToken;
-use App\Models\Transaction;
-use App\Models\User;
-use AshAllenDesign\ShortURL\Facades\ShortURL;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -67,6 +61,18 @@ trait Helpers
         }
     }
 
+    protected static function processImage(array $image_fields, array $data)
+    {
+        foreach ($image_fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $is_base_64   = str_starts_with($data[$field], 'data:image');
+                $data[$field] = $is_base_64 ? static::base64ImageDecode($data[$field]) : $data[$field];
+            }
+        }
+
+        return $data;
+    }
+
     protected static function deleteImage(?string $image_path): bool
     {
         if (! $image_path) {
@@ -90,73 +96,6 @@ trait Helpers
             logger()->error('Failed to delete image', ['error' => $e->getMessage(), 'path' => $image_path]);
             return false;
         }
-    }
-
-    protected static function transformDealSummary(object $item): array
-    {
-        return [
-            "id"                         => $item->deal_id,
-            "vendor_id"                  => $item->vendor_id,
-            "deal_slug"                  => $item->deal_slug,
-            "title"                      => $item->title,
-            "category"                   => $item->category ?? [],
-            "quantity"                   => $item->quantity ?? [],
-            "status"                     => $item->status,
-            "image"                      => $item->image,
-            "images"                     => $item->images ?? [],
-            "company_logo"               => $item->logo,
-            "company_name"               => $item->brand_name,
-            "google_map_url"             => $item->google_map_url,
-            "price"                      => $item->price,
-            "discounted_price"           => $item->discounted_price,
-            "discount_percentage"        => $item->discount_percentage,
-            "created_at"                 => $item->created_at,
-            "start_date"                 => $item->start_date,
-            "expiry_date"                => $item->expiry_date,
-            "region_location"            => $item->region_location ?? [],
-            "partner_location"           => $item->partner_location ?? [],
-            "target_branches"            => $item->target_branches ?? [],
-            "promote_deal"               => $item->promote_deal,
-            "redemption_type"            => $item->redemption_type ?? [],
-            "online_link"                => $item->online_link,
-            "offer_type"                 => $item->offer_type,
-            "sku"                        => $item->sku,
-            "properties"                 => $item->properties ?? [],
-            "redemption_limits"          => $item->redemption_limits ?? [],
-            "exclusions"                 => $item->exclusions ?? [],
-            "age"                        => self::decodeJsonArray($item->age) ?? $item->age,
-            "delivery_fee"               => $item->delivery_fee,
-            "free_delivery_areas"        => $item->free_delivery_areas,
-            "validity_type"              => $item->validity_type,
-            "flash"                      => $item->flash,
-            "terms"                      => $item->terms_and_conditions,
-            "refund_policy"              => $item->refund_policy,
-            "reject_reason"              => $item->reject_reason,
-            "rejected_date"              => $item->rejected_date,
-            "initial_blast"              => $item->initial_blast,
-            "sms_delivery_status"        => $item->sms_delivery_status,
-            "sms_count"                  => $item->sms_count,
-            "subscriber_count"           => $item->subscriber_count,
-            "bogo"                       => self::decodeJsonArray($item->bogo) ?? $item->bogo,
-            "bundle"                     => self::decodeJsonArray($item->bundle) ?? $item->bundle,
-            "details"                    => [
-                "description"             => $item->description,
-                "redemption_instructions" => $item->redemption_instructions,
-            ],
-            "contact"                    => [
-                "email"        => $item->email,
-                "phone_number" => $item->deals_phone_number,
-                "website"      => $item->website,
-                "social_media" => [
-                    "facebook"  => $item->facebook,
-                    "instagram" => $item->instagram,
-                    "twitter"   => $item->twitter,
-                ],
-            ],
-            "redemption_region_location" => $item->redemption_region_location ?? [],
-            "redemption_branches"        => $item->redemption_branches ?? [],
-            "redemption_partners"        => $item->redemption_partners ?? [],
-        ];
     }
 
     /**
@@ -224,20 +163,5 @@ trait Helpers
             }
         }
         return $token;
-    }
-
-    
-    protected static function processImage(array $image_fields, array $data)
-    {
-        foreach ($image_fields as $field)
-        {
-            if (isset($data[$field]) && is_string($data[$field]))
-            {
-                $is_base_64   = str_starts_with($data[$field], 'data:image');
-                $data[$field] = $is_base_64 ? static::base64ImageDecode($data[$field]) : $data[$field];
-            }
-        }
-
-        return $data;
     }
 }
