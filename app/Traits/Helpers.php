@@ -226,6 +226,7 @@ trait Helpers
         return $token;
     }
 
+    
     protected static function processImage(array $image_fields, array $data)
     {
         foreach ($image_fields as $field)
