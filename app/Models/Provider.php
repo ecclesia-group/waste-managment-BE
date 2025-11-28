@@ -31,12 +31,7 @@ class Provider extends Actor
     ];
 
     protected $casts = [
-        "email_verified_at"          => "datetime",
-        "password"                   => "hashed",
-        "business_certificate_image" => "array",
-        "mmda_contract_image"        => "array",
-        "tax_certificate_image"      => "array",
-        "epa_permit_image"           => "array",
-        "profile_image"              => "array",
+        "email_verified_at"                => "datetime",
+        "password"                         => "hashed"
     ];
 }

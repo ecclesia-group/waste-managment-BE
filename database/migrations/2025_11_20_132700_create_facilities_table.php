@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->longText('business_certificate_image')->nullable();
-            $table->longText('mmda_contract_image')->nullable();
+            $table->longText('district_assembly_contract_image')->nullable();
             $table->longText('tax_certificate_image')->nullable();
             $table->longText('epa_permit_image')->nullable();
             $table->longText('profile_image')->nullable();

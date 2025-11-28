@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminOnboardingController;
 use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Admin\AdminProviderManagementController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
 use Illuminate\Http\Request;
@@ -41,8 +42,13 @@ Route::prefix("admin")->group(function () {
         Route::post("logout", [AdminAuthenticationController::class, "logout"]);
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
-        // Provider, Facility, District  Onboarding Management
+        // Provider, Facility, District Assembly Onboarding Management
         Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
+        // Provider Management
+        Route::get("all_providers", [AdminProviderManagementController::class, "listProviders"]);
+        Route::get("get_single_provider/{provider_slug}", [AdminProviderManagementController::class, "getProviderDetails"]);
+        Route::post("update_provider_status", [AdminProviderManagementController::class, "updateProviderStatus"]);
+        Route::put("update_provider_details/{provider_slug}", [AdminProviderManagementController::class, "updateProviderDetails"]);
     });
 });

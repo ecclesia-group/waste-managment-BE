@@ -20,7 +20,7 @@ class Facility extends Model
         'first_name',
         'last_name',
         'business_certificate_image',
-        'mmda_contract_image',
+        'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
         'type',
@@ -32,12 +32,12 @@ class Facility extends Model
     ];
 
     protected $casts = [
-        'created_at'                 => 'datetime',
-        'updated_at'                 => 'datetime',
-        'business_certificate_image' => 'array',
-        'mmda_contract_image'        => 'array',
-        'tax_certificate_image'      => 'array',
-        'epa_permit_image'           => 'array',
-        'profile_image'              => 'array',
+        'created_at'                       => 'datetime',
+        'updated_at'                       => 'datetime',
+        'business_certificate_image'       => 'array',
+        'district_assembly_contract_image' => 'array',
+        'tax_certificate_image'            => 'array',
+        'epa_permit_image'                 => 'array',
+        'profile_image'                    => 'array',
     ];
 }

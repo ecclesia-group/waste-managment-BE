@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Password Reset</title>
+    <title>Provider Account Creation</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 
@@ -47,33 +47,32 @@
                                 </tr>
                             </table>
 
-                            <!-- OTP Box -->
-                            <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#00361B"
-                                style="border: 1px dashed #00361B; border-radius: 12px; margin-bottom: 20px; box-shadow:0 4px 12px rgba(0,0,0,0.10);">
+                            <!-- Login Credentials -->
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#F0FAFF"
+                                style="border: 1px dashed #66B3FF; border-radius: 10px; margin-bottom: 20px;">
                                 <tr>
-                                    <td align="center" valign="middle" style="padding: 30px;">
-                                        <!-- Center Fix: Nested table with a single centered cell -->
-                                        <table cellspacing="0" cellpadding="0" border="0" align="center">
-                                            <tr>
-                                                <td align="center">
-                                                    <span
-                                                        style="font-size: 32px; letter-spacing: 6px; font-weight: 700; color: #ffffff; text-align: center; display: block;">
-                                                        {{ $otp }}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <td style="padding: 20px;">
+                                        <p style="font-size: 15px; color: #333; margin-bottom: 8px;"><strong>Login
+                                                Credentials</strong></p>
+                                        <p style="font-size: 14px; color: #555; margin: 0;">
+                                            📞 Phone Number: <strong>{{ $phone_number }}</strong><br>
+                                            📧 Email: <strong>{{ $email }}</strong><br>
+                                            🔑 Password: <strong>{{ $password }}</strong><br>
+                                            🔗 Sign in here: <a href="http://86.48.2.138:2000/api/yes"
+                                                style="color: #1a73e8;">http://86.48.2.138:2000/api/yes</a>
+                                        </p>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Expiration Notice -->
+                            <!-- Password Change Notice -->
                             <table width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                     <td align="center" style="padding-bottom: 30px; justify-content: center;">
                                         <p
                                             style="font-size: 13px; color: #FF4C4C; text-align: center; font-weight: 500; margin: 0;">
-                                            ⚠️ This code will expire after 10 minutes
+                                            ⚠ Please change your password immediately after logging in for security
+                                            reasons.
                                         </p>
                                     </td>
                                 </tr>
@@ -84,12 +83,13 @@
                                 <tr>
                                     <td align="center">
                                         <p style="font-size: 14px; color: #888; text-align: center; margin: 0;">
-                                            If you did not request this service, please ignore this email or
+                                            If you did not request this verification, please ignore this email or
                                             contact support.
                                         </p>
                                     </td>
                                 </tr>
                             </table>
+
                         </td>
                     </tr>
                 </table>

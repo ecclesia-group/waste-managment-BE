@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('password');
             $table->timestamp('email_verified_at')->nullable();
             $table->longText('business_certificate_image')->nullable();
-            $table->longText('mmda_contract_image')->nullable();
+            $table->longText('district_assembly_contract_image')->nullable();
             $table->longText('tax_certificate_image')->nullable();
             $table->longText('epa_permit_image')->nullable();
             $table->string('zone_id')->nullable();

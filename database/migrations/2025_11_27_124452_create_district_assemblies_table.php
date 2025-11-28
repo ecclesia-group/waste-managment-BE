@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('district_assemblies', function (Blueprint $table) {
             $table->id();
-            $table->string('mmda_slug')->unique();
+            $table->string('district_assembly_slug')->unique();
             $table->string('region');
             $table->string('district');
             $table->string('email')->unique();
