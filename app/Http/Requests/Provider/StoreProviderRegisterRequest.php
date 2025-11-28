@@ -1,9 +1,9 @@
 <?php
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\Provider;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AdminProviderRegisterRequest extends FormRequest
+class StoreProviderRegisterRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

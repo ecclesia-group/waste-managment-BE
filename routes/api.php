@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminOnboardingController;
 use App\Http\Controllers\Admin\AdminPasswordController;
 use App\Http\Controllers\Admin\AdminProviderManagementController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -43,13 +44,13 @@ Route::prefix("admin")->group(function () {
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
         // Provider, Facility, District Assembly Onboarding Management
-        Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
-        Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
+        Route::post("register_provider", [ProviderController::class, "register"]);
+       // Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
         // Provider Management
-        Route::get("all_providers", [AdminProviderManagementController::class, "listProviders"]);
-        Route::get("get_single_provider/{provider_slug}", [AdminProviderManagementController::class, "getProviderDetails"]);
-        Route::post("update_provider_status", [AdminProviderManagementController::class, "updateProviderStatus"]);
-        Route::put("update_provider_details/{provider_slug}", [AdminProviderManagementController::class, "updateProviderDetails"]);
+        Route::get("all_providers", [ProviderController::class, "index"]);
+        Route::get("get_single_provider/{provider_slug}", [ProviderController::class, "show"]);
+        Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
+        Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProfile"]);
     });
 });

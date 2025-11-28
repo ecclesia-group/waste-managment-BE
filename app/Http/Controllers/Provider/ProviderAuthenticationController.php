@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AdminProviderRegisterRequest;
 use App\Models\Provider;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class ProviderAuthenticationController extends Controller

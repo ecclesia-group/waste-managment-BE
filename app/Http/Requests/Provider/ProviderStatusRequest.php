@@ -1,9 +1,9 @@
 <?php
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\Provider;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AdminProviderAccountStatusRequest extends FormRequest
+class ProviderStatusRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,7 +22,7 @@ class AdminProviderAccountStatusRequest extends FormRequest
     {
         return [
             "status"        => ["required", "string", "in:pending,deactivate,activate", "bail"],
-            "provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
+            //"provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
         ];
     }
 }
