@@ -10,15 +10,10 @@ use Illuminate\Routing\Controller as BaseController;
 
 class Controller extends BaseController
 {
-    const API_SUCCESS        = "000";
-    const API_FAIL           = "001";
-    const API_NOT_FOUND      = "002";
-    const API_FOUND          = "003";
-    const API_CREATED        = "004";
-    const API_SENDER         = "005";
-    const API_DEAL_DELETE    = "006";
-    const API_MISMATCH       = "007";
-    const API_ALREADY_EXISTS = "008";
+    const API_SUCCESS = 200;
+    const API_FAIL = 401;
+    const API_FOUND = 404;
+    const API_CREATED = 201;
 
     use AuthorizesRequests, ValidatesRequests, ApiTransformer, AppNotifications, Helpers;
 }

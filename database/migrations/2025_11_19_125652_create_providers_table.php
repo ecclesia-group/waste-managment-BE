@@ -32,6 +32,8 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->longText('profile_image')->nullable();
             $table->timestamps();
+
+            $table->softDeletes();
         });
     }
 
