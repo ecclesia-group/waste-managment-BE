@@ -10,6 +10,7 @@ class Zone extends Model
 
     protected $fillable = [
         'name',
+        'zone_slug',
         'region',
         'description',
         'locations',

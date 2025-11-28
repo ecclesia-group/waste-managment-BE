@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminPasswordController;
+<<<<<<< Updated upstream
+=======
+use App\Http\Controllers\Admin\AdminProviderManagementController;
+use App\Http\Controllers\Admin\AdminZoneManagementController;
+>>>>>>> Stashed changes
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
@@ -50,5 +55,12 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_provider/{provider_slug}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
         Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProfile"]);
+
+        // Zone Management
+        Route::get('all_zones', [AdminZoneManagementController::class, 'listZones']);
+        Route::get('get_single_zone/{zone_slug}', [AdminZoneManagementController::class, 'getZoneDetails']);
+        Route::post('create_zone', [AdminZoneManagementController::class, 'createZone']);
+        Route::put('update_zone/{zone_slug}', [AdminZoneManagementController::class, 'updateZone']);
+        Route::delete('delete_zone/{zone_slug}', [AdminZoneManagementController::class, 'deleteZone']);
     });
 });

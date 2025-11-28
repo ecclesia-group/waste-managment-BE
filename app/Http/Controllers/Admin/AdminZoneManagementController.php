@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminZoneCreationRequest;
 use App\Http\Requests\Admin\AdminZoneUpdationRequest;
 use App\Models\Zone;
+use Illuminate\Support\Str;
 
 class AdminZoneManagementController extends Controller
 {
@@ -31,9 +32,9 @@ class AdminZoneManagementController extends Controller
     }
 
     // Gets details of a single zone
-    public function getZoneDetails($zone_id)
+    public function getZoneDetails($zone_slug)
     {
-        $zone = Zone::find($zone_id);
+        $zone = Zone::find($zone_slug);
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,
@@ -55,8 +56,9 @@ class AdminZoneManagementController extends Controller
     // Creates a new zone
     public function createZone(AdminZoneCreationRequest $request)
     {
-        $data = $request->validated();
-        $zone = Zone::create($data);
+        $data              = $request->validated();
+        $data['zone_slug'] = Str::uuid();
+        $zone              = Zone::create($data);
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -67,10 +69,10 @@ class AdminZoneManagementController extends Controller
     }
 
     // Updates an existing zone
-    public function updateZone(AdminZoneUpdationRequest $request, $zone_id)
+    public function updateZone(AdminZoneUpdationRequest $request, $zone_slug)
     {
         $data = $request->validated();
-        $zone = Zone::find($zone_id);
+        $zone = Zone::find($zone_slug);
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,
@@ -91,9 +93,9 @@ class AdminZoneManagementController extends Controller
     }
 
     // Deletes a zone
-    public function deleteZone($zone_id)
+    public function deleteZone($zone_slug)
     {
-        $zone = Zone::find($zone_id);
+        $zone = Zone::find($zone_slug);
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,

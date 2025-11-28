@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('zones', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->string('zone_slug')->unique();
             $table->string('region')->unique();
             $table->text('description')->nullable();
             $table->longText('locations')->nullable();
