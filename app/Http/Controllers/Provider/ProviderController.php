@@ -101,20 +101,9 @@ class ProviderController extends Controller
         );
     }
 
-    public function updateProfile(UpdateProviderProfileRequest $request, $provider_slug)
+    public function updateProfile(UpdateProviderProfileRequest $request)
     {
         $data     = $request->validated();
-        $provider = Provider::where('provider_slug', $provider_slug)->first();
-
-        if (! $provider)
-        {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Provider not found",
-                status_code: 404
-            );
-        }
 
         $image_fields = [
             'business_certificate_image',
@@ -125,14 +114,14 @@ class ProviderController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
-        $provider->update($data);
+        request()->user()->update($data);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: request()->user()->toArray()
         );
     }
 }

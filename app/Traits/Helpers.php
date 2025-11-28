@@ -225,4 +225,18 @@ trait Helpers
         }
         return $token;
     }
+
+    protected static function processImage(array $image_fields, array $data)
+    {
+        foreach ($image_fields as $field)
+        {
+            if (isset($data[$field]) && is_string($data[$field]))
+            {
+                $is_base_64   = str_starts_with($data[$field], 'data:image');
+                $data[$field] = $is_base_64 ? static::base64ImageDecode($data[$field]) : $data[$field];
+            }
+        }
+
+        return $data;
+    }
 }

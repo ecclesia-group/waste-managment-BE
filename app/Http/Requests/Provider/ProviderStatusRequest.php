@@ -22,7 +22,7 @@ class ProviderStatusRequest extends FormRequest
     {
         return [
             "status"        => ["required", "string", "in:pending,deactivate,activate", "bail"],
-            //"provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
+            "provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
         ];
     }
 }
