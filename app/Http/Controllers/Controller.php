@@ -13,6 +13,7 @@ class Controller extends BaseController
     const API_SUCCESS = 200;
     const API_FAIL = 401;
     const API_FOUND = 404;
+    const API_NOT_FOUND = 403;
     const API_CREATED = 201;
 
     use AuthorizesRequests, ValidatesRequests, ApiTransformer, AppNotifications, Helpers;
