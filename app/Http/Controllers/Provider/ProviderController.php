@@ -124,10 +124,10 @@ class ProviderController extends Controller
         );
     }
 
-    public function updateProviderProfile(UpdateProviderProfileRequest $request)
+    public function updateProviderProfile(UpdateProviderProfileRequest $request, $provider_slug)
     {
         $data         = $request->validated();
-        $provider     = Provider::find($data['provider_slug']);
+        $provider     = Provider::where('provider_slug', $provider_slug)->first();
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',
@@ -137,6 +137,7 @@ class ProviderController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
+
         $provider->update($data);
         return self::apiResponse(
             in_error: false,
