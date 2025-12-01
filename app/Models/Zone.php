@@ -19,4 +19,10 @@ class Zone extends Model
     protected $casts = [
         'locations' => 'array',
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return "zone_slug";
+    }
+
 }

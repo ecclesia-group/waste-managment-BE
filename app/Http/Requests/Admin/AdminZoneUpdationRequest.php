@@ -23,13 +23,8 @@ class AdminZoneUpdationRequest extends FormRequest
     {
         // Get the zone ID from the route parameter (which should be zone_slug, not zone_id)
         $zone_slug = $this->route('zone_slug');
-
         return [
-            'name'        => [
-                'sometimes',
-                'string',
-                Rule::unique('zones', 'name')->ignore($zone_slug),
-            ],
+            'name'        => ['sometimes', Rule::unique('zones')->ignore($zone_slug, 'zone_slug')],
             'region'      => 'sometimes|string',
             'description' => 'nullable|string',
             'locations'   => 'nullable|array',
