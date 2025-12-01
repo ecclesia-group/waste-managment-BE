@@ -1,16 +1,19 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\ZoneManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ZoneManagementController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Admin\AdminAuthenticationController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -36,11 +39,23 @@ Route::prefix("facility")->group(function () {
     Route::post("login", [FacilityAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [FacilityPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("resetpassword", [FacilityPasswordController::class, "resetPassword"]);
-    Route::post("resend_verificationCode", [ProviderPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resend_verificationCode", [FacilityPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:facility"])->group(function () {
         Route::post("change_password", [FacilityPasswordController::class, "changePassword"]);
         Route::post("logout", [FacilityAuthenticationController::class, "logout"]);
+    });
+});
+
+Route::prefix("district_assembly")->group(function () {
+    Route::post("login", [DistrictAssembleyAuthenticationController::class, "login"]);
+    Route::post("reset_password_notification", [DistrictAssembleyPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resetpassword", [DistrictAssembleyPasswordController::class, "resetPassword"]);
+    Route::post("resend_verificationCode", [DistrictAssembleyPasswordController::class, "sendResetPasswordNotification"]);
+
+    Route::middleware(["auth:district_assembly"])->group(function () {
+        Route::post("change_password", [DistrictAssembleyPasswordController::class, "changePassword"]);
+        Route::post("logout", [DistrictAssembleyAuthenticationController::class, "logout"]);
     });
 });
 
@@ -67,6 +82,13 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
         Route::put("update_facility_details/{facility_slug}", [FacilityController::class, "updateFacilityProfile"]);
+
+        // District Assembly Management
+        Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
+        Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
+        Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
+        Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
+        Route::put("update_district_assembly_details/{district_assembly_slug}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);

@@ -57,7 +57,7 @@ class UpdateProviderProfileRequest extends FormRequest
             'tax_certificate_image'            => 'nullable|starts_with:data:,http://,https://',
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
 
-            'zone_id'                          => 'nullable|exists:zones,id',
+            'zone_slug'                        => 'nullable|exists:zones,zone_slug',
             'region'                           => 'required|string|max:100',
             'location'                         => 'required|string|max:255',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',

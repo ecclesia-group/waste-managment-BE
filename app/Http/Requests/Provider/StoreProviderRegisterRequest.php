@@ -24,7 +24,7 @@ class StoreProviderRegisterRequest extends FormRequest
             'first_name'                       => 'required|string',
             'last_name'                        => 'nullable|string',
             'email'                            => 'required|string|email|unique:providers,email',
-            'phone_number'                     => 'required|stringunique:providers,phone_number',
+            'phone_number'                     => 'required|string|unique:providers,phone_number',
             'business_name'                    => 'required|string',
             'business_registration_number'     => 'required|string|unique:providers,business_registration_number',
             'gps_address'                      => 'required|string',
