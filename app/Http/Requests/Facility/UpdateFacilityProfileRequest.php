@@ -21,7 +21,7 @@ class UpdateFacilityProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $facility_slug = $this->route('facility_slug');
+        $facility_slug = $this->route('facility');
 
         return [
             'district'                         => 'required|string|max:255',

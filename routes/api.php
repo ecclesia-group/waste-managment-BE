@@ -1,19 +1,19 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuthenticationController;
+use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\ZoneManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ZoneManagementController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -81,14 +81,14 @@ Route::prefix("admin")->group(function () {
         Route::get("all_facilities", [FacilityController::class, "index"]);
         Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
-        Route::put("update_facility_details/{facility_slug}", [FacilityController::class, "updateFacilityProfile"]);
+        Route::put("update_facility_details/{facility}", [FacilityController::class, "updateFacilityProfile"]);
 
         // District Assembly Management
         Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
         Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
         Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
         Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
-        Route::put("update_district_assembly_details/{district_assembly_slug}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
+        Route::put("update_district_assembly_details/{district_assembly}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);

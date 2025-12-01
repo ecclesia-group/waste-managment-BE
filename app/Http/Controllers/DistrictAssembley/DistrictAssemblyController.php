@@ -107,10 +107,9 @@ class DistrictAssemblyController extends Controller
         );
     }
 
-    public function updateDistrictAssemblyProfile(UpdateDistrictAssemblyProfileRequest $request, string $facility_slug)
+    public function updateDistrictAssemblyProfile(UpdateDistrictAssemblyProfileRequest $request, DistrictAssembly $district_assembly)
     {
         $data              = $request->validated();
-        $district_assembly = DistrictAssembly::where('facility_slug', $facility_slug)->first();
         $image_fields      = [
             'business_certificate_image',
             'district_assembly_contract_image',

@@ -21,7 +21,7 @@ class UpdateDistrictAssemblyProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $district_assembly_slug = $this->route('district_assembly_slug');
+        $district_assembly_slug = $this->route('district_assembly');
 
         return [
             'region'        => 'required|string|max:100',
@@ -31,14 +31,14 @@ class UpdateDistrictAssemblyProfileRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('providers', 'email')->ignore($district_assembly_slug, 'district_assembly_slug'),
+                Rule::unique('district_assemblies', 'email')->ignore($district_assembly_slug, 'district_assembly_slug'),
             ],
 
             'phone_number'  => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('providers', 'phone_number')->ignore($district_assembly_slug, 'district_assembly_slug'),
+                Rule::unique('district_assemblies', 'phone_number')->ignore($district_assembly_slug, 'district_assembly_slug'),
             ],
 
             'gps_address'   => 'required|string|max:255',

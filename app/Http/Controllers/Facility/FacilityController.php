@@ -115,10 +115,9 @@ class FacilityController extends Controller
         );
     }
 
-    public function updateFacilityProfile(UpdateFacilityProfileRequest $request, string $facility_slug)
+    public function updateFacilityProfile(UpdateFacilityProfileRequest $request, Facility $facility)
     {
         $data         = $request->validated();
-        $facility     = Facility::where('facility_slug', $facility_slug)->first();
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',

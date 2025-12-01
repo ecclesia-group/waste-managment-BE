@@ -22,8 +22,7 @@ class UpdateProviderProfileRequest extends FormRequest
 
     public function rules(): array
     {
-        $provider_slug = $this->route('provider_slug');
-
+        $provider_slug = $this->route('provider');
         return [
             'first_name'                       => 'required|string|max:255',
             'last_name'                        => 'nullable|string|max:255',

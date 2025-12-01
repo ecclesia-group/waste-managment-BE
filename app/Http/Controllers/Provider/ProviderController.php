@@ -6,18 +6,17 @@ use App\Http\Requests\Provider\ProviderStatusRequest;
 use App\Http\Requests\Provider\StoreProviderRegisterRequest;
 use App\Http\Requests\Provider\UpdateProviderProfileRequest;
 use App\Models\Provider;
-use Illuminate\Support\Str;
-
 use function Symfony\Component\Clock\now;
+use Illuminate\Support\Str;
 
 class ProviderController extends Controller
 {
     public function register(StoreProviderRegisterRequest $request)
     {
-        $password              = Str::random(8);
-        $data                  = $request->validated();
-        $data['provider_slug'] = Str::uuid();
-        $data['password']      = $password;
+        $password                  = Str::random(8);
+        $data                      = $request->validated();
+        $data['provider_slug']     = Str::uuid();
+        $data['password']          = $password;
         $data['email_verified_at'] = now();
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
@@ -118,7 +117,6 @@ class ProviderController extends Controller
     public function updateProviderProfile(UpdateProviderProfileRequest $request, Provider $provider)
     {
         $data         = $request->validated();
-        $provider     = Provider::where('provider_slug', $provider->provider_slug)->first();
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',
