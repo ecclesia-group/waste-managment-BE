@@ -2,9 +2,9 @@
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AdminProviderRegisterRequest;
 use App\Models\Provider;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class ProviderAuthenticationController extends Controller
@@ -60,6 +60,6 @@ class ProviderAuthenticationController extends Controller
         $otp   = request("otp");
         $admin = Provider::where("provider_slug", request("provider_slug"))->first();
 
-        return self::verifyActorAccount($otp, $admin, "admin");
+        return self::verifyActorAccount($otp, $admin, "provider");
     }
 }

@@ -2,6 +2,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AdminZoneUpdationRequest extends FormRequest
 {
@@ -20,12 +21,17 @@ class AdminZoneUpdationRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Get the zone ID from the route parameter (which should be zone_slug, not zone_id)
+        $zone_slug = $this->route('zone_slug');
+
         return [
-            // 'name'        => 'sometimes|string|unique:zones,name,except,id,name',
-            // 'name'        => 'sometimes|string|unique:zones,name,' . $this->route('zone_id') . ',id',
-            'name'        => 'sometimes|string|unique:zones,name',
+            'name'        => [
+                'sometimes',
+                'string',
+                Rule::unique('zones', 'name')->ignore($zone_slug),
+            ],
             'region'      => 'sometimes|string',
-            'description' => 'nullable|nullable|string',
+            'description' => 'nullable|string',
             'locations'   => 'nullable|array',
         ];
     }

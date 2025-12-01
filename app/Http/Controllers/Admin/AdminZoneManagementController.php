@@ -34,7 +34,7 @@ class AdminZoneManagementController extends Controller
     // Gets details of a single zone
     public function getZoneDetails($zone_slug)
     {
-        $zone = Zone::find($zone_slug);
+        $zone = Zone::where('zone_slug', $zone_slug)->first();
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,
@@ -72,7 +72,7 @@ class AdminZoneManagementController extends Controller
     public function updateZone(AdminZoneUpdationRequest $request, $zone_slug)
     {
         $data = $request->validated();
-        $zone = Zone::find($zone_slug);
+        $zone = Zone::where('zone_slug', $zone_slug)->first();
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,
@@ -95,7 +95,7 @@ class AdminZoneManagementController extends Controller
     // Deletes a zone
     public function deleteZone($zone_slug)
     {
-        $zone = Zone::find($zone_slug);
+        $zone = Zone::where('zone_slug', $zone_slug)->first();
         if (! $zone) {
             return self::apiResponse(
                 in_error: true,

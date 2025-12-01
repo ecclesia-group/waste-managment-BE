@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class DistrictAssembly extends Model
 {
      protected $fillable = [
-        'district_assembl_slug',
+        'district_assembly_slug',
         'region',
         'district',
         'email',
