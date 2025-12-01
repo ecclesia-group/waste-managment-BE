@@ -23,6 +23,7 @@ class Facility extends Model
         'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
+        'profile_image',
         'type',
         'ownership',
     ];
@@ -40,4 +41,10 @@ class Facility extends Model
         'epa_permit_image'                 => 'array',
         'profile_image'                    => 'array',
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return "facility_slug";
+    }
+
 }

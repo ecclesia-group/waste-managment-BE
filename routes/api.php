@@ -3,6 +3,9 @@
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminPasswordController;
 use App\Http\Controllers\Admin\AdminZoneManagementController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
@@ -30,6 +33,19 @@ Route::prefix("provider")->group(function () {
     // });
 });
 
+Route::prefix("facility")->group(function () {
+    Route::post("login", [FacilityAuthenticationController::class, "login"]);
+    // Route::post("verify/account", [FacilityAuthenticationController::class, "verifyAccount"]);
+    Route::post("email/resetpassword", [FacilityPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resetpassword", [FacilityPasswordController::class, "resetPassword"]);
+    Route::post("resend/verificationCode", [FacilityAuthenticationController::class, "resendVerificationCode"]);
+
+    // Route::middleware(["auth:user", "verified"])->group(function () {
+    //     Route::apiResource("deals", UserDealController::class);
+    // Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProfile"]);
+    // });
+});
+
 Route::prefix("admin")->group(function () {
     Route::post("login", [AdminAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [AdminPasswordController::class, "sendResetPasswordNotification"]);
@@ -44,14 +60,20 @@ Route::prefix("admin")->group(function () {
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
         // Provider, Facility, District Assembly Onboarding Management
-        Route::post("register_provider", [ProviderController::class, "register"]);
-        // Route::post("register_provider", [AdminOnboardingController::class, "registerProvider"]);
 
         // Provider Management
+        Route::post("register_provider", [ProviderController::class, "register"]);
         Route::get("all_providers", [ProviderController::class, "index"]);
         Route::get("get_single_provider/{provider_slug}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
         Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProviderProfile"]);
+
+        // Facility Management
+        Route::post("register_facility", [FacilityController::class, "register"]);
+        Route::get("all_facilities", [FacilityController::class, "index"]);
+        Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
+        Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
+        Route::put("update_facility_details/{facility_slug}", [FacilityController::class, "updateFacilityProfile"]);
 
         // Zone Management
         Route::get('all_zones', [AdminZoneManagementController::class, 'listZones']);

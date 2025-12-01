@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('provider_slug')->unique();
             $table->string('first_name');
             $table->string('last_name')->nullable();
+            $table->string('business_name')->nullable();
             $table->string('business_registration_number')->nullable();
             $table->string('gps_address')->nullable();
             $table->string('email')->unique();

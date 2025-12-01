@@ -7,6 +7,7 @@ class Provider extends Actor
         'provider_slug',
         'first_name',
         'last_name',
+        'business_name',
         'business_registration_number',
         'gps_address',
         'email',
@@ -17,7 +18,7 @@ class Provider extends Actor
         'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
-        'zone_id',
+        'zone_slug',
         'status',
         'region',
         'location',
@@ -31,7 +32,13 @@ class Provider extends Actor
     ];
 
     protected $casts = [
-        "email_verified_at"                => "datetime",
-        "password"                         => "hashed"
+        "email_verified_at" => "datetime",
+        "password"          => "hashed",
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return "provider_slug";
+    }
+
 }

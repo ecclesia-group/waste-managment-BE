@@ -31,7 +31,7 @@ class ProviderController extends Controller
 
         self::sendEmail(
             $provider->email,
-            email_class: "App\Mail\ProviderAccountCreationMail",
+            email_class: "App\Mail\ActorAccountCreationMail",
             parameters: [
                 $provider->email,
                 $password,
@@ -82,7 +82,7 @@ class ProviderController extends Controller
     public function updateStatus(ProviderStatusRequest $request)
     {
         $data     = $request->validated();
-        $provider = Provider::where('provider_slug', request()->user()->provider_slug)->first();
+        $provider = Provider::where('provider_slug', $)->first();
 
         // if (! $provider) {
         //     return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: self::API_FAIL);
