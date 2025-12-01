@@ -2,15 +2,15 @@
 namespace App\Http\Controllers\Facility;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Facility\AdminFacilityAccountStatusRequest;
-use App\Http\Requests\Facility\AdminFacilityOnboardingRequest;
+use App\Http\Requests\Facility\FacilityAccountStatusRequest;
+use App\Http\Requests\Facility\FacilityOnboardingRequest;
 use App\Http\Requests\Facility\UpdateFacilityProfileRequest;
 use App\Models\Facility;
 use Illuminate\Support\Str;
 
 class FacilityController extends Controller
 {
-    public function register(AdminFacilityOnboardingRequest $request)
+    public function register(FacilityOnboardingRequest $request)
     {
         $password              = Str::random(8);
         $data                  = $request->validated();
@@ -75,7 +75,7 @@ class FacilityController extends Controller
         );
     }
 
-    public function updateStatus(AdminFacilityAccountStatusRequest $request)
+    public function updateStatus(FacilityAccountStatusRequest $request)
     {
         $data             = $request->validated();
         $facility         = Facility::where('facility_slug', $data['facility_slug'])->first();

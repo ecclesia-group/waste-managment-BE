@@ -3,7 +3,7 @@ namespace App\Http\Requests\Facility;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AdminFacilityOnboardingRequest extends FormRequest
+class FacilityOnboardingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

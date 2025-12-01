@@ -1,10 +1,9 @@
 <?php
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\DistrictAssembley;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class AdminPasswordChangeRequest extends FormRequest
+class AccountStatusRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,8 +21,8 @@ class AdminPasswordChangeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "old_password" => ["current_password:admin"],
-            "password"     => ["required", Password::defaults(), "confirmed", "bail"],
+            "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
+            "facility_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
         ];
     }
 }

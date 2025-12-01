@@ -23,8 +23,8 @@ class AdminDistrictAssemblyOnboardingRequest extends FormRequest
         return [
             'region'                           => 'required|string|max:100',
             'district'                         => 'required|string|max:255',
-            'email'                            => 'required|string|email|max:255|unique:facilities,email',
-            'phone_number'                     => 'required|string|max:20|unique:facilities,phone_number',
+            'email'                            => 'required|string|email|max:255|unique:district_assemblies,email',
+            'phone_number'                     => 'required|string|max:20|unique:district_assemblies,phone_number',
             'gps_address'                      => 'required|string|max:255',
             'first_name'                       => 'required|string|max:255',
             'last_name'                        => 'nullable|string|max:255',

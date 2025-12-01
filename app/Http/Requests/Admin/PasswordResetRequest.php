@@ -1,9 +1,10 @@
 <?php
-namespace App\Http\Requests\DistrictAssembley;
+namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
-class AdminDistrictAssemblyAccountStatusRequest extends FormRequest
+class PasswordResetRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,8 +22,9 @@ class AdminDistrictAssemblyAccountStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
-            "facility_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
+            "password"   => ["required", Password::defaults(), "bail"],
+            "admin_slug" => ["required", "alpha_dash"],
+            "otp"        => ["required"],
         ];
     }
 }

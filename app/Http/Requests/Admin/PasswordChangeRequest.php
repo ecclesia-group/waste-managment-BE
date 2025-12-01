@@ -1,10 +1,10 @@
 <?php
-namespace App\Http\Requests\DistrictAssembley;
+namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
-class DistrictAssemblyPasswordChangeResetRequest extends FormRequest
+class PasswordChangeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,7 +22,7 @@ class DistrictAssemblyPasswordChangeResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "old_password" => ["current_password:district_assembly"],
+            "old_password" => ["current_password:admin"],
             "password"     => ["required", Password::defaults(), "confirmed", "bail"],
         ];
     }

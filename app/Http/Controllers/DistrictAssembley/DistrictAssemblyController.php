@@ -1,16 +1,16 @@
 <?php
 namespace App\Http\Controllers\DistrictAssembley;
 
-use Illuminate\Support\Str;
-use App\Models\DistrictAssembly;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DistrictAssembley\UpdateDistrictAssemblyProfileRequest;
-use App\Http\Requests\DistrictAssembley\AdminDistrictAssemblyOnboardingRequest;
-use App\Http\Requests\DistrictAssembley\AdminDistrictAssemblyAccountStatusRequest;
+use App\Http\Requests\DistrictAssembley\AccountStatusRequest;
+use App\Http\Requests\DistrictAssembley\OnboardingRequest;
+use App\Http\Requests\DistrictAssembley\ProfileUpdateRequest;
+use App\Models\DistrictAssembly;
+use Illuminate\Support\Str;
 
 class DistrictAssemblyController extends Controller
 {
-    public function register(AdminDistrictAssemblyOnboardingRequest $request)
+    public function register(OnboardingRequest $request)
     {
         $password                       = Str::random(8);
         $data                           = $request->validated();
@@ -67,7 +67,7 @@ class DistrictAssemblyController extends Controller
         );
     }
 
-    public function updateStatus(AdminDistrictAssemblyAccountStatusRequest $request)
+    public function updateStatus(AccountStatusRequest $request)
     {
         $data                      = $request->validated();
         $district_assembly         = DistrictAssembly::where('district_assembly_slug', $data['district_assembly_slug'])->first();
@@ -83,7 +83,7 @@ class DistrictAssemblyController extends Controller
         );
     }
 
-    public function updateProfile(UpdateDistrictAssemblyProfileRequest $request)
+    public function updateProfile(ProfileUpdateRequest $request)
     {
         $data = $request->validated();
 
@@ -107,10 +107,10 @@ class DistrictAssemblyController extends Controller
         );
     }
 
-    public function updateDistrictAssemblyProfile(UpdateDistrictAssemblyProfileRequest $request, DistrictAssembly $district_assembly)
+    public function updateDistrictAssemblyProfile(ProfileUpdateRequest $request, DistrictAssembly $district_assembly)
     {
-        $data              = $request->validated();
-        $image_fields      = [
+        $data         = $request->validated();
+        $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',
             'tax_certificate_image',

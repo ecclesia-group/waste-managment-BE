@@ -1,9 +1,10 @@
 <?php
-namespace App\Http\Requests\Zone;
+namespace App\Http\Requests\DistrictAssembley;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
-class AdminZoneCreationRequest extends FormRequest
+class PasswordChangeResetRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,10 +22,8 @@ class AdminZoneCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'required|string|unique:zones,name',
-            'region'      => 'required|string',
-            'description' => 'nullable|string',
-            'locations'   => 'required|array',
+            "old_password" => ["current_password:district_assembly"],
+            "password"     => ["required", Password::defaults(), "confirmed", "bail"],
         ];
     }
 }

@@ -5,13 +5,13 @@ use Illuminate\Http\Request;
 use App\Models\DistrictAssembly;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\DistrictAssembley\DistrictAssemblyPasswordResetRequest;
-use App\Http\Requests\DistrictAssembley\DistrictAssemblyPasswordChangeResetRequest;
+use App\Http\Requests\DistrictAssembley\PasswordResetRequest;
+use App\Http\Requests\DistrictAssembley\PasswordChangeResetRequest;
 
 class DistrictAssembleyPasswordController extends Controller
 {
     // Handles password change for vendor
-    public function changePassword(DistrictAssemblyPasswordChangeResetRequest $http_request): JsonResponse
+    public function changePassword(PasswordChangeResetRequest $http_request): JsonResponse
     {
         $validated_password = $http_request->validated();
         request()->user()->update([
@@ -37,7 +37,7 @@ class DistrictAssembleyPasswordController extends Controller
         return self::sendActorResetPasswordNotification(actor: $district_assembly, guard: "district_assembly");
     }
 
-    public function resetPassword(DistrictAssemblyPasswordResetRequest $http_request)
+    public function resetPassword(PasswordResetRequest $http_request)
     {
         $data = $http_request->validated();
         $user = DistrictAssembly::where("district_assembly_slug", $data["district_assembly_slug"])->first();

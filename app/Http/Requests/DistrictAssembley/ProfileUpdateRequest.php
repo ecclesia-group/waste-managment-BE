@@ -4,7 +4,7 @@ namespace App\Http\Requests\DistrictAssembley;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateDistrictAssemblyProfileRequest extends FormRequest
+class ProfileUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

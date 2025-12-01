@@ -4,7 +4,7 @@ namespace App\Http\Requests\Zone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class AdminZoneUpdationRequest extends FormRequest
+class ZoneUpdationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Zone\AdminZoneCreationRequest;
-use App\Http\Requests\Zone\AdminZoneUpdationRequest;
+use App\Http\Requests\Zone\ZoneCreationRequest;
+use App\Http\Requests\Zone\ZoneUpdationRequest;
 use App\Models\Zone;
 use Illuminate\Support\Str;
 
@@ -34,7 +34,7 @@ class ZoneManagementController extends Controller
     }
 
     // Creates a new zone
-    public function createZone(AdminZoneCreationRequest $request)
+    public function createZone(ZoneCreationRequest $request)
     {
         $data              = $request->validated();
         $data['zone_slug'] = Str::uuid();
@@ -49,7 +49,7 @@ class ZoneManagementController extends Controller
     }
 
     // Updates an existing zone
-    public function updateZone(AdminZoneUpdationRequest $request, Zone $zone)
+    public function updateZone(ZoneUpdationRequest $request, Zone $zone)
     {
         $data = $request->validated();
         $zone->update($data);

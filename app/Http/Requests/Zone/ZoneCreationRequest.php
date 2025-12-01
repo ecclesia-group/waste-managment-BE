@@ -1,10 +1,9 @@
 <?php
-namespace App\Http\Requests\Admin;
+namespace App\Http\Requests\Zone;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class AdminPasswordResetRequest extends FormRequest
+class ZoneCreationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +21,10 @@ class AdminPasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "password"   => ["required", Password::defaults(), "bail"],
-            "admin_slug" => ["required", "alpha_dash"],
-            "otp"        => ["required"],
+            'name'        => 'required|string|unique:zones,name',
+            'region'      => 'required|string',
+            'description' => 'nullable|string',
+            'locations'   => 'required|array',
         ];
     }
 }

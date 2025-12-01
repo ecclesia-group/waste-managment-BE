@@ -5,13 +5,13 @@ use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AdminPasswordResetRequest;
-use App\Http\Requests\Admin\AdminPasswordChangeRequest;
+use App\Http\Requests\Admin\PasswordResetRequest;
+use App\Http\Requests\Admin\PasswordChangeRequest;
 
 class AdminPasswordController extends Controller
 {
     // Handles password change for vendor
-    public function changePassword(AdminPasswordChangeRequest $http_request): JsonResponse
+    public function changePassword(PasswordChangeRequest $http_request): JsonResponse
     {
         $validated_password = $http_request->validated();
         request()->user()->update([
@@ -37,7 +37,7 @@ class AdminPasswordController extends Controller
         return self::sendActorResetPasswordNotification(actor: $admin, guard: "admin");
     }
 
-    public function resetPassword(AdminPasswordResetRequest $http_request)
+    public function resetPassword(PasswordResetRequest $http_request)
     {
         $data = $http_request->validated();
         $user = Admin::where("admin_slug", $data["admin_slug"])->first();
