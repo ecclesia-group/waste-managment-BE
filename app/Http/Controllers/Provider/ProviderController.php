@@ -51,10 +51,6 @@ class ProviderController extends Controller
     public function index()
     {
         $provider = Provider::all();
-
-        // if (!$provider) {
-        //     return self::apiResponse(in_error: true, message: "Action Failed", reason: "No providers found", status_code: self::API_FAIL);
-        // }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -64,12 +60,9 @@ class ProviderController extends Controller
         );
     }
 
-    public function show(string $provider_slug)
+    public function show(Provider $provider)
     {
-        $provider = Provider::where('provider_slug', $provider_slug)->first();
-        // if (! $provider) {
-        //     return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: self::API_FAIL);
-        // }
+        $provider = Provider::where('provider_slug', $provider->provider_slug)->first();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -81,13 +74,8 @@ class ProviderController extends Controller
 
     public function updateStatus(ProviderStatusRequest $request)
     {
-        $data     = $request->validated();
-        $provider = Provider::where('provider_slug', $)->first();
-
-        // if (! $provider) {
-        //     return self::apiResponse(in_error: true, message: "Action Failed", reason: "Provider not found", status_code: self::API_FAIL);
-        // }
-
+        $data             = $request->validated();
+        $provider         = Provider::where('provider_slug', $data['provider_slug'])->first();
         $provider->status = $data['status'];
         $provider->save();
 
@@ -124,10 +112,10 @@ class ProviderController extends Controller
         );
     }
 
-    public function updateProviderProfile(UpdateProviderProfileRequest $request, $provider_slug)
+    public function updateProviderProfile(UpdateProviderProfileRequest $request, Provider $provider)
     {
         $data         = $request->validated();
-        $provider     = Provider::where('provider_slug', $provider_slug)->first();
+        $provider     = Provider::where('provider_slug', $provider->provider_slug)->first();
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',
@@ -137,7 +125,7 @@ class ProviderController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
-
+        dd($data);
         $provider->update($data);
         return self::apiResponse(
             in_error: false,

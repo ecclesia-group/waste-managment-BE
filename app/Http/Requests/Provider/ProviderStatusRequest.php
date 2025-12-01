@@ -21,7 +21,7 @@ class ProviderStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "status"        => ["required", "string", "in:pending,deactivate,activate", "bail"],
+            "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
             "provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
         ];
     }

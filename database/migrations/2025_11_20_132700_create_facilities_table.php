@@ -30,7 +30,7 @@ return new class extends Migration
             $table->longText('profile_image')->nullable();
             $table->string('type')->nullable();
             $table->string('ownership')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('active');
             $table->timestamps();
         });
     }

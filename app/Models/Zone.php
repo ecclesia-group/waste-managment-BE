@@ -25,4 +25,8 @@ class Zone extends Model
         return "zone_slug";
     }
 
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'zone_slug', 'zone_slug');
+    }
 }

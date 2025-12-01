@@ -21,7 +21,7 @@ class AdminFacilityAccountStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "status"        => ["required", "string", "in:pending,deactivate,activate", "bail"],
+            "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
             "facility_slug" => ["required", "string", "exists:facilities,facility_slug", "bail"],
         ];
     }

@@ -57,9 +57,9 @@ Route::prefix("admin")->group(function () {
         // Provider Management
         Route::post("register_provider", [ProviderController::class, "register"]);
         Route::get("all_providers", [ProviderController::class, "index"]);
-        Route::get("get_single_provider/{provider_slug}", [ProviderController::class, "show"]);
+        Route::get("get_single_provider/{provider}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
-        Route::put("update_provider_details/{provider_slug}", [ProviderController::class, "updateProviderProfile"]);
+        Route::put("update_provider_details/{provider}", [ProviderController::class, "updateProviderProfile"]);
 
         // Facility Management
         Route::post("register_facility", [FacilityController::class, "register"]);

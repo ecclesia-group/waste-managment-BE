@@ -21,19 +21,20 @@ class StoreProviderRegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name'                       => 'required|string|max:255',
-            'last_name'                        => 'nullable|string|max:255',
-            'email'                            => 'required|string|email|max:255|unique:providers,email',
-            'phone_number'                     => 'required|string|max:20|unique:providers,phone_number',
-            'business_registration_number'     => 'required|string|max:100|unique:providers,business_registration_number',
-            'gps_address'                      => 'required|string|max:255',
+            'first_name'                       => 'required|string',
+            'last_name'                        => 'nullable|string',
+            'email'                            => 'required|string|email|unique:providers,email',
+            'phone_number'                     => 'required|stringunique:providers,phone_number',
+            'business_name'                    => 'required|string',
+            'business_registration_number'     => 'required|string|unique:providers,business_registration_number',
+            'gps_address'                      => 'required|string',
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
             'tax_certificate_image'            => 'nullable|starts_with:data:,http://,https://',
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
             'zone_slug'                        => 'nullable|string|exists:zones,zone_slug',
-            'region'                           => 'required|string|max:100',
-            'location'                         => 'required|string|max:255',
+            'region'                           => 'required|string',
+            'location'                         => 'required|string',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
         ];
     }

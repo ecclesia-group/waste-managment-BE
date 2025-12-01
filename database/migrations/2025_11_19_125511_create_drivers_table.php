@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('emergency_contract_address')->nullable();
             $table->longText('license_front_image')->nullable();
             $table->longText('license_back_image')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('active');
             $table->timestamps();
         });
     }
