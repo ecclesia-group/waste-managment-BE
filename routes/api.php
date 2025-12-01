@@ -76,10 +76,10 @@ Route::prefix("admin")->group(function () {
         Route::put("update_facility_details/{facility_slug}", [FacilityController::class, "updateFacilityProfile"]);
 
         // Zone Management
-        Route::get('all_zones', [AdminZoneManagementController::class, 'listZones']);
-        Route::get('get_single_zone/{zone_slug}', [AdminZoneManagementController::class, 'getZoneDetails']);
+        Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
+        Route::get('get_single_zone/{zone}', [AdminZoneManagementController::class, 'getZoneDetails']);
         Route::post('create_zone', [AdminZoneManagementController::class, 'createZone']);
-        Route::put('update_zone/{zone_slug}', [AdminZoneManagementController::class, 'updateZone']);
-        Route::delete('delete_zone/{zone_slug}', [AdminZoneManagementController::class, 'deleteZone']);
+        Route::put('update_zone/{zone}', [AdminZoneManagementController::class, 'updateZone']);
+        Route::delete('delete_zone/{zone}', [AdminZoneManagementController::class, 'deleteZone']);
     });
 });

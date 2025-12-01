@@ -1,27 +1,17 @@
 <?php
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminZoneCreationRequest;
 use App\Http\Requests\Admin\AdminZoneUpdationRequest;
 use App\Models\Zone;
 use Illuminate\Support\Str;
 
-class AdminZoneManagementController extends Controller
+class ZoneManagementController extends Controller
 {
     // Lists all zones
     public function listZones()
     {
         $zones = Zone::all();
-        if ($zones->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Unsuccessful",
-                reason: "No zones found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -32,18 +22,8 @@ class AdminZoneManagementController extends Controller
     }
 
     // Gets details of a single zone
-    public function getZoneDetails($zone_slug)
+    public function getZoneDetails(Zone $zone)
     {
-        $zone = Zone::where('zone_slug', $zone_slug)->first();
-        if (! $zone) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Unsuccessful",
-                reason: "Zone not found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -69,20 +49,11 @@ class AdminZoneManagementController extends Controller
     }
 
     // Updates an existing zone
-    public function updateZone(AdminZoneUpdationRequest $request, $zone_slug)
+    public function updateZone(AdminZoneUpdationRequest $request, Zone $zone)
     {
         $data = $request->validated();
-        $zone = Zone::where('zone_slug', $zone_slug)->first();
-        if (! $zone) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Unsuccessful",
-                reason: "Zone not found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
         $zone->update($data);
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -93,18 +64,8 @@ class AdminZoneManagementController extends Controller
     }
 
     // Deletes a zone
-    public function deleteZone($zone_slug)
+    public function deleteZone(Zone $zone)
     {
-        $zone = Zone::where('zone_slug', $zone_slug)->first();
-        if (! $zone) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Unsuccessful",
-                reason: "Zone not found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
         $zone->delete();
         return self::apiResponse(
             in_error: false,

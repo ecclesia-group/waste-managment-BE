@@ -15,7 +15,4 @@ class Actor extends Authenticatable implements MustVerifyEmail, OAuthenticatable
 {
     use HasFactory, SoftDeletes, HasApiTokens, Notifiable, Helpers;
 
-
-
-
 }
