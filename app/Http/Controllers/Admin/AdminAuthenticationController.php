@@ -46,13 +46,4 @@ class AdminAuthenticationController extends Controller
         // Return success response
         return self::apiResponse(in_error: false, message: "Action Successful", reason: "Logout successful", status_code: self::API_SUCCESS, data: []);
     }
-
-    // Verifies vendor's account using OTP
-    public function verifyAccount()
-    {
-        $otp   = request("otp");
-        $admin = Admin::where("admin_slug", request("admin_slug"))->first();
-
-        return self::verifyActorAccount($otp, $admin, "admin");
-    }
 }

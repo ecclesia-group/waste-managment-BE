@@ -22,7 +22,7 @@ class AdminPasswordChangeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "old_password" => ["current_password:vendor"],
+            "old_password" => ["current_password:admin"],
             "password"     => ["required", Password::defaults(), "confirmed", "bail"],
         ];
     }

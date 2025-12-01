@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Admin\AdminZoneCreationRequest;
-use App\Http\Requests\Admin\AdminZoneUpdationRequest;
+use App\Http\Requests\Zone\AdminZoneCreationRequest;
+use App\Http\Requests\Zone\AdminZoneUpdationRequest;
 use App\Models\Zone;
 use Illuminate\Support\Str;
 

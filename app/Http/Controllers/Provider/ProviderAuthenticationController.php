@@ -15,11 +15,9 @@ class ProviderAuthenticationController extends Controller
             ->orWhere("phone_number", request("emailOrPhone"))
             ->first();
 
-        if ($provider)
-        {
+        if ($provider) {
             $bool = Hash::check(request('password'), $provider->password);
-            if ($bool)
-            {
+            if ($bool) {
                 $provider = self::apiToken($provider, "provider");
                 return self::apiResponse(
                     in_error: false,
@@ -36,7 +34,7 @@ class ProviderAuthenticationController extends Controller
             message: "Action Unsuccessful",
             reason: "Provider cannot be found",
             status_code:
-           self::API_FAIL,
+            self::API_FAIL,
             data: []
         );
     }
@@ -52,14 +50,5 @@ class ProviderAuthenticationController extends Controller
             status_code: self::API_SUCCESS,
             data: []
         );
-    }
-
-    // Verifies vendor's account using OTP
-    public function verifyAccount()
-    {
-        $otp   = request("otp");
-        $admin = Provider::where("provider_slug", request("provider_slug"))->first();
-
-        return self::verifyActorAccount($otp, $admin, "provider");
     }
 }
