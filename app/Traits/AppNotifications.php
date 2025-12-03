@@ -78,7 +78,7 @@ trait AppNotifications
     public static function sendActorResetPasswordNotification(?Actor $actor = null, string $guard)
     {
         if ($actor) {
-            if (in_array($guard, ["admin", "provider"])) {
+            if (in_array($guard, ["admin", "provider", "facility"])) {
                 $otp = self::otpCode(
                     channel: "email",
                     type: "password_reset",

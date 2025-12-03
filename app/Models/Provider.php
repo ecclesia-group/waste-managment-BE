@@ -43,6 +43,6 @@ class Provider extends Actor
 
     public function zones()
     {
-        return $this->hasMany(Zone::class, 'partner_slug', 'partner_slug');
+        return $this->hasMany(Zone::class, 'zone_slug', 'zone_slug');
     }
 }

@@ -35,7 +35,7 @@ class FacilityOnboardingRequest extends FormRequest
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
             'type'                             => 'nullable|string',
-            'owenership'                       => 'nullable|string',
+            'ownership'                       => 'nullable|string',
         ];
     }
 }

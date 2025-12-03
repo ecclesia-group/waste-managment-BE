@@ -23,7 +23,7 @@ class FacilityPasswordResetRequest extends FormRequest
     {
         return [
             "password"   => ["required", Password::defaults(), "bail"],
-            "faci" => ["required", "alpha_dash"],
+            "facility_slug" => ["required", "alpha_dash"],
             "otp"        => ["required"],
         ];
     }

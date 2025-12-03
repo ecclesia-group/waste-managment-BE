@@ -3,7 +3,7 @@ namespace App\Http\Requests\DistrictAssembley;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AdminDistrictAssemblyOnboardingRequest extends FormRequest
+class OnboardingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

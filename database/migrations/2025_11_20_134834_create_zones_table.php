@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->string('zone_slug')->unique();
-            $table->string('region')->unique();
+            $table->string('region');
             $table->text('description')->nullable();
             $table->longText('locations')->nullable();
             $table->timestamps();
