@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,12 +37,13 @@ class Driver extends Model
     ];
 
     protected $casts = [
-        'date_of_birth' => 'date',
-        'license_date_issued' => 'date',
+        'date_of_birth'         => 'date',
+        'license_date_issued'   => 'date',
         'license_expiry_issued' => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'license_back_image' => 'array',
-        'license_front_image' => 'array',
+        'created_at'            => 'datetime',
+        'updated_at'            => 'datetime',
+        'license_back_image'    => 'array',
+        'license_front_image'   => 'array',
+        "password"              => "hashed",
     ];
 }

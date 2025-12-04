@@ -27,6 +27,7 @@ class DistrictAssembly extends Model
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
         'profile_image' => 'array',
+        "password"      => "hashed",
     ];
 
     public function getRouteKeyName(): string

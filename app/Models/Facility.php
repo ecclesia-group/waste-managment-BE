@@ -40,6 +40,7 @@ class Facility extends Model
         'tax_certificate_image'            => 'array',
         'epa_permit_image'                 => 'array',
         'profile_image'                    => 'array',
+        "password"                         => "hashed",
     ];
 
     public function getRouteKeyName(): string
