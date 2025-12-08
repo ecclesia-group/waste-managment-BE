@@ -9,6 +9,7 @@ use App\Http\Controllers\Complaint\ComplaintanagementController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\Driver\DriverController;
 use App\Http\Controllers\Facility\FacilityAuthenticationController;
 use App\Http\Controllers\Facility\FacilityController;
 use App\Http\Controllers\Facility\FacilityPasswordController;
@@ -62,6 +63,13 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
+
+        // Drivers Management
+        Route::post("register_driver", [DriverController::class, "register"]);
+        Route::get("all_driver", [DriverController::class, "allDrivers"]);
+        Route::get("get_single_driver/{driver}", [DriverController::class, "show"]);
+        Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
+        Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
 
     });
 });
