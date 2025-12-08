@@ -1,10 +1,9 @@
 <?php
-namespace App\Http\Requests\Provider;
+namespace App\Http\Requests\Complaint;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class ProviderPasswordResetRequest extends FormRequest
+class CreationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +21,8 @@ class ProviderPasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "password"      => ["required", Password::defaults(), "bail"],
-            "provider_slug" => ["required", "alpha_dash"],
-            "otp"           => ["required"],
+            "status"                 => ["required", "string", "in:pending,deactivate,active", "bail"],
+            "district_assembly_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
         ];
     }
 }

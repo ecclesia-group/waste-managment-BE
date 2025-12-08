@@ -1,17 +1,17 @@
 <?php
-namespace App\Http\Requests\Provider;
+
+namespace App\Http\Requests\Client;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class ProviderPasswordResetRequest extends FormRequest
+class PasswordResetRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        return false;
     }
 
     /**
@@ -22,9 +22,7 @@ class ProviderPasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "password"      => ["required", Password::defaults(), "bail"],
-            "provider_slug" => ["required", "alpha_dash"],
-            "otp"           => ["required"],
+            //
         ];
     }
 }

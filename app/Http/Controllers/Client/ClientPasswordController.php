@@ -1,14 +1,14 @@
 <?php
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\PasswordChangeRequest;
-use App\Http\Requests\Admin\PasswordResetRequest;
-use App\Models\Admin;
+use App\Http\Requests\Client\PasswordChangeRequest;
+use App\Http\Requests\Client\PasswordResetRequest;
+use App\Models\Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class AdminPasswordController extends Controller
+class ClientPasswordController extends Controller
 {
     public function changePassword(PasswordChangeRequest $http_request): JsonResponse
     {
@@ -28,23 +28,23 @@ class AdminPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $admin = Admin::where("email", request("emailOrPhone"))
+        $client = Client::where("email", request("emailOrPhone"))
             ->orWhere("phone_number", request("emailOrPhone"))
             ->first();
 
         // Send reset password notification
-        return self::sendActorResetPasswordNotification(actor: $admin, guard: "admin");
+        return self::sendActorResetPasswordNotification(actor: $client, guard: "client");
     }
 
     public function resetPassword(PasswordResetRequest $http_request)
     {
         $data = $http_request->validated();
-        $user = Admin::where("admin_slug", $data["admin_slug"])->first();
+        $user = Client::where("client_slug", $data["client_slug"])->first();
 
         return self::resetActorPassword(
             otp: $data["otp"],
             actor: $user,
-            guard: "admin",
+            guard: "client",
             password: $data["password"]
         );
     }

@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Client\ClientAuthenticationController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Client\ClientPasswordController;
+use App\Http\Controllers\Complaint\ComplaintanagementController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
@@ -23,15 +27,42 @@ Route::get("yes", function () {
     return "yes yes";
 });
 
+Route::prefix("client")->group(function () {
+    Route::post("login", [ClientAuthenticationController::class, "login"]);
+    Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resetpassword", [ClientPasswordController::class, "resetPassword"]);
+    Route::post("resend_verificationCode", [ClientPasswordController::class, "sendResetPasswordNotification"]);
+
+    Route::middleware(["auth:client"])->group(function () {
+        Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
+        Route::post("logout", [ClientAuthenticationController::class, "logout"]);
+
+        // Complaint Management
+        Route::post('create_complaint', [ComplaintanagementController::class, 'createComplaint']);
+        Route::get('get_complaints', [ComplaintanagementController::class, 'listComplaints']);
+        Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
+        // Route::put('update_complaint_status/{complaint}', [ComplaintanagementController::class, 'updateComplaintStatus']);
+        // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
+    });
+});
+
 Route::prefix("provider")->group(function () {
     Route::post("login", [ProviderAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ProviderPasswordController::class, "sendResetPasswordNotification"]);
-    Route::post("resetpassword", [ProviderPasswordController::class, "resetPassword"]);
+    Route::post("reset_password", [ProviderPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [ProviderPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:provider"])->group(function () {
         Route::post("change_password", [ProviderPasswordController::class, "changePassword"]);
         Route::post("logout", [ProviderAuthenticationController::class, "logout"]);
+
+        // Clients Management
+        Route::post("register_client", [ClientController::class, "register"]);
+        Route::get("all_clients", [ClientController::class, "allClients"]);
+        Route::get("get_single_client/{client}", [ClientController::class, "show"]);
+        Route::post("update_client_status", [ClientController::class, "updateStatus"]);
+        Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
+
     });
 });
 
@@ -96,5 +127,12 @@ Route::prefix("admin")->group(function () {
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
+
+        // Complaint Management
+        Route::get('all_complaints', [ComplaintanagementController::class, 'listComplaints']);
+        Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
+        Route::put('update_complaint_status/{complaint}', [ComplaintanagementController::class, 'updateComplaintStatus']);
+        // Route::post('create_complaint', [ZoneManagementController::class, 'createComplaint']);
+        // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
     });
 });

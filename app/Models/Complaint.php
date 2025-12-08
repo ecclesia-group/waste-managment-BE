@@ -9,8 +9,7 @@ class Complaint extends Model
     use HasFactory;
 
     protected $fillable = [
-        'actor',
-        'actor_id',
+        'client_slug',
         'code',
         'location',
         'description',
@@ -23,4 +22,9 @@ class Complaint extends Model
         'images' => 'array',
         'videos' => 'array',
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
+    }
 }

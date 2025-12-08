@@ -26,6 +26,7 @@ class Client extends Actor
         "password",
         "created_at",
         "updated_at",
+        "deleted_at",
     ];
 
     protected $casts = [
@@ -34,4 +35,9 @@ class Client extends Actor
         "profile_image"     => "array",
         "qrcode"            => "array",
     ];
+
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class, 'client_slug', 'client_slug');
+    }
 }
