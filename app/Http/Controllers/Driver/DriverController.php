@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\RegisterRequest;
+use App\Http\Requests\Driver\StatusRequest;
 use App\Models\Driver;
 use Illuminate\Support\Str;
 
@@ -18,7 +19,8 @@ class DriverController extends Controller
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
-            'qrcode',
+            'license_front_image',
+            'license_back_image',
             'profile_image',
         ];
 
@@ -44,28 +46,43 @@ class DriverController extends Controller
         );
     }
 
-    // public function allClients()
-    // {
-    //     $clients = Client::all();
-    //     return self::apiResponse(
-    //         in_error: false,
-    //         message: "Action Successful",
-    //         reason: "Clients retrieved successfully",
-    //         status_code: self::API_SUCCESS,
-    //         data: $clients->toArray()
-    //     );
-    // }
+    public function allDrivers()
+    {
+        $drivers = Driver::all();
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Drivers retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $drivers->toArray()
+        );
+    }
 
-    // public function show(Client $client)
-    // {
-    //     $client = Client::where('client_slug', $client->client_slug)->first();
-    //     return self::apiResponse(
-    //         in_error: false,
-    //         message: "Action Successful",
-    //         reason: "Client details retrieved successfully",
-    //         status_code: self::API_SUCCESS,
-    //         data: $client->toArray()
-    //     );
-    // }
+    public function show(Driver $driver)
+    {
+        $driver = Driver::where('driver_slug', $driver->driver_slug)->first();
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client details retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $driver->toArray()
+        );
+    }
 
+    public function updateStatus(StatusRequest $request)
+    {
+        $data           = $request->validated();
+        $driver         = Driver::where('driver_slug', $data['driver_slug'])->first();
+        $driver->status = $data['status'];
+        $driver->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Driver status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $driver->toArray()
+        );
+    }
 }

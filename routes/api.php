@@ -31,7 +31,7 @@ Route::get("yes", function () {
 Route::prefix("client")->group(function () {
     Route::post("login", [ClientAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
-    Route::post("resetpassword", [ClientPasswordController::class, "resetPassword"]);
+    Route::post("reset_password", [ClientPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [ClientPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:client"])->group(function () {

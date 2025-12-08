@@ -1,10 +1,9 @@
 <?php
-namespace App\Http\Requests\Client;
+namespace App\Http\Requests\Driver;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
-class PasswordResetRequest extends FormRequest
+class StatusRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +21,8 @@ class PasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "password"    => ["required", Password::defaults(), "bail"],
-            "client_slug" => ["required", "alpha_dash"],
-            "otp"         => ["required"],
+            "status"      => ["required", "string", "in:pending,deactivate,activate", "bail"],
+            "driver_slug" => ["required", "string", "exists:drivers,client_slug", "bail"],
         ];
     }
 }

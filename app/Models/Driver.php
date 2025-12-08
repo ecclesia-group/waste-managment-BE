@@ -29,6 +29,7 @@ class Driver extends Model
         'emergency_contract_address',
         'license_front_image',
         'license_back_image',
+        'profile_image',
         'status',
     ];
 
@@ -46,4 +47,9 @@ class Driver extends Model
         'license_front_image'   => 'array',
         "password"              => "hashed",
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return "driver_slug";
+    }
 }
