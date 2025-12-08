@@ -3,6 +3,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\RegisterRequest;
+use App\Http\Requests\Client\StatusRequest;
+use App\Http\Requests\Client\UpdateClientProfileRequest;
 use App\Models\Client;
 use Illuminate\Support\Str;
 
@@ -53,6 +55,53 @@ class ClientController extends Controller
             reason: "Clients retrieved successfully",
             status_code: self::API_SUCCESS,
             data: $clients->toArray()
+        );
+    }
+
+    public function show(Client $client)
+    {
+        $client = Client::where('client_slug', $client->client_slug)->first();
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client details retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $client->toArray()
+        );
+    }
+
+    public function updateStatus(StatusRequest $request)
+    {
+        $data           = $request->validated();
+        $client         = Client::where('client_slug', $data['client_slug'])->first();
+        $client->status = $data['status'];
+        $client->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $client->toArray()
+        );
+    }
+
+    public function updateClientProfile(UpdateClientProfileRequest $request, Client $client)
+    {
+        $data         = $request->validated();
+        $image_fields = [
+            'qrcode',
+            'profile_image',
+        ];
+
+        $data = static::processImage($image_fields, $data);
+        $client->update($data);
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client details updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $client->toArray()
         );
     }
 }

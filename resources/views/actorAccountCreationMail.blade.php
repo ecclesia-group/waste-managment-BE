@@ -39,10 +39,10 @@
                                                 {{ $email }}
                                             </span>,
                                         </p>
-                                        <p style="font-size: 15px; color: #555; margin: 0;">
+                                        {{-- <p style="font-size: 15px; color: #555; margin: 0;">
                                             Please reset your password by using the OTP
                                             code below.
-                                        </p>
+                                        </p> --}}
                                     </td>
                                 </tr>
                             </table>
