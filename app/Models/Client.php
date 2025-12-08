@@ -15,7 +15,7 @@ class Client extends Actor
         'type',
         'pickup_location',
         'bin_size',
-        'bin_registration_number',
+        'bin_code',
         'status',
         'group_id',
         'qrcode',
