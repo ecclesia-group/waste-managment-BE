@@ -77,7 +77,7 @@ Route::prefix("provider")->group(function () {
 Route::prefix("facility")->group(function () {
     Route::post("login", [FacilityAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [FacilityPasswordController::class, "sendResetPasswordNotification"]);
-    Route::post("resetpassword", [FacilityPasswordController::class, "resetPassword"]);
+    Route::post("reset_password", [FacilityPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [FacilityPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:facility"])->group(function () {
@@ -89,7 +89,7 @@ Route::prefix("facility")->group(function () {
 Route::prefix("district_assembly")->group(function () {
     Route::post("login", [DistrictAssembleyAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [DistrictAssembleyPasswordController::class, "sendResetPasswordNotification"]);
-    Route::post("resetpassword", [DistrictAssembleyPasswordController::class, "resetPassword"]);
+    Route::post("reset_password", [DistrictAssembleyPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [DistrictAssembleyPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:district_assembly"])->group(function () {

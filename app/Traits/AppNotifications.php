@@ -78,7 +78,7 @@ trait AppNotifications
     public static function sendActorResetPasswordNotification(?Actor $actor = null, string $guard)
     {
         if ($actor) {
-            if (in_array($guard, ["admin", "provider", "facility", "client"])) {
+            if (in_array($guard, ["admin", "provider", "facility", "client", "district_assembly"])) {
                 $otp = self::otpCode(
                     channel: "email",
                     type: "password_reset",
@@ -183,6 +183,6 @@ trait AppNotifications
             return self::apiResponse(in_error: false, message: "Action Successful", reason: "Password reset succcessfully", status_code: self::API_SUCCESS, data: []);
         }
 
-        return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "Admin account cannot be found", status_code: self::API_NOT_FOUND, data: []);
+        return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "User account cannot be found", status_code: self::API_NOT_FOUND, data: []);
     }
 }

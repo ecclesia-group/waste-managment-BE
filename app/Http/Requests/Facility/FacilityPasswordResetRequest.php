@@ -11,7 +11,7 @@ class FacilityPasswordResetRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,9 +22,9 @@ class FacilityPasswordResetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "password"   => ["required", Password::defaults(), "bail"],
+            "password"      => ["required", Password::defaults(), "bail"],
             "facility_slug" => ["required", "alpha_dash"],
-            "otp"        => ["required"],
+            "otp"           => ["required"],
         ];
     }
 }

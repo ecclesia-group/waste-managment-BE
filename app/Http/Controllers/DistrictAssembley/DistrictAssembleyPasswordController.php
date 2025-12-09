@@ -1,12 +1,12 @@
 <?php
 namespace App\Http\Controllers\DistrictAssembley;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\DistrictAssembley\PasswordChangeResetRequest;
+use App\Http\Requests\DistrictAssembley\PasswordResetRequest;
 use App\Models\DistrictAssembly;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\DistrictAssembley\PasswordResetRequest;
-use App\Http\Requests\DistrictAssembley\PasswordChangeResetRequest;
+use Illuminate\Http\Request;
 
 class DistrictAssembleyPasswordController extends Controller
 {

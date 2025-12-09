@@ -1,11 +1,12 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Zone;
+use App\Models\Complaint;
+use Illuminate\Support\Str;
 use App\Http\Requests\Zone\ZoneCreationRequest;
 use App\Http\Requests\Zone\ZoneUpdationRequest;
-use App\Models\Complaint;
-use App\Models\Zone;
-use Illuminate\Support\Str;
+use App\Http\Requests\Complaint\CreationRequest;
 
 class ZoneManagementController extends Controller
 {

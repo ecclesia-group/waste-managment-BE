@@ -1,9 +1,7 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class DistrictAssembly extends Model
+class DistrictAssembly extends Actor
 {
     protected $fillable = [
         'district_assembly_slug',
