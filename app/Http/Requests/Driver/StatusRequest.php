@@ -22,7 +22,7 @@ class StatusRequest extends FormRequest
     {
         return [
             "status"      => ["required", "string", "in:pending,deactivate,activate", "bail"],
-            "driver_slug" => ["required", "string", "exists:drivers,client_slug", "bail"],
+            "driver_slug" => ["required", "string", "exists:drivers,driver_slug", "bail"],
         ];
     }
 }

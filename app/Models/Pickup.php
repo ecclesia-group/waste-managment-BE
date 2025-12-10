@@ -7,13 +7,14 @@ class Pickup extends Model
 {
     protected $fillable = [
         'code',
-        'client_id',
+        'client_slug',
         'title',
         'category',
         'description',
         'status',
         'location',
         'images',
+        'pickup_date',
     ];
 
     protected $casts = [

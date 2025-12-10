@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('pickups', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('client_id');
+            $table->string('client_slug');
             $table->string('title');
             $table->string('category');
             $table->text('description')->nullable();
             $table->string('status')->default('pending');
             $table->string('location')->nullable();
             $table->longText('images')->nullable();
+            $table->timestamp('pickup_date')->nullable();
             $table->timestamps();
         });
     }

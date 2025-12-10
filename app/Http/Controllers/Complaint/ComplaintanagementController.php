@@ -15,7 +15,7 @@ class ComplaintanagementController extends Controller
             message: "Action Successful",
             reason: "Complaints retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaints->toArray()
+            data: $complaints?->toArray()
         );
     }
 

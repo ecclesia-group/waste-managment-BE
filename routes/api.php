@@ -13,6 +13,7 @@ use App\Http\Controllers\Driver\DriverController;
 use App\Http\Controllers\Facility\FacilityAuthenticationController;
 use App\Http\Controllers\Facility\FacilityController;
 use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Pickup\PickupController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
@@ -55,6 +56,7 @@ Route::prefix("provider")->group(function () {
 
     Route::middleware(["auth:provider"])->group(function () {
         Route::post("change_password", [ProviderPasswordController::class, "changePassword"]);
+        Route::put("update_profile/{provider}", [ProviderController::class, "updateProviderProfile"]);
         Route::post("logout", [ProviderAuthenticationController::class, "logout"]);
 
         // Clients Management
@@ -66,10 +68,24 @@ Route::prefix("provider")->group(function () {
 
         // Drivers Management
         Route::post("register_driver", [DriverController::class, "register"]);
-        Route::get("all_driver", [DriverController::class, "allDrivers"]);
+        Route::get("all_drivers", [DriverController::class, "allDrivers"]);
         Route::get("get_single_driver/{driver}", [DriverController::class, "show"]);
         Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
         Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
+
+        // Pickup Management
+        Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
+        // Route::get("all_drivers", [PickupController::class, "allDrivers"]);
+        // Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
+        // Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
+        // Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
+
+        // Complaint Management
+        Route::get("all_complaints", [ComplaintanagementController::class, "listComplaints"]);
+        Route::get("all_drivers", [PickupController::class, "allDrivers"]);
+        Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
+        Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
+        Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
 
     });
 });

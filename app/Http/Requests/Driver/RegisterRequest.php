@@ -40,7 +40,6 @@ class RegisterRequest extends FormRequest
             'license_front_image'        => 'required|starts_with:data:,http://,https://',
             'license_back_image'         => 'required|starts_with:data:,http://,https://',
             'profile_image'              => 'required|starts_with:data:,http://,https://',
-            'status'                     => 'required|string',
         ];
     }
 }
