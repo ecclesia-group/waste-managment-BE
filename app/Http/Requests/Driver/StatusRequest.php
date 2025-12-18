@@ -21,7 +21,7 @@ class StatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "status"      => ["required", "string", "in:pending,deactivate,activate", "bail"],
+            "status"      => ["required", "string", "in:pending,deactivate,activate,on_leave", "bail"],
             "driver_slug" => ["required", "string", "exists:drivers,driver_slug", "bail"],
         ];
     }
