@@ -82,10 +82,10 @@ Route::prefix("provider")->group(function () {
 
         // Complaint Management
         Route::get("all_complaints", [ComplaintanagementController::class, "listComplaints"]);
-        Route::get("all_pickups", [PickupController::class, "index"]);
-        Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
-        Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
-        Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
+        // Route::get("all_pickups", [PickupController::class, "index"]);
+        // Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
+        // Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
+        // Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
 
     });
 });
