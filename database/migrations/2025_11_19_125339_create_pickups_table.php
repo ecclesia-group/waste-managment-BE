@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('category');
             $table->text('description')->nullable();
+            $table->decimal('amount', 10, 2);
             $table->string('status')->default('pending');
             $table->string('location')->nullable();
             $table->longText('images')->nullable();

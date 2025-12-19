@@ -45,6 +45,10 @@ Route::prefix("client")->group(function () {
         Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
         // Route::put('update_complaint_status/{complaint}', [ComplaintanagementController::class, 'updateComplaintStatus']);
         // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
+
+        // Pickup Management
+        Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
+        Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
     });
 });
 
@@ -75,7 +79,8 @@ Route::prefix("provider")->group(function () {
 
         // Pickup Management
         Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
-        // Route::get("all_drivers", [PickupController::class, "allDrivers"]);
+        Route::get("get_all_client_pickups", [PickupController::class, "getAllPickups"]);
+        Route::post("set_pickup_price/{pickup}", [PickupController::class, "setPickupPrice"]);
         // Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
         // Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
         // Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);

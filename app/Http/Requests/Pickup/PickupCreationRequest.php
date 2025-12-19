@@ -3,7 +3,7 @@ namespace App\Http\Requests\Pickup;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProviderPickupCreationRequest extends FormRequest
+class PickupCreationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,8 +26,8 @@ class ProviderPickupCreationRequest extends FormRequest
             'category'    => 'required|string',
             'description' => 'nullable|string',
             'location'    => 'required|string',
-            'pickup_date' => 'required|date',
-            "images"      => ["required", "array"],
+            'pickup_date' => 'nullable|date',
+            "images"      => ["nullable", "array"],
             "images.*"    => ["string", "starts_with:data:,http://,https://"],
         ];
     }

@@ -15,9 +15,11 @@ class Pickup extends Model
         'location',
         'images',
         'pickup_date',
+        'amount',
     ];
 
     protected $casts = [
         'images' => 'array',
+        'amount' => 'float',
     ];
 }
