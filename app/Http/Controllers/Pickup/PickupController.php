@@ -3,6 +3,8 @@ namespace App\Http\Controllers\Pickup;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pickup\PickupCreationRequest;
+use App\Http\Requests\Pickup\SetPickupDateRequest;
+use App\Http\Requests\Pickup\SetPickupPriceRequest;
 use App\Models\Pickup;
 use Illuminate\Support\Str;
 
@@ -68,6 +70,27 @@ class PickupController extends Controller
         );
     }
 
+    public function getSinglePickup($pickup_code)
+    {
+        $pickup = Pickup::where('code', $pickup_code)->first();
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
     public function getClientPickups()
     {
         $user    = request()->user();
@@ -95,7 +118,7 @@ class PickupController extends Controller
             );
         }
 
-        $pickup->price  = $data['price'];
+        $pickup->amount = $data['amount'];
         $pickup->status = 'priced';
         $pickup->save();
 
@@ -105,6 +128,46 @@ class PickupController extends Controller
             reason: "Pickup price set successfully",
             status_code: self::API_SUCCESS,
             data: $pickup->toArray()
+        );
+    }
+
+    public function setPickupDate(SetPickupDateRequest $request)
+    {
+        $data = $request->validated();
+
+        $pickup = Pickup::where('code', $data['code'])->first();
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
+
+        $pickup->pickup_date = $data['pickup_date'];
+        $pickup->status      = 'scheduled';
+        $pickup->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup date and time set successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function getPickupDates()
+    {
+        $pickup_dates = Pickup::whereNotNull('pickup_date')->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup dates retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup_dates->toArray()
         );
     }
 }

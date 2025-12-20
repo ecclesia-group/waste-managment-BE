@@ -1,25 +1,26 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Client\ClientAuthenticationController;
-use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Client\ClientPasswordController;
-use App\Http\Controllers\Complaint\ComplaintanagementController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
-use App\Http\Controllers\Driver\DriverController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Pickup\PickupController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\ZoneManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Driver\DriverController;
+use App\Http\Controllers\Pickup\PickupController;
+use App\Http\Controllers\ZoneManagementController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Client\ClientPasswordController;
+use App\Http\Controllers\Admin\AdminAuthenticationController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Notification\NotificationController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\Client\ClientAuthenticationController;
+use App\Http\Controllers\Complaint\ComplaintanagementController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -37,18 +38,24 @@ Route::prefix("client")->group(function () {
 
     Route::middleware(["auth:client"])->group(function () {
         Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
+        Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
 
         // Complaint Management
         Route::post('create_complaint', [ComplaintanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
-        // Route::put('update_complaint_status/{complaint}', [ComplaintanagementController::class, 'updateComplaintStatus']);
-        // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
 
         // Pickup Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
         Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
+        Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
+        Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
+
+        // Notification Management
+        Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
+        Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
+        Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
     });
 });
 
@@ -80,18 +87,12 @@ Route::prefix("provider")->group(function () {
         // Pickup Management
         Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
         Route::get("get_all_client_pickups", [PickupController::class, "getAllPickups"]);
-        Route::post("set_pickup_price/{pickup}", [PickupController::class, "setPickupPrice"]);
-        // Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
-        // Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
-        // Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
+        Route::get("get_single_client_pickup/{pickup}", [PickupController::class, "getSinglePickup"]);
+        Route::post("set_pickup_price", [PickupController::class, "setPickupPrice"]);
+        Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
 
         // Complaint Management
         Route::get("all_complaints", [ComplaintanagementController::class, "listComplaints"]);
-        // Route::get("all_pickups", [PickupController::class, "index"]);
-        // Route::get("get_single_driver/{driver}", [PickupController::class, "show"]);
-        // Route::post("update_driver_status", [PickupController::class, "updateStatus"]);
-        // Route::put("update_driver_details/{driver}", [PickupController::class, "updateDriverProfile"]);
-
     });
 });
 

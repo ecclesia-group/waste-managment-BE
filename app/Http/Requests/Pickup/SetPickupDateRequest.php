@@ -1,10 +1,9 @@
 <?php
-
 namespace App\Http\Requests\Pickup;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SetPickupPriceRequest extends FormRequest
+class SetPickupDateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,8 +21,8 @@ class SetPickupPriceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0'],
-            'code' => ['required', 'string', 'exists:pickups,code'],
+            'pickup_date' => ['required', 'date'],
+            'code'        => ['required', 'string', 'exists:pickups,code'],
         ];
     }
 }

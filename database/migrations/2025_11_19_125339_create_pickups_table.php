@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('status')->default('pending');
             $table->string('location')->nullable();
+            $table->string('provider_slug')->nullable();
             $table->longText('images')->nullable();
             $table->timestamp('pickup_date')->nullable();
             $table->timestamps();

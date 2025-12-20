@@ -1,23 +1,26 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
-   protected $fillable = [
-       'code',
-       'actor',
-       'actor_id',
-       'title',
-       'message',
-       'type',
-       'is_read',
-   ];
+    protected $fillable = [
+        'actor',
+        'actor_id',
+        'actor_slug',
+        'title',
+        'message',
+        'type',
+        'is_read',
+    ];
 
-   protected $casts = [
-       'is_read' => 'boolean',
-   ];
+    protected $casts = [
+        'is_read' => 'boolean',
+    ];
+
+    public function actor()
+    {
+        return $this->morphTo(__FUNCTION__, 'actor', 'actor_slug', 'actor_id');
+    }
 }

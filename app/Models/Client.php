@@ -41,6 +41,21 @@ class Client extends Actor
         return $this->hasMany(Complaint::class, 'client_slug', 'client_slug');
     }
 
+    public function pickups()
+    {
+        return $this->hasMany(Pickup::class, 'client_slug', 'client_slug');
+    }
+
+    // public function notifications()
+    // {
+    //     return $this->hasMany(Notification::class, 'actor_id', 'actor_slug')->where('actor', 'client');
+    // }
+
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'actor', 'actor', 'actor_slug', 'actor_id');
+    }
+
     public function getRouteKeyName(): string
     {
         return "client_slug";
