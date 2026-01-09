@@ -22,7 +22,7 @@ class CreationRequest extends FormRequest
     {
         return [
             "status"                 => ["nullable", "string", "in:pending,deactivate,active", "bail"],
-            "district_assembly_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
+            "district_assembly_slug" => ["nullable", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
         ];
     }
 }
