@@ -1,12 +1,10 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Zone;
-use App\Models\Complaint;
-use Illuminate\Support\Str;
-use App\Http\Requests\Zone\ZoneCreationRequest;
-use App\Http\Requests\Zone\ZoneUpdationRequest;
 use App\Http\Requests\Complaint\CreationRequest;
+use App\Http\Requests\Zone\ZoneUpdationRequest;
+use App\Models\Zone;
+use Illuminate\Support\Str;
 
 class ZoneManagementController extends Controller
 {
@@ -36,7 +34,7 @@ class ZoneManagementController extends Controller
     }
 
     // Creates a new zone
-    public function create(CreationRequest $request)
+    public function createZone(CreationRequest $request)
     {
         $data              = $request->validated();
         $data['zone_slug'] = Str::uuid();
