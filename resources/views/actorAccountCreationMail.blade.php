@@ -19,7 +19,7 @@
                     <!-- Header -->
                     <tr>
                         <td align="center" bgcolor="#00361B" style="padding: 30px 20px;">
-                            <img src="http://86.48.2.138:2000/images/logo.png" alt="Logo"
+                            <img src="https://wastebackend.tripsecuregh.com/images/logo.png" alt="Logo"
                                 style="max-width: 140px; margin-bottom: 15px;">
                         </td>
                     </tr>
@@ -58,8 +58,8 @@
                                             📞 Phone Number: <strong>{{ $phone_number }}</strong><br>
                                             📧 Email: <strong>{{ $email }}</strong><br>
                                             🔑 Password: <strong>{{ $password }}</strong><br>
-                                            🔗 Sign in here: <a href="http://86.48.2.138:2000/api/yes"
-                                                style="color: #1a73e8;">http://86.48.2.138:2000/api/yes</a>
+                                            🔗 Sign in here: <a href="{{ $login_url }}"
+                                                style="color: #1a73e8;">{{ $login_url }}</a>
                                         </p>
                                     </td>
                                 </tr>

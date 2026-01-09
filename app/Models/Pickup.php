@@ -16,6 +16,7 @@ class Pickup extends Model
         'images',
         'pickup_date',
         'amount',
+        'provider_slug'
     ];
 
     protected $casts = [

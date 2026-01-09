@@ -1,26 +1,27 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuthenticationController;
+use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Client\ClientAuthenticationController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Client\ClientPasswordController;
+use App\Http\Controllers\Complaint\ComplaintmanagementController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\Driver\DriverController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Feedback\FeedbackController;
+use App\Http\Controllers\Notification\NotificationController;
+use App\Http\Controllers\Pickup\PickupController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\ZoneManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Driver\DriverController;
-use App\Http\Controllers\Pickup\PickupController;
-use App\Http\Controllers\ZoneManagementController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Client\ClientPasswordController;
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Notification\NotificationController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\Client\ClientAuthenticationController;
-use App\Http\Controllers\Complaint\ComplaintanagementController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -42,9 +43,12 @@ Route::prefix("client")->group(function () {
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
 
         // Complaint Management
-        Route::post('create_complaint', [ComplaintanagementController::class, 'createComplaint']);
-        Route::get('get_complaints', [ComplaintanagementController::class, 'listComplaints']);
-        Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
+        Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
+        Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
+        Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
+
+        // Report Management
+        Route::post('create_feedback', [FeedbackController::class, 'createFeedback']);
 
         // Pickup Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
@@ -92,7 +96,7 @@ Route::prefix("provider")->group(function () {
         Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
 
         // Complaint Management
-        Route::get("all_complaints", [ComplaintanagementController::class, "listComplaints"]);
+        Route::get("all_complaints", [ComplaintmanagementController::class, "listComplaints"]);
     });
 });
 
@@ -159,9 +163,9 @@ Route::prefix("admin")->group(function () {
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
 
         // Complaint Management
-        Route::get('all_complaints', [ComplaintanagementController::class, 'listComplaints']);
-        Route::get('get_single_complaint/{complaint}', [ComplaintanagementController::class, 'getComplaintDetails']);
-        Route::put('update_complaint_status/{complaint}', [ComplaintanagementController::class, 'updateComplaintStatus']);
+        Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);
+        Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
+        Route::put('update_complaint_status/{complaint}', [ComplaintmanagementController::class, 'updateComplaintStatus']);
         // Route::post('create_complaint', [ZoneManagementController::class, 'createComplaint']);
         // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
     });

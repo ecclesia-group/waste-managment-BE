@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('feedback', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('actor');
-            $table->string('actor_id');
+            $table->string('client_slug');
             $table->integer('ratings')->nullable();
             $table->text('comments')->nullable();
             $table->string('status')->default('pending');

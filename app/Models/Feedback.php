@@ -7,8 +7,7 @@ class Feedback extends Model
 {
     protected $fillable = [
         'code',
-        'actor',
-        'actor_id',
+        'client_slug',
         'ratings',
         'comments',
         'status',

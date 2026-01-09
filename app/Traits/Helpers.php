@@ -73,6 +73,18 @@ trait Helpers
         return $data;
     }
 
+    // process video
+    protected static function processVideo(array $video_fields, array $data)
+    {
+        foreach ($video_fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                // it's not an image so dont' use base54
+                $data[$field] = $data[$field];
+            }
+        }
+        return $data;
+    }
+
     protected static function deleteImage(?string $image_path): bool
     {
         if (! $image_path) {
