@@ -21,8 +21,8 @@ class CreationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "status"                 => ["nullable", "string", "in:pending,deactivate,active", "bail"],
-            "district_assembly_slug" => ["nullable", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
+            "status"                 => ["required", "string", "in:pending,deactivate,active", "bail"],
+            "district_assembly_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
         ];
     }
 }
