@@ -29,13 +29,15 @@ class FacilityOnboardingRequest extends FormRequest
             'gps_address'                      => 'required|string|max:255',
             'first_name'                       => 'required|string|max:255',
             'last_name'                        => 'nullable|string|max:255',
+            'business_registration_name'       => 'nullable|string',
+            'district_assembly'                => 'nullable|string',
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
             'tax_certificate_image'            => 'nullable|starts_with:data:,http://,https://',
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
             'type'                             => 'nullable|string',
-            'ownership'                       => 'nullable|string',
+            'ownership'                        => 'nullable|string',
         ];
     }
 }

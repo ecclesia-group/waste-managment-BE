@@ -36,6 +36,7 @@ class FacilityController extends Controller
                 $facility->email,
                 $password,
                 $facility->phone_number,
+                $login_url = "https://wastefacility.tripsecuregh.com"
             ]
         );
 

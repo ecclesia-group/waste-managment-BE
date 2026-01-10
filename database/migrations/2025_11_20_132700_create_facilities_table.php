@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('gps_address')->nullable();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
+            $table->string('district_assembly')->nullable();
+            $table->string('business_registration_name')->nullable();
             $table->longText('business_certificate_image')->nullable();
             $table->longText('district_assembly_contract_image')->nullable();
             $table->longText('tax_certificate_image')->nullable();
