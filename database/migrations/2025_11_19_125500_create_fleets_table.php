@@ -33,6 +33,7 @@ return new class extends Migration
             $table->longText('vehicle_roadworthy_certificate_image')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -24,6 +24,7 @@ class DistrictAssembly extends Actor
     protected $casts = [
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
+        'deleted_at'    => 'datetime',
         'profile_image' => 'array',
         "password"      => "hashed",
     ];

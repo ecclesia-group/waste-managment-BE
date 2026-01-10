@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('comments')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

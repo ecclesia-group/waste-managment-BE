@@ -21,6 +21,7 @@ return new class extends Migration
             $table->longText('images')->nullable();
             $table->longText('videos')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

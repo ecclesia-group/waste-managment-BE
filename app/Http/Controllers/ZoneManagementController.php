@@ -1,11 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Zone\ZoneCreationRequest;
+use App\Http\Requests\Zone\ZoneStatusUpdateRequest;
+use App\Http\Requests\Zone\ZoneUpdationRequest;
 use App\Models\Zone;
 use Illuminate\Support\Str;
-use App\Http\Requests\Zone\ZoneCreationRequest;
-use App\Http\Requests\Zone\ZoneUpdationRequest;
-use App\Http\Requests\Complaint\CreationRequest;
 
 class ZoneManagementController extends Controller
 {
@@ -13,6 +13,15 @@ class ZoneManagementController extends Controller
     public function listZones()
     {
         $zones = Zone::all();
+        if ($zones->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "No Zones Found",
+                reason: "No zones are registered in the system",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -59,6 +68,22 @@ class ZoneManagementController extends Controller
             in_error: false,
             message: "Action Successful",
             reason: "Zone updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $zone->toArray()
+        );
+    }
+
+    // Updates the status of a zone
+    public function updateZoneStatus(ZoneStatusUpdateRequest $request)
+    {
+        $data        = $request->validated();
+        $zone        = Zone::where('zone_slug', $data['zone_slug'])->first();
+        $zone->status = $data['status'];
+        $zone->save();
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Zone status updated successfully",
             status_code: self::API_SUCCESS,
             data: $zone->toArray()
         );

@@ -3,10 +3,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Complaint extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'client_slug',
@@ -19,8 +20,11 @@ class Complaint extends Model
     ];
 
     protected $casts = [
-        'images' => 'array',
-        'videos' => 'array',
+        'images'     => 'array',
+        'videos'     => 'array',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function client()

@@ -3,10 +3,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Driver extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'driver_slug',
@@ -43,6 +44,8 @@ class Driver extends Model
         'license_expiry_issued' => 'date',
         'created_at'            => 'datetime',
         'updated_at'            => 'datetime',
+        'deleted_at'            => 'datetime',
+        'profile_image'         => 'array',
         'license_back_image'    => 'array',
         'license_front_image'   => 'array',
         "password"              => "hashed",

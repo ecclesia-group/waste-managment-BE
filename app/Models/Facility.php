@@ -2,10 +2,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Facility extends Actor
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'facility_slug',
@@ -34,6 +35,7 @@ class Facility extends Actor
     protected $casts = [
         'created_at'                       => 'datetime',
         'updated_at'                       => 'datetime',
+        'deleted_at'                       => 'datetime',
         'business_certificate_image'       => 'array',
         'district_assembly_contract_image' => 'array',
         'tax_certificate_image'            => 'array',

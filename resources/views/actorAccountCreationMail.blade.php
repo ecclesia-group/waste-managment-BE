@@ -39,10 +39,9 @@
                                                 {{ $email }}
                                             </span>,
                                         </p>
-                                        {{-- <p style="font-size: 15px; color: #555; margin: 0;">
-                                            Please reset your password by using the OTP
-                                            code below.
-                                        </p> --}}
+                                        <p style="font-size: 15px; color: #555555; line-height: 1.6; margin: 0;">
+                                            Your account has been successfully created on our Waste Management
+                                            Platform. Below are your login credentials:
                                     </td>
                                 </tr>
                             </table>
@@ -58,8 +57,8 @@
                                             📞 Phone Number: <strong>{{ $phone_number }}</strong><br>
                                             📧 Email: <strong>{{ $email }}</strong><br>
                                             🔑 Password: <strong>{{ $password }}</strong><br>
-                                            🔗 Sign in here: <a href="https://wasteadmin.tripsecuregh.com/"
-                                                {{-- 🔗 Sign in here: <a href="{{ $login_url }}" --}} style="color: #1a73e8;">Login Here</a>
+                                            🔗 Sign in here: <a href={{ $login_url }} 🔗 Sign in here: <a
+                                                href="{{ $login_url }}" style="color: #1a73e8;">Login Here</a>
                                         </p>
                                     </td>
                                 </tr>

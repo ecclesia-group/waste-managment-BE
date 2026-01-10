@@ -2,9 +2,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pickup extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'code',
         'client_slug',
@@ -16,11 +19,14 @@ class Pickup extends Model
         'images',
         'pickup_date',
         'amount',
-        'provider_slug'
+        'provider_slug',
     ];
 
     protected $casts = [
-        'images' => 'array',
-        'amount' => 'float',
+        'images'     => 'array',
+        'amount'     => 'float',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 }

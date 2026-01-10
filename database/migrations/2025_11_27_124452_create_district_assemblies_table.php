@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->longText('profile_image')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

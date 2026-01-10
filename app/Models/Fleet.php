@@ -1,13 +1,13 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Fleet extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'code',
@@ -32,10 +32,13 @@ class Fleet extends Model
     ];
 
     protected $casts = [
-        'vehicle_images' => 'array',
+        'vehicle_images'                         => 'array',
         'vehicle_registration_certificate_image' => 'array',
-        'vehicle_insurance_certificate_image' => 'array',
-        'vehicle_roadworthy_certificate_image' => 'array',
-        'insurance_expiry_date' => 'datetime',
+        'vehicle_insurance_certificate_image'    => 'array',
+        'vehicle_roadworthy_certificate_image'   => 'array',
+        'insurance_expiry_date'                  => 'datetime',
+        'deleted_at'                             => 'datetime',
+        'created_at'                             => 'datetime',
+        'updated_at'                             => 'datetime',
     ];
 }

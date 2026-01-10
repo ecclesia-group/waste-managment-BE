@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('group_id')->nullable();
             $table->longText('qrcode')->nullable();
             $table->longText('profile_image')->nullable();
+            
             $table->timestamps();
         });
     }

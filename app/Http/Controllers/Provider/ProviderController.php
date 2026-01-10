@@ -38,6 +38,7 @@ class ProviderController extends Controller
                 $provider->email,
                 $password,
                 $provider->phone_number,
+                $login_url = 'https://wasteprovider.tripsecuregh.com/login',
             ]
         );
 
@@ -53,6 +54,15 @@ class ProviderController extends Controller
     public function index()
     {
         $provider = Provider::all();
+        if ($provider->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "No Providers Found",
+                reason: "No providers are registered in the system",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

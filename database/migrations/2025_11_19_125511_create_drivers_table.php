@@ -34,6 +34,7 @@ return new class extends Migration
             $table->longText('license_front_image')->nullable();
             $table->longText('license_back_image')->nullable();
             $table->string('status')->default('active');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

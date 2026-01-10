@@ -14,11 +14,12 @@ class ActorAccountCreationMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public string $email, public string $password, public string $phone_number)
+    public function __construct(public string $email, public string $password, public string $phone_number, public string $login_url)
     {
         $this->email        = $email;
         $this->password     = $password;
         $this->phone_number = $phone_number;
+        $this->login_url    = $login_url;
     }
     /**
      * Get the message envelope.

@@ -160,6 +160,7 @@ Route::prefix("admin")->group(function () {
         Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'getZoneDetails']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
+        Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
 
         // Complaint Management

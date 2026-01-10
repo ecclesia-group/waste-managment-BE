@@ -18,6 +18,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('group_id');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

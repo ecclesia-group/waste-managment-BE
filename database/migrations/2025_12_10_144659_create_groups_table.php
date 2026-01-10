@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->longText('zones')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

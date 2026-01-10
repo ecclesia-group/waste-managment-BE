@@ -2,9 +2,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Notification extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'actor',
         'actor_id',
@@ -16,7 +19,10 @@ class Notification extends Model
     ];
 
     protected $casts = [
-        'is_read' => 'boolean',
+        'is_read'    => 'boolean',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function actor()

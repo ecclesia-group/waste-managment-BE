@@ -25,6 +25,7 @@ return new class extends Migration
             $table->longText('images')->nullable();
             $table->timestamp('pickup_date')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

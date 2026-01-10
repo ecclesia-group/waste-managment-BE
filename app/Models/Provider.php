@@ -33,8 +33,16 @@ class Provider extends Actor
     ];
 
     protected $casts = [
-        "email_verified_at" => "datetime",
-        "password"          => "hashed",
+        "email_verified_at"                => "datetime",
+        "password"                         => "hashed",
+        'deleted_at'                       => 'datetime',
+        'created_at'                       => 'datetime',
+        'updated_at'                       => 'datetime',
+        "business_certificate_image"       => "array",
+        "district_assembly_contract_image" => "array",
+        "tax_certificate_image"            => "array",
+        "epa_permit_image"                 => "array",
+        "profile_image"                    => "array",
     ];
 
     public function getRouteKeyName(): string

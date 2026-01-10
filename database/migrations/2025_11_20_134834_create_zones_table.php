@@ -18,7 +18,9 @@ return new class extends Migration
             $table->string('region');
             $table->text('description')->nullable();
             $table->longText('locations')->nullable();
+            $table->string('status')->default('active');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
