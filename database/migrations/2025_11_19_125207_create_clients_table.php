@@ -23,13 +23,14 @@ return new class extends Migration
             $table->string('gps_address')->nullable();
             $table->string('type')->nullable();
             $table->string('pickup_location')->nullable();
+            $table->string('bin_code')->nullable();
             $table->string('bin_size')->nullable();
             $table->string('bin_registration_number')->nullable();
             $table->string('status')->default('active');
             $table->string('group_id')->nullable();
             $table->longText('qrcode')->nullable();
             $table->longText('profile_image')->nullable();
-            
+            $table->softDeletes();
             $table->timestamps();
         });
     }

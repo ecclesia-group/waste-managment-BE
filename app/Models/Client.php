@@ -26,7 +26,7 @@ class Client extends Actor
         "password",
         "created_at",
         "updated_at",
-        "deleted_at",
+        " ",
     ];
 
     protected $casts = [

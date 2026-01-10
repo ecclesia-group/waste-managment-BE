@@ -34,7 +34,7 @@ class ClientController extends Controller
                 $provider->email,
                 $password,
                 $provider->phone_number,
-                $login_url = "https://wasteclient.tripsecuregh.com//login"
+                $login_url = "https://wasteclient.tripsecuregh.com/login",
             ]
         );
 
@@ -103,6 +103,18 @@ class ClientController extends Controller
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
             data: $client->toArray()
+        );
+    }
+
+    public function deleteClient(Client $client)
+    {
+        $client->delete();
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: []
         );
     }
 }

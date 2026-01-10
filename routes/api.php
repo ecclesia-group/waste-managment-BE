@@ -80,6 +80,7 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
+        Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
 
         // Drivers Management
         Route::post("register_driver", [DriverController::class, "register"]);
@@ -149,7 +150,7 @@ Route::prefix("admin")->group(function () {
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
         Route::put("update_facility_details/{facility}", [FacilityController::class, "updateFacilityProfile"]);
         Route::delete("delete_facility/{facility}", [FacilityController::class, "deleteFacility"]);
-        
+
         // District Assembly Management
         Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
         Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
