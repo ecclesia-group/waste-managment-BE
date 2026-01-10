@@ -50,6 +50,7 @@ class UpdateProviderProfileRequest extends FormRequest
             ],
 
             'gps_address'                      => 'required|string|max:255',
+            'district_assembly'                => 'nullable|string|max:255',
 
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
