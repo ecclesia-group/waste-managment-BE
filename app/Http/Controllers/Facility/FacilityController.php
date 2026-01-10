@@ -139,4 +139,17 @@ class FacilityController extends Controller
             data: $facility->toArray()
         );
     }
+
+    public function deleteFacility(Facility $facility)
+    {
+        $facility->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Facility deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: null
+        );
+    }
 }

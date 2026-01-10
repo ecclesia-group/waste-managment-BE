@@ -148,7 +148,8 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
         Route::put("update_facility_details/{facility}", [FacilityController::class, "updateFacilityProfile"]);
-
+        Route::delete("delete_facility/{facility}", [FacilityController::class, "deleteFacility"]);
+        
         // District Assembly Management
         Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
         Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
