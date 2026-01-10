@@ -131,4 +131,17 @@ class DistrictAssemblyController extends Controller
             data: $district_assembly->toArray()
         );
     }
+
+    public function deleteDistrictAssembly(DistrictAssembly $district_assembly)
+    {
+        $district_assembly->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "District Assembly deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: null
+        );
+    }
 }

@@ -154,6 +154,7 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
         Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
         Route::put("update_district_assembly_details/{district_assembly}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
+        Route::delete("delete_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "deleteDistrictAssembly"]);
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
