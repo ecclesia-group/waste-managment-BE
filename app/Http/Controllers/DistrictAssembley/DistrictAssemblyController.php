@@ -48,6 +48,15 @@ class DistrictAssemblyController extends Controller
     public function index()
     {
         $district_assemblies = DistrictAssembly::all();
+        if ($district_assemblies->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "No District Assemblies Found",
+                reason: "No district assemblies are registered in the system",
+                status_code: self::API_NOT_FOUND,
+                data: null
+            );
+        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
