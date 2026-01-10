@@ -70,7 +70,7 @@ trait AppNotifications
         return self::API_NOT_FOUND;
     }
 
-    protected static function sendEmail(string $email, array $parameters, string $email_class): void
+    protected static function sendEmail(string $email, array $parameters, string $email_class, string $login_url = null): void
     {
         Mail::to($email)->send(new $email_class(...$parameters));
     }

@@ -32,6 +32,7 @@ class DistrictAssemblyController extends Controller
                 $district_assembly->email,
                 $password,
                 $district_assembly->phone_number,
+                $login_url = 'https://wastemmda.tripsecuregh.com/login',
             ]
         );
 
