@@ -145,4 +145,17 @@ class ProviderController extends Controller
             data: $provider->toArray()
         );
     }
+
+    public function deleteProvider(Provider $provider)
+    {
+        $provider->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Provider deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: []
+        );
+    }
 }

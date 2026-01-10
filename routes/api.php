@@ -140,6 +140,7 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_provider/{provider}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
         Route::put("update_provider_details/{provider}", [ProviderController::class, "updateProviderProfile"]);
+        Route::delete("delete_provider/{provider}", [ProviderController::class, "deleteProvider"]);
 
         // Facility Management
         Route::post("register_facility", [FacilityController::class, "register"]);
