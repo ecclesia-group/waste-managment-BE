@@ -34,6 +34,7 @@ class ClientController extends Controller
                 $provider->email,
                 $password,
                 $provider->phone_number,
+                $login_url = "https://wasteclient.tripsecuregh.com//login"
             ]
         );
 
