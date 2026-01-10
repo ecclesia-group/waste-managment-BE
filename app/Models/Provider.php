@@ -8,6 +8,7 @@ class Provider extends Actor
         'first_name',
         'last_name',
         'business_name',
+        'district_assembly',
         'business_registration_number',
         'gps_address',
         'email',
