@@ -131,13 +131,13 @@ Route::prefix("admin")->group(function () {
     Route::post("reset_password_notification", [AdminPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [AdminPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [AdminPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("register_admin", [AdminController::class, "register"]);
 
     Route::middleware(["auth:admin", "verified"])->group(function () {
         Route::post("logout", [AdminAuthenticationController::class, "logout"]);
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
         // Provider Management
-        Route::post("register_admin", [AdminController::class, "register"]);
         Route::post("register_provider", [ProviderController::class, "register"]);
         Route::get("all_providers", [ProviderController::class, "index"]);
         Route::get("get_single_provider/{provider}", [ProviderController::class, "show"]);
