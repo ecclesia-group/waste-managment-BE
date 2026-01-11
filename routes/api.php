@@ -136,6 +136,7 @@ Route::prefix("admin")->group(function () {
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
 
         // Provider Management
+        Route::post("register_admin", [ProviderController::class, "register"]);
         Route::post("register_provider", [ProviderController::class, "register"]);
         Route::get("all_providers", [ProviderController::class, "index"]);
         Route::get("get_single_provider/{provider}", [ProviderController::class, "show"]);
