@@ -36,7 +36,7 @@ class PickupController extends Controller
         );
     }
 
-    public function bulkWasteRequest(UpdatePickupRequest $request)
+    public function bulkWasteRequest(PickupCreationRequest $request)
     {
         $code         = Str::random(5);
         $data         = $request->validated();
@@ -59,7 +59,7 @@ class PickupController extends Controller
         );
     }
 
-    public function updateBulkWasteRequest(PickupCreationRequest $request, Pickup $pickup)
+    public function updateBulkWasteRequest(UpdatePickupRequest $request, Pickup $pickup)
     {
         $data = $request->validated();
 
