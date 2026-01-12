@@ -148,13 +148,24 @@ class PickupController extends Controller
     {
         $data = $request->validated();
 
-        $pickup = Pickup::where('id', $data['code'])->first();
+        $pickup = Pickup::where('id', $data['id'])->first();
         if (! $pickup) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
                 reason: "Pickup not found",
                 status_code: self::API_NOT_FOUND
+            );
+        }
+
+        $user = request()->user();
+        if ($pickup->client_slug !== $user->client_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
             );
         }
 

@@ -22,7 +22,7 @@ class SetPickupDateRequest extends FormRequest
     {
         return [
             'pickup_date' => ['required', 'date'],
-            'id'          => ['required', 'string', 'exists:pickups,id'],
+            'id'          => ['required', 'string'],
         ];
     }
 }
