@@ -21,8 +21,7 @@ class SetPickupDateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'pickup_date' => ['required', 'date'],
-            'id'          => ['required', 'string'],
+            'id' => ['required', 'string'],
         ];
     }
 }
