@@ -112,7 +112,6 @@ class PickupController extends Controller
 
     public function deletePickup(Pickup $pickup)
     {
-        dd($pickup);
         $user = request()->user();
         if ($pickup->client_slug !== $user->client_slug) {
             return self::apiResponse(
@@ -123,6 +122,7 @@ class PickupController extends Controller
                 data: []
             );
         }
+        dd($pickup);
 
         $pickup->delete();
 
