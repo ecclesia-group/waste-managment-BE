@@ -22,7 +22,7 @@ class PickupStatusChangeRequest extends FormRequest
     {
         return [
             'id'     => 'required|string|exists:pickups,id',
-            'status' => 'required|string|in:cancelled',
+            'status' => 'required|string',
         ];
     }
 }
