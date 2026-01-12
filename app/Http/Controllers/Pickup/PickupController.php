@@ -112,155 +112,165 @@ class PickupController extends Controller
 
     public function deletePickup(Pickup $pickup)
     {
-        $pickup->delete();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup deleted successfully",
-            status_code: self::API_SUCCESS,
-            data: []
-        );
-    }
-
-    public function reschedulePickup(SetPickupDateRequest $request)
-    {
-        $data = $request->validated();
-
-        $pickup = Pickup::where('code', $data['code'])->first();
-        if (! $pickup) {
+        $user = request()->user();
+        if ($pickup->client_slug !== $user->client_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
                 reason: "Pickup not found",
-                status_code: self::API_NOT_FOUND
+                status_code: self::API_NOT_FOUND,
+                data: []
             );
-        }
 
-        $pickup->pickup_date = null;
-        $pickup->status      = 'rescheduled';
-        $pickup->save();
+            $pickup->delete();
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup rescheduled successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
-        );
-    }
-
-    public function getAllPickups()
-    {
-        $pickups = Pickup::get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Bulk waste requests retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
-        );
-    }
-
-    public function getSinglePickup($pickup_code)
-    {
-        $pickup = Pickup::where('code', $pickup_code)->first();
-        if (! $pickup) {
             return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Pickup not found",
-                status_code: self::API_NOT_FOUND
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup deleted successfully",
+                status_code: self::API_SUCCESS,
+                data: []
             );
         }
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
-        );
-    }
+        function reschedulePickup(SetPickupDateRequest $request)
+        {
+            $data = $request->validated();
 
-    public function getClientPickups()
-    {
-        $user    = request()->user();
-        $pickups = Pickup::where('client_slug', $user->client_slug)->get();
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Client pickups retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
-        );
-    }
+            $pickup = Pickup::where('code', $data['code'])->first();
+            if (! $pickup) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Pickup not found",
+                    status_code: self::API_NOT_FOUND
+                );
+            }
 
-    public function setPickupPrice(SetPickupPriceRequest $request)
-    {
-        $data = $request->validated();
+            $pickup->pickup_date = null;
+            $pickup->status      = 'rescheduled';
+            $pickup->save();
 
-        $pickup = Pickup::where('code', $data['code'])->first();
-        if (! $pickup) {
             return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Pickup not found",
-                status_code: self::API_NOT_FOUND
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup rescheduled successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickup->toArray()
             );
         }
 
-        $pickup->amount = $data['amount'];
-        $pickup->status = 'priced';
-        $pickup->save();
+        function getAllPickups()
+        {
+            $pickups = Pickup::get();
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup price set successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
-        );
-    }
-
-    public function setPickupDate(SetPickupDateRequest $request)
-    {
-        $data = $request->validated();
-
-        $pickup = Pickup::where('code', $data['code'])->first();
-        if (! $pickup) {
             return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Pickup not found",
-                status_code: self::API_NOT_FOUND
+                in_error: false,
+                message: "Action Successful",
+                reason: "Bulk waste requests retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickups->toArray()
             );
         }
 
-        $pickup->pickup_date = $data['pickup_date'];
-        $pickup->status      = 'scheduled';
-        $pickup->save();
+        function getSinglePickup($pickup_code)
+        {
+            $pickup = Pickup::where('code', $pickup_code)->first();
+            if (! $pickup) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Pickup not found",
+                    status_code: self::API_NOT_FOUND
+                );
+            }
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup date and time set successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
-        );
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickup->toArray()
+            );
+        }
+
+        function getClientPickups()
+        {
+            $user    = request()->user();
+            $pickups = Pickup::where('client_slug', $user->client_slug)->get();
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Client pickups retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickups->toArray()
+            );
+        }
+
+        function setPickupPrice(SetPickupPriceRequest $request)
+        {
+            $data = $request->validated();
+
+            $pickup = Pickup::where('code', $data['code'])->first();
+            if (! $pickup) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Pickup not found",
+                    status_code: self::API_NOT_FOUND
+                );
+            }
+
+            $pickup->amount = $data['amount'];
+            $pickup->status = 'priced';
+            $pickup->save();
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup price set successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickup->toArray()
+            );
+        }
+
+        function setPickupDate(SetPickupDateRequest $request)
+        {
+            $data = $request->validated();
+
+            $pickup = Pickup::where('code', $data['code'])->first();
+            if (! $pickup) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Pickup not found",
+                    status_code: self::API_NOT_FOUND
+                );
+            }
+
+            $pickup->pickup_date = $data['pickup_date'];
+            $pickup->status      = 'scheduled';
+            $pickup->save();
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup date and time set successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickup->toArray()
+            );
+        }
+
+        function getPickupDates()
+        {
+            $pickup_dates = Pickup::whereNotNull('pickup_date')->get();
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Pickup dates retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: $pickup_dates->toArray()
+            );
+        }
     }
-
-    public function getPickupDates()
-    {
-        $pickup_dates = Pickup::whereNotNull('pickup_date')->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup dates retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup_dates->toArray()
-        );
-    }
-}
