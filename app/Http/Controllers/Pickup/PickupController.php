@@ -148,7 +148,7 @@ class PickupController extends Controller
     {
         $data = $request->validated();
 
-        $pickup = Pickup::where('code', $data['code'])->first();
+        $pickup = Pickup::where('id', $data['code'])->first();
         if (! $pickup) {
             return self::apiResponse(
                 in_error: true,
