@@ -122,7 +122,6 @@ class PickupController extends Controller
                 data: []
             );
         }
-        dd($pickup);
 
         $pickup->delete();
 
