@@ -21,7 +21,7 @@ class UpdatePickupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_slug' => 'sometimes|string|exists:clients,client_slug',
+            // 'client_slug' => 'sometimes|string|exists:clients,client_slug',
             'title'       => ['sometimes', 'string'],
             'category'    => ['sometimes', 'string'],
             'description' => ['sometimes', 'string'],
