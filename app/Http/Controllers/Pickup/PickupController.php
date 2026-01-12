@@ -3,8 +3,10 @@ namespace App\Http\Controllers\Pickup;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pickup\PickupCreationRequest;
+use App\Http\Requests\Pickup\PickupStatusChangeRequest;
 use App\Http\Requests\Pickup\SetPickupDateRequest;
 use App\Http\Requests\Pickup\SetPickupPriceRequest;
+use App\Http\Requests\Pickup\UpdatePickupRequest;
 use App\Models\Pickup;
 use Illuminate\Support\Str;
 
@@ -34,7 +36,7 @@ class PickupController extends Controller
         );
     }
 
-    public function bulkWasteRequest(PickupCreationRequest $request)
+    public function bulkWasteRequest(UpdatePickupRequest $request)
     {
         $code         = Str::random(5);
         $data         = $request->validated();
@@ -52,6 +54,93 @@ class PickupController extends Controller
             in_error: false,
             message: "Action Successful",
             reason: "Bulk waste request created successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function updateBulkWasteRequest(PickupCreationRequest $request, Pickup $pickup)
+    {
+        $data = $request->validated();
+
+        $image_fields = [
+            'images',
+        ];
+
+        $data = static::processImage($image_fields, $data);
+
+        $pickup->update($data);
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bulk waste request updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function updatePickupStatus(PickupStatusChangeRequest $request)
+    {
+        $data = $request->validated();
+
+        $pickup = Pickup::where('id', $data['id'])->first();
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
+
+        $pickup->status = $data['status'];
+        $pickup->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function deletePickup(Pickup $pickup)
+    {
+        $pickup->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: []
+        );
+    }
+
+    public function reschedulePickup(SetPickupDateRequest $request)
+    {
+        $data = $request->validated();
+
+        $pickup = Pickup::where('code', $data['code'])->first();
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
+
+        $pickup->pickup_date = null;
+        $pickup->status      = 'rescheduled';
+        $pickup->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup rescheduled successfully",
             status_code: self::API_SUCCESS,
             data: $pickup->toArray()
         );
