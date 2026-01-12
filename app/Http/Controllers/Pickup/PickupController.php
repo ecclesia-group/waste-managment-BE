@@ -38,11 +38,14 @@ class PickupController extends Controller
 
     public function getCompletedPickups()
     {
-        $user    = request()->user();
+        $user = request()->user();
+
         $pickups = Pickup::where('client_slug', $user->client_slug)
             ->where('status', 'completed')
             ->get();
-        if (! $pickups) {
+
+        // Check if the collection is empty
+        if ($pickups->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -51,6 +54,7 @@ class PickupController extends Controller
                 data: []
             );
         }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
