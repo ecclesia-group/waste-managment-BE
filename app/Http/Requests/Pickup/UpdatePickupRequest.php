@@ -28,7 +28,7 @@ class UpdatePickupRequest extends FormRequest
             'location'    => ['sometimes', 'string'],
             'pickup_date' => ['sometimes', 'date'],
             'images'      => ['sometimes', 'array'],
-            'images.*'    => ['sometimes', 'image', 'starts_with:data:,http://,https://'],
+            'images.*'    => ['sometimes', 'starts_with:data:,http://,https://'],
         ];
     }
 }
