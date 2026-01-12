@@ -61,7 +61,21 @@ class PickupController extends Controller
 
     public function updateBulkWasteRequest(UpdatePickupRequest $request, Pickup $pickup)
     {
-        $data = $request->validated();
+        $data   = $request->validated();
+        $user   = request()->user();
+        $pickup = Pickup::where([
+            'id'          => $data['id'],
+            'client_slug' => $user->client_slug,
+        ])->first();
+
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
 
         $image_fields = [
             'images',
