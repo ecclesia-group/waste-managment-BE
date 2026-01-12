@@ -82,9 +82,13 @@ class PickupController extends Controller
 
     public function updatePickupStatus(PickupStatusChangeRequest $request)
     {
-        $data = $request->validated();
-        $user = request()->user();
-        $pickup = Pickup::where(['id' => $data['id'], 'client_slug' => $user->])->first();
+        $data   = $request->validated();
+        $user   = request()->user();
+        $pickup = Pickup::where([
+            'id'          => $data['id'],
+            'client_slug' => $user->client_slug,
+        ])->first();
+
         if (! $pickup) {
             return self::apiResponse(
                 in_error: true,
