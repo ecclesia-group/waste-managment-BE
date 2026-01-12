@@ -36,6 +36,30 @@ class PickupController extends Controller
         );
     }
 
+    public function getCompletedPickups()
+    {
+        $user    = request()->user();
+        $pickups = Pickup::where('client_slug', $user->client_slug)
+            ->where('status', 'completed')
+            ->get();
+        if (! $pickups) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "No completed pickups found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Client completed pickups retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickups->toArray()
+        );
+    }
+
     public function bulkWasteRequest(PickupCreationRequest $request)
     {
         $code         = Str::random(5);
