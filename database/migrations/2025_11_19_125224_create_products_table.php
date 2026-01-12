@@ -15,13 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('product_slug')->unique();
             $table->string('name');
-            $table->text('description')->nullable();
-            $table->decimal('price', 8, 2);
-            $table->integer('stock_quantity')->default(0);
-            $table->string('status')->default('active');
-            $table->string('category_id')->nullable();
+            $table->string('color')->nullable();
             $table->string('size')->nullable();
             $table->longText('images')->nullable();
+            $table->decimal('original_price', 10, 2);
+            $table->decimal('discounted_price', 10, 2)->nullable();
+            $table->decimal('discount_percentage', 5, 2)->default(0);
+            $table->integer('quantity')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

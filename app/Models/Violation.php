@@ -11,9 +11,11 @@ class Violation extends Model
 
     protected $fillable = [
         'code',
-        'client_id',
+        'client_slug',
+        'type',
         'status',
         'location',
+        'description',
         'images',
     ];
 

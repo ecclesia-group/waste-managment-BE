@@ -64,20 +64,43 @@ trait Helpers
     protected static function processImage(array $image_fields, array $data)
     {
         foreach ($image_fields as $field) {
+            if (!isset($data[$field])) {
+                continue;
+            }
 
-            if (! isset($data[$field]) || ! is_array($data[$field])) {
+            // Handle file uploads (from form data)
+            if (request()->hasFile($field)) {
+                $files = request()->file($field);
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+                $uploadedUrls = [];
+                foreach ($files as $file) {
+                    if ($file->isValid()) {
+                        $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
+                        $filePath = "uploads/images/" . $fileName;
+                        Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
+                        $uploadedUrls[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                    }
+                }
+                $data[$field] = $uploadedUrls;
+                continue;
+            }
+
+            // Handle array of base64 strings or URLs
+            if (!is_array($data[$field])) {
                 continue;
             }
 
             foreach ($data[$field] as $index => $image) {
-
-                if (! is_string($image)) {
+                if (!is_string($image)) {
                     continue;
                 }
 
                 if (str_starts_with($image, 'data:image')) {
                     $data[$field][$index] = static::base64ImageDecode($image);
                 }
+                // URLs are kept as-is
             }
         }
 
@@ -88,12 +111,61 @@ trait Helpers
     protected static function processVideo(array $video_fields, array $data)
     {
         foreach ($video_fields as $field) {
-            if (isset($data[$field]) && is_string($data[$field])) {
-                // it's not an image so dont' use base54
-                $data[$field] = $data[$field];
+            if (!isset($data[$field])) {
+                continue;
+            }
+
+            // Handle file uploads (from form data)
+            if (request()->hasFile($field)) {
+                $files = request()->file($field);
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+                $uploadedUrls = [];
+                foreach ($files as $file) {
+                    if ($file->isValid()) {
+                        $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
+                        $filePath = "uploads/videos/" . $fileName;
+                        Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
+                        $uploadedUrls[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                    }
+                }
+                $data[$field] = $uploadedUrls;
+                continue;
+            }
+
+            // Handle array of base64 strings or URLs
+            if (is_array($data[$field])) {
+                foreach ($data[$field] as $index => $video) {
+                    if (is_string($video) && str_starts_with($video, 'data:video')) {
+                        // Handle base64 video (similar to images)
+                        $data[$field][$index] = static::base64VideoDecode($video);
+                    }
+                    // URLs are kept as-is
+                }
+            } elseif (is_string($data[$field])) {
+                // Single video URL or base64
+                if (str_starts_with($data[$field], 'data:video')) {
+                    $data[$field] = static::base64VideoDecode($data[$field]);
+                }
             }
         }
         return $data;
+    }
+
+    protected static function base64VideoDecode(string $base64_video)
+    {
+        if (preg_match('/^data:video\/(\w+);base64,/', $base64_video, $matches)) {
+            $video_extension = $matches[1];
+            $video_data = substr($base64_video, strpos($base64_video, ',') + 1);
+
+            $fileName = Str::random(15) . '.' . $video_extension;
+            $file_path = "uploads/videos/" . $fileName;
+
+            Storage::disk("public")->put($file_path, base64_decode($video_data));
+            return config("custom.urls.backend_url") . "/" . "storage/" . $file_path;
+        }
+        return $base64_video;
     }
 
     protected static function deleteImage(?string $image_path): bool
@@ -186,5 +258,26 @@ trait Helpers
             }
         }
         return $token;
+    }
+
+    /**
+     * Generate QR code image for client bin
+     */
+    protected static function generateQRCodeImage(string $data, string $clientSlug): string
+    {
+        // Using a simple API to generate QR code
+        // For production, consider installing: composer require simplesoftwareio/simple-qrcode
+        $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($data);
+
+        // Download and save the QR code
+        $qrCodeContent = @file_get_contents($qrCodeUrl);
+        if ($qrCodeContent) {
+            $fileName = Str::random(15) . '.png';
+            $filePath = "uploads/qrcodes/" . $fileName;
+            Storage::disk("public")->put($filePath, $qrCodeContent);
+            return config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+        }
+
+        return $qrCodeUrl; // Return the API URL if download fails
     }
 }

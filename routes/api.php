@@ -23,6 +23,9 @@ use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\Violation\ViolationManagementController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Purchase\PurchaseController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -47,6 +50,25 @@ Route::prefix("client")->group(function () {
         Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
+        Route::put('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
+        Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
+
+        // Violation Management
+        Route::post('create_violation', [ViolationManagementController::class, 'createViolation']);
+        Route::get('get_violations', [ViolationManagementController::class, 'listViolations']);
+        Route::get('get_single_violation/{violation}', [ViolationManagementController::class, 'getViolationDetails']);
+        Route::put('update_violation/{violation}', [ViolationManagementController::class, 'updateViolation']);
+        Route::delete('delete_violation/{violation}', [ViolationManagementController::class, 'deleteViolation']);
+
+        // Product Management (View products for purchase)
+        Route::get('get_products', [ProductController::class, 'listProducts']);
+        Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
+
+        // Purchase Management
+        Route::post('create_purchase', [PurchaseController::class, 'createPurchase']);
+        Route::get('get_purchases', [PurchaseController::class, 'listPurchases']);
+        Route::get('get_single_purchase/{purchase}', [PurchaseController::class, 'getPurchaseDetails']);
+        Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
 
         // Report Management
         Route::post('create_feedback', [FeedbackController::class, 'createFeedback']);
@@ -104,6 +126,23 @@ Route::prefix("provider")->group(function () {
 
         // Complaint Management
         Route::get("all_complaints", [ComplaintmanagementController::class, "listComplaints"]);
+        Route::get("get_single_complaint/{complaint}", [ComplaintmanagementController::class, "getComplaintDetails"]);
+        Route::put("update_complaint_status/{complaint}", [ComplaintmanagementController::class, "updateComplaintStatus"]);
+
+        // Violation Management
+        Route::get("all_violations", [ViolationManagementController::class, "listViolations"]);
+        Route::get("get_single_violation/{violation}", [ViolationManagementController::class, "getViolationDetails"]);
+        Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
+
+        // Product Management
+        Route::post("create_product", [ProductController::class, "createProduct"]);
+        Route::get("all_products", [ProductController::class, "listProducts"]);
+        Route::get("get_single_product/{product}", [ProductController::class, "getProductDetails"]);
+        Route::put("update_product/{product}", [ProductController::class, "updateProduct"]);
+        Route::delete("delete_product/{product}", [ProductController::class, "deleteProduct"]);
+
+        // QR Code Scanner (Scan bin QR code to get client details)
+        Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
     });
 });
 
@@ -178,7 +217,17 @@ Route::prefix("admin")->group(function () {
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
         Route::put('update_complaint_status/{complaint}', [ComplaintmanagementController::class, 'updateComplaintStatus']);
-        // Route::post('create_complaint', [ZoneManagementController::class, 'createComplaint']);
-        // Route::delete('delete_complaint/{complaint}', [ZoneManagementController::class, 'deleteComplaint']);
+
+        // Violation Management
+        Route::get('all_violations', [ViolationManagementController::class, 'listViolations']);
+        Route::get('get_single_violation/{violation}', [ViolationManagementController::class, 'getViolationDetails']);
+        Route::put('update_violation_status/{violation}', [ViolationManagementController::class, 'updateViolationStatus']);
+
+        // Product Management
+        Route::post('create_product', [ProductController::class, 'createProduct']);
+        Route::get('all_products', [ProductController::class, 'listProducts']);
+        Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
+        Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
+        Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
     });
 });

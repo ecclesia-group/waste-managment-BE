@@ -1,9 +1,9 @@
 <?php
-namespace App\Http\Requests\Complaint;
+namespace App\Http\Requests\Violation;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ComplaintCreationRequest extends FormRequest
+class ViolationCreationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,12 +21,11 @@ class ComplaintCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            "type"        => ["required", "string"],
             "location"    => ["required", "string"],
             "description" => ["nullable", "string"],
             "images"      => ["nullable"],
-            'images.*'    => 'nullable|file|image|max:10240', // 10MB max for file uploads, or base64/URL
-            'videos'      => 'nullable',
-            "videos.*"    => ["nullable", "file", "mimes:mp4,avi,mov,wmv,flv|max:51200"], // 50MB max for videos, or base64/URL
+            'images.*'    => 'nullable|file|image|max:10240', // 10MB max
         ];
     }
 }

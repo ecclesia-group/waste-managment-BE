@@ -1,24 +1,24 @@
 <?php
-namespace App\Http\Controllers\Complaint;
+namespace App\Http\Controllers\Violation;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Complaint\ComplaintCreationRequest;
-use App\Http\Requests\Complaint\ComplaintUpdateRequest;
-use App\Models\Complaint;
+use App\Http\Requests\Violation\ViolationCreationRequest;
+use App\Http\Requests\Violation\ViolationUpdateRequest;
+use App\Models\Violation;
 use Illuminate\Support\Str;
 
-class ComplaintmanagementController extends Controller
+class ViolationManagementController extends Controller
 {
-    // Lists all complaints
-    public function listComplaints()
+    // Lists all violations
+    public function listViolations()
     {
-        $user       = request()->user();
-        $complaints = Complaint::where('client_slug', $user->client_slug)->get();
-        if ($complaints->isEmpty()) {
+        $user = request()->user();
+        $violations = Violation::where('client_slug', $user->client_slug)->get();
+        if ($violations->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "No complaints found",
+                reason: "No violations found",
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
@@ -26,26 +26,26 @@ class ComplaintmanagementController extends Controller
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaints retrieved successfully",
+            reason: "Violations retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaints?->toArray()
+            data: $violations?->toArray()
         );
     }
 
-    // Gets details of a single complaint
-    public function getComplaintDetails(Complaint $complaint)
+    // Gets details of a single violation
+    public function getViolationDetails(Violation $violation)
     {
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaint details retrieved successfully",
+            reason: "Violation details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $violation->toArray()
         );
     }
 
-    // create complaint
-    public function createComplaint(ComplaintCreationRequest $request)
+    // create violation
+    public function createViolation(ViolationCreationRequest $request)
     {
         $user = request()->user();
         $data = $request->validated();
@@ -53,106 +53,93 @@ class ComplaintmanagementController extends Controller
         $data['client_slug'] = $user->client_slug;
 
         $image_fields = ['images'];
-        $video_fields = ['videos'];
-
         $data = static::processImage($image_fields, $data);
-        $data = static::processVideo($video_fields, $data);
-        $complaint = Complaint::create($data);
+        $violation = Violation::create($data);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaint created successfully",
+            reason: "Violation created successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $violation->toArray()
         );
     }
 
-    public function updateComplaint(ComplaintUpdateRequest $request, Complaint $complaint)
+    public function updateViolation(ViolationUpdateRequest $request, Violation $violation)
     {
         $user = request()->user();
 
         // Verify ownership
-        if ($complaint->client_slug !== $user->client_slug) {
+        if ($violation->client_slug !== $user->client_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Unauthorized to update this complaint",
+                reason: "Unauthorized to update this violation",
                 status_code: self::API_FAIL,
                 data: []
             );
         }
 
         $data = $request->validated();
-
-        // Process images and videos
         $data = static::processImage(['images'], $data);
-        $data = static::processVideo(['videos'], $data);
-
-        $complaint->update($data);
+        $violation->update($data);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaint updated successfully",
+            reason: "Violation updated successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $violation->toArray()
         );
     }
 
-    public function deleteComplaint(Complaint $complaint)
+    public function deleteViolation(Violation $violation)
     {
         $user = request()->user();
 
         // Verify ownership
-        if ($complaint->client_slug !== $user->client_slug) {
+        if ($violation->client_slug !== $user->client_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Unauthorized to delete this complaint",
+                reason: "Unauthorized to delete this violation",
                 status_code: self::API_FAIL,
                 data: []
             );
         }
 
-        // Delete associated images and videos
-        if ($complaint->images) {
-            foreach ($complaint->images as $image) {
+        // Delete associated images
+        if ($violation->images) {
+            foreach ($violation->images as $image) {
                 static::deleteImage($image);
             }
         }
-        if ($complaint->videos) {
-            foreach ($complaint->videos as $video) {
-                static::deleteImage($video); // Reuse deleteImage for videos
-            }
-        }
 
-        $complaint->delete();
+        $violation->delete();
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaint deleted successfully",
+            reason: "Violation deleted successfully",
             status_code: self::API_SUCCESS,
             data: []
         );
     }
 
-    public function updateComplaintStatus(Complaint $complaint)
+    public function updateViolationStatus(Violation $violation)
     {
         $data = request()->validate([
             'status' => 'required|string|in:pending,open,in_progress,closed'
         ]);
 
-        $complaint->update(['status' => $data['status']]);
+        $violation->update(['status' => $data['status']]);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Complaint status updated successfully",
+            reason: "Violation status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $violation->toArray()
         );
     }
-
 }

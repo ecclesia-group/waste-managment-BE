@@ -15,6 +15,7 @@ class Payment extends Model
         'payment_method',
         'network',
         'phone_number',
+        'name',
         'client_email',
         'card_name',
         'card_number',
@@ -23,6 +24,8 @@ class Payment extends Model
         'amount',
         'currency',
         'status',
+        'purchase_id',
+        'pickup_id',
     ];
 
     protected $casts = [

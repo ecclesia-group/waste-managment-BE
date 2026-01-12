@@ -11,15 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('violations', function (Blueprint $table) {
+        Schema::create('purchases', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('client_slug');
-            $table->string('type');
-            $table->string('location');
-            $table->text('description')->nullable();
-            $table->string('status')->default('pending');
-            $table->longText('images')->nullable();
+            $table->integer('number_of_items');
+            $table->decimal('total_price', 10, 2);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -30,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('violations');
+        Schema::dropIfExists('purchases');
     }
 };

@@ -11,13 +11,23 @@ class Product extends Model
     protected $fillable = [
         'product_slug',
         'name',
-        'description',
-        'price',
-        'stock_quantity',
-        'status',
-        'category_id',
+        'color',
         'size',
         'images',
+        'original_price',
+        'discounted_price',
+        'discount_percentage',
+        'quantity',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'images'     => 'array',
+        'original_price' => 'decimal:2',
+        'discounted_price' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
+        'deleted_at' => 'datetime',
     ];
 
     protected $casts = [

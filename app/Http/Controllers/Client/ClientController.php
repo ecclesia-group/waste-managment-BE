@@ -117,4 +117,63 @@ class ClientController extends Controller
             data: []
         );
     }
+
+    // Scan QR code to get client details (for providers)
+    public function scanQRCode()
+    {
+        $data = request()->validate([
+            'qrcode_data' => 'required|string',
+        ]);
+
+        try {
+            $qrData = json_decode($data['qrcode_data'], true);
+
+            if (!$qrData || !isset($qrData['client_slug'])) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Invalid QR code data",
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
+
+            $client = Client::where('client_slug', $qrData['client_slug'])->first();
+
+            if (!$client) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Client not found",
+                    status_code: self::API_NOT_FOUND,
+                    data: []
+                );
+            }
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Client details retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: [
+                    'client_slug' => $client->client_slug,
+                    'name' => $client->first_name . ' ' . ($client->last_name ?? ''),
+                    'phone_number' => $client->phone_number,
+                    'email' => $client->email,
+                    'gps_address' => $client->gps_address,
+                    'pickup_location' => $client->pickup_location,
+                    'bin_code' => $client->bin_code,
+                    'bin_size' => $client->bin_size,
+                ]
+            );
+        } catch (\Exception $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Failed to scan QR code: " . $e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+    }
 }
