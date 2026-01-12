@@ -64,9 +64,20 @@ trait Helpers
     protected static function processImage(array $image_fields, array $data)
     {
         foreach ($image_fields as $field) {
-            if (isset($data[$field]) && is_string($data[$field])) {
-                $is_base_64   = str_starts_with($data[$field], 'data:image');
-                $data[$field] = $is_base_64 ? static::base64ImageDecode($data[$field]) : $data[$field];
+
+            if (! isset($data[$field]) || ! is_array($data[$field])) {
+                continue;
+            }
+
+            foreach ($data[$field] as $index => $image) {
+
+                if (! is_string($image)) {
+                    continue;
+                }
+
+                if (str_starts_with($image, 'data:image')) {
+                    $data[$field][$index] = static::base64ImageDecode($image);
+                }
             }
         }
 
