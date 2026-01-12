@@ -29,4 +29,9 @@ class Pickup extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
 }

@@ -40,11 +40,13 @@ class PickupController extends Controller
     {
         $user = request()->user();
 
+        // Eager load the provider relationship in the initial query
         $pickups = Pickup::where('client_slug', $user->client_slug)
             ->where('status', 'completed')
+            ->with('provider') // Eager load here - reduces to 2 queries total
+            ->latest()         // Optional: order by most recent
             ->get();
 
-        // Check if the collection is empty
         if ($pickups->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
