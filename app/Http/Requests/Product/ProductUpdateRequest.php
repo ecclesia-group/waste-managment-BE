@@ -24,7 +24,7 @@ class ProductUpdateRequest extends FormRequest
             "name"              => ["sometimes", "string"],
             "color"             => ["sometimes", "string"],
             "size"              => ["sometimes", "string"],
-            "images"            => ["sometimes"],
+            "images"            => ["sometimes", "array"],
             'images.*'          => 'nullable|file|image|max:10240',
             "original_price"    => ["sometimes", "numeric", "min:0"],
             "discounted_price"  => ["sometimes", "nullable", "numeric", "min:0"],

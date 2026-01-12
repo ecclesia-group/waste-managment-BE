@@ -24,7 +24,7 @@ class ProductCreationRequest extends FormRequest
             "name"              => ["required", "string"],
             "color"             => ["nullable", "string"],
             "size"              => ["nullable", "string"],
-            "images"            => ["nullable"],
+            "images"            => ["nullable", "array"],
             'images.*'          => 'nullable|file|image|max:10240',
             "original_price"    => ["required", "numeric", "min:0"],
             "discounted_price"  => ["nullable", "numeric", "min:0"],

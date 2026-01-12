@@ -64,44 +64,39 @@ trait Helpers
     protected static function processImage(array $image_fields, array $data)
     {
         foreach ($image_fields as $field) {
-            if (!isset($data[$field])) {
+            if (! isset($data[$field]) && ! request()->hasFile($field)) {
                 continue;
             }
 
-            // Handle file uploads (from form data)
+            $normalized = [];
+            // Normalize existing array/base64/urls in payload
+            if (isset($data[$field]) && is_array($data[$field])) {
+                foreach ($data[$field] as $item) {
+                    if (is_string($item)) {
+                        $normalized[] = str_starts_with($item, 'data:image')
+                            ? static::base64ImageDecode($item)
+                            : $item;
+                    }
+                }
+            }
+
+            // Handle file uploads (from multipart form-data)
             if (request()->hasFile($field)) {
                 $files = request()->file($field);
-                if (!is_array($files)) {
+                if (! is_array($files)) {
                     $files = [$files];
                 }
-                $uploadedUrls = [];
                 foreach ($files as $file) {
-                    if ($file->isValid()) {
+                    if ($file && $file->isValid()) {
                         $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
                         $filePath = "uploads/images/" . $fileName;
                         Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
-                        $uploadedUrls[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        $normalized[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
                     }
                 }
-                $data[$field] = $uploadedUrls;
-                continue;
             }
 
-            // Handle array of base64 strings or URLs
-            if (!is_array($data[$field])) {
-                continue;
-            }
-
-            foreach ($data[$field] as $index => $image) {
-                if (!is_string($image)) {
-                    continue;
-                }
-
-                if (str_starts_with($image, 'data:image')) {
-                    $data[$field][$index] = static::base64ImageDecode($image);
-                }
-                // URLs are kept as-is
-            }
+            $data[$field] = array_values($normalized);
         }
 
         return $data;
@@ -111,45 +106,44 @@ trait Helpers
     protected static function processVideo(array $video_fields, array $data)
     {
         foreach ($video_fields as $field) {
-            if (!isset($data[$field])) {
+            if (! isset($data[$field]) && ! request()->hasFile($field)) {
                 continue;
             }
 
-            // Handle file uploads (from form data)
+            $normalized = [];
+            if (isset($data[$field]) && is_array($data[$field])) {
+                foreach ($data[$field] as $item) {
+                    if (is_string($item)) {
+                        $normalized[] = str_starts_with($item, 'data:video')
+                            ? static::base64VideoDecode($item)
+                            : $item;
+                    }
+                }
+            } elseif (isset($data[$field]) && is_string($data[$field])) {
+                $normalized[] = str_starts_with($data[$field], 'data:video')
+                    ? static::base64VideoDecode($data[$field])
+                    : $data[$field];
+            }
+
+            // Handle file uploads (from multipart form-data)
             if (request()->hasFile($field)) {
                 $files = request()->file($field);
-                if (!is_array($files)) {
+                if (! is_array($files)) {
                     $files = [$files];
                 }
-                $uploadedUrls = [];
                 foreach ($files as $file) {
-                    if ($file->isValid()) {
+                    if ($file && $file->isValid()) {
                         $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
                         $filePath = "uploads/videos/" . $fileName;
                         Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
-                        $uploadedUrls[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        $normalized[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
                     }
                 }
-                $data[$field] = $uploadedUrls;
-                continue;
             }
 
-            // Handle array of base64 strings or URLs
-            if (is_array($data[$field])) {
-                foreach ($data[$field] as $index => $video) {
-                    if (is_string($video) && str_starts_with($video, 'data:video')) {
-                        // Handle base64 video (similar to images)
-                        $data[$field][$index] = static::base64VideoDecode($video);
-                    }
-                    // URLs are kept as-is
-                }
-            } elseif (is_string($data[$field])) {
-                // Single video URL or base64
-                if (str_starts_with($data[$field], 'data:video')) {
-                    $data[$field] = static::base64VideoDecode($data[$field]);
-                }
-            }
+            $data[$field] = array_values($normalized);
         }
+
         return $data;
     }
 

@@ -26,7 +26,7 @@ class ViolationUpdateRequest extends FormRequest
             'location'    => ['sometimes', 'string'],
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
 
-            'images'      => ['sometimes'],
+            'images'      => ['sometimes', 'array'],
             'images.*'    => ['nullable', 'file', 'image', 'max:10240'], // 10MB max
         ];
     }

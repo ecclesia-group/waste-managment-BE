@@ -47,16 +47,17 @@ class ComplaintmanagementController extends Controller
     // create complaint
     public function createComplaint(ComplaintCreationRequest $request)
     {
-        $user = request()->user();
-        $data = $request->validated();
-        $data['code'] = Str::uuid();
+        $user                = request()->user();
+        $data                = $request->validated();
+        $code                = Str::random(5);
+        $data['code']        = $code;
         $data['client_slug'] = $user->client_slug;
 
         $image_fields = ['images'];
         $video_fields = ['videos'];
 
-        $data = static::processImage($image_fields, $data);
-        $data = static::processVideo($video_fields, $data);
+        $data      = static::processImage($image_fields, $data);
+        $data      = static::processVideo($video_fields, $data);
         $complaint = Complaint::create($data);
 
         return self::apiResponse(
@@ -141,7 +142,7 @@ class ComplaintmanagementController extends Controller
     public function updateComplaintStatus(Complaint $complaint)
     {
         $data = request()->validate([
-            'status' => 'required|string|in:pending,open,in_progress,closed'
+            'status' => 'required|string|in:pending,open,in_progress,closed',
         ]);
 
         $complaint->update(['status' => $data['status']]);
