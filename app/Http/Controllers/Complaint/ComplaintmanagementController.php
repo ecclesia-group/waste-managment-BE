@@ -87,9 +87,15 @@ class ComplaintmanagementController extends Controller
         $image_fields = ['images'];
         $video_fields = ['videos'];
 
-        // Process images and videos
-        $data = static::processImage($image_fields, $data);
-        $data = static::processVideo($video_fields, $data);
+        // Get existing images and videos to merge with new ones
+        $existingData = [
+            'images' => $complaint->images ?? [],
+            'videos' => $complaint->videos ?? [],
+        ];
+
+        // Process images and videos (merge with existing)
+        $data = static::processImage($image_fields, $data, $existingData);
+        $data = static::processVideo($video_fields, $data, $existingData);
 
         $complaint->update($data);
 

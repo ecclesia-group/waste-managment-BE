@@ -61,21 +61,34 @@ trait Helpers
         }
     }
 
-    protected static function processImage(array $image_fields, array $data)
+    protected static function processImage(array $image_fields, array $data, array $existingData = [])
     {
         foreach ($image_fields as $field) {
+            // Start with existing data if available (for updates)
+            $normalized = [];
+            if (isset($existingData[$field]) && is_array($existingData[$field])) {
+                $normalized = $existingData[$field];
+            }
+
+            // If field is not in request and no files uploaded, keep existing data
             if (! isset($data[$field]) && ! request()->hasFile($field)) {
+                if (!empty($normalized)) {
+                    $data[$field] = $normalized;
+                }
                 continue;
             }
 
-            $normalized = [];
-            // Normalize existing array/base64/urls in payload
+            // Normalize new array/base64/urls in payload
             if (isset($data[$field]) && is_array($data[$field])) {
                 foreach ($data[$field] as $item) {
                     if (is_string($item)) {
-                        $normalized[] = str_starts_with($item, 'data:image')
+                        $processed = str_starts_with($item, 'data:image')
                             ? static::base64ImageDecode($item)
                             : $item;
+                        // Only add if not already in normalized array
+                        if ($processed && !in_array($processed, $normalized)) {
+                            $normalized[] = $processed;
+                        }
                     }
                 }
             }
@@ -91,7 +104,11 @@ trait Helpers
                         $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
                         $filePath = "uploads/images/" . $fileName;
                         Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
-                        $normalized[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        $newUrl = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        // Only add if not already in normalized array
+                        if (!in_array($newUrl, $normalized)) {
+                            $normalized[] = $newUrl;
+                        }
                     }
                 }
             }
@@ -103,26 +120,44 @@ trait Helpers
     }
 
     // process video
-    protected static function processVideo(array $video_fields, array $data)
+    protected static function processVideo(array $video_fields, array $data, array $existingData = [])
     {
         foreach ($video_fields as $field) {
+            // Start with existing data if available (for updates)
+            $normalized = [];
+            if (isset($existingData[$field]) && is_array($existingData[$field])) {
+                $normalized = $existingData[$field];
+            }
+
+            // If field is not in request and no files uploaded, keep existing data
             if (! isset($data[$field]) && ! request()->hasFile($field)) {
+                if (!empty($normalized)) {
+                    $data[$field] = $normalized;
+                }
                 continue;
             }
 
-            $normalized = [];
+            // Normalize new array/base64/urls in payload
             if (isset($data[$field]) && is_array($data[$field])) {
                 foreach ($data[$field] as $item) {
                     if (is_string($item)) {
-                        $normalized[] = str_starts_with($item, 'data:video')
+                        $processed = str_starts_with($item, 'data:video')
                             ? static::base64VideoDecode($item)
                             : $item;
+                        // Only add if not already in normalized array
+                        if ($processed && !in_array($processed, $normalized)) {
+                            $normalized[] = $processed;
+                        }
                     }
                 }
             } elseif (isset($data[$field]) && is_string($data[$field])) {
-                $normalized[] = str_starts_with($data[$field], 'data:video')
+                $processed = str_starts_with($data[$field], 'data:video')
                     ? static::base64VideoDecode($data[$field])
                     : $data[$field];
+                // Only add if not already in normalized array
+                if ($processed && !in_array($processed, $normalized)) {
+                    $normalized[] = $processed;
+                }
             }
 
             // Handle file uploads (from multipart form-data)
@@ -136,7 +171,11 @@ trait Helpers
                         $fileName = Str::random(15) . '.' . $file->getClientOriginalExtension();
                         $filePath = "uploads/videos/" . $fileName;
                         Storage::disk("public")->put($filePath, file_get_contents($file->getRealPath()));
-                        $normalized[] = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        $newUrl = config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+                        // Only add if not already in normalized array
+                        if (!in_array($newUrl, $normalized)) {
+                            $normalized[] = $newUrl;
+                        }
                     }
                 }
             }

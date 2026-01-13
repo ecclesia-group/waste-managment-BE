@@ -88,9 +88,15 @@ class ViolationManagementController extends Controller
         $image_fields = ['images'];
         $video_fields = ['videos'];
 
-        // Process images and videos
-        $data = static::processImage($image_fields, $data);
-        $data = static::processVideo($video_fields, $data);
+        // Get existing images to merge with new ones
+        $existingData = [
+            'images' => $violation->images ?? [],
+            'videos' => $violation->videos ?? [],
+        ];
+
+        // Process images and videos (merge with existing)
+        $data = static::processImage($image_fields, $data, $existingData);
+        $data = static::processVideo($video_fields, $data, $existingData);
 
         $violation->update($data);
 
