@@ -24,10 +24,10 @@ class ComplaintUpdateRequest extends FormRequest
             'location'    => ['sometimes', 'string'],
             'description' => ['nullable', 'string'],
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
-            'images'      => ['nullable', 'array'],
-            'images.*'    => ['nullable'], // Can be file upload or URL string
-            'videos'      => ['nullable', 'array'],
-            'videos.*'    => ['nullable'], // Can be file upload or URL string
+            'images'      => ['present', 'nullable', 'array'], // 👈 present is key
+            'images.*'    => ['nullable', 'string'],
+            'videos'      => ['present', 'nullable', 'array'],
+            'videos.*'    => ['nullable', 'string'],
         ];
     }
 
