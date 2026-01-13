@@ -90,7 +90,6 @@ class ComplaintmanagementController extends Controller
         // Process images and videos
         $data = static::processImage($image_fields, $data);
         $data = static::processVideo($video_fields, $data);
-        dd($request->all(), $request->validated(), $complaint, $user, $data);
 
         $complaint->update($data);
 
