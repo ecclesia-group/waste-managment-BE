@@ -25,9 +25,9 @@ class ComplaintUpdateRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
             'images'      => ['nullable', 'array'],
-            'images.*'    => ['nullable', 'file', 'image', 'max:10240'], // 10MB max
+            'images.*'    => ['nullable', 'max:10240'], // 10MB max
             'videos'      => ['nullable', 'array'],
-            'videos.*'    => ['nullable', 'file', 'mimes:mp4,avi,mov,wmv,flv', 'max:51200'], // 50MB max
+            'videos.*'    => ['nullable', 'mimes:mp4,avi,mov,wmv,flv', 'max:51200'], // 50MB max
         ];
     }
 
