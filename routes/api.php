@@ -233,5 +233,8 @@ Route::prefix("admin")->group(function () {
         Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
         Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
         Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
+
+        // Statictics Management
+        Route::get('statistics_overview', [AdminController::class, 'getStatisticsOverview']);
     });
 });
