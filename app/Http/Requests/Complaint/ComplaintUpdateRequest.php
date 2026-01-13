@@ -23,7 +23,7 @@ class ComplaintUpdateRequest extends FormRequest
         return [
             'location'    => ['sometimes', 'string'],
             'description' => ['nullable', 'string'],
-            // 'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
+            'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
             'images'      => ['nullable', 'array'],
             'images.*'    => ['nullable', 'file', 'image', 'max:10240'], // 10MB max
             'videos'      => ['nullable', 'array'],

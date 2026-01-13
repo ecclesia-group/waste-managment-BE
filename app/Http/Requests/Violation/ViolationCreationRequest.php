@@ -26,6 +26,8 @@ class ViolationCreationRequest extends FormRequest
             "description" => ["nullable", "string"],
             "images"      => ["nullable", "array"],
             'images.*'    => 'nullable|file|image|max:10240', // 10MB max
+            'videos'      => ['nullable', 'array'],
+            "videos.*"    => ["nullable", "file", "mimes:mp4,avi,mov,wmv,flv", "max:51200"], // 50MB max
         ];
     }
 }

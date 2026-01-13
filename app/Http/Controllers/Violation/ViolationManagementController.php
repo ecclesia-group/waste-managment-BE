@@ -12,7 +12,7 @@ class ViolationManagementController extends Controller
     // Lists all violations
     public function listViolations()
     {
-        $user = request()->user();
+        $user       = request()->user();
         $violations = Violation::where('client_slug', $user->client_slug)->get();
         if ($violations->isEmpty()) {
             return self::apiResponse(
@@ -47,13 +47,17 @@ class ViolationManagementController extends Controller
     // create violation
     public function createViolation(ViolationCreationRequest $request)
     {
-        $user = request()->user();
-        $data = $request->validated();
-        $data['code'] = Str::uuid();
+        $user                = request()->user();
+        $data                = $request->validated();
+        $code                = Str::random(5);
+        $data['code']        = $code;
         $data['client_slug'] = $user->client_slug;
 
         $image_fields = ['images'];
-        $data = static::processImage($image_fields, $data);
+        $video_fields = ['videos'];
+
+        $data      = static::processImage($image_fields, $data);
+        $data      = static::processVideo($video_fields, $data);
         $violation = Violation::create($data);
 
         return self::apiResponse(
@@ -129,7 +133,7 @@ class ViolationManagementController extends Controller
     public function updateViolationStatus(Violation $violation)
     {
         $data = request()->validate([
-            'status' => 'required|string|in:pending,open,in_progress,closed'
+            'status' => 'required|string|in:pending,open,in_progress,closed',
         ]);
 
         $violation->update(['status' => $data['status']]);

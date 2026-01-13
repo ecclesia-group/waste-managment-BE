@@ -26,7 +26,7 @@ class Client extends Actor
         "password",
         "created_at",
         "updated_at",
-        " ",
+        "deleted_at",
     ];
 
     protected $casts = [
@@ -42,6 +42,11 @@ class Client extends Actor
     public function complaints()
     {
         return $this->hasMany(Complaint::class, 'client_slug', 'client_slug');
+    }
+
+    public function violations()
+    {
+        return $this->hasMany(Violation::class, 'client_slug', 'client_slug');
     }
 
     public function pickups()

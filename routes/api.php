@@ -50,7 +50,7 @@ Route::prefix("client")->group(function () {
         Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
-        Route::post('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
+        Route::put('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
         Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
 
         // Violation Management
