@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('client_slug');
             $table->integer('ratings')->nullable();
             $table->text('comments')->nullable();
+            $table->integer('score')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
             $table->softDeletes();

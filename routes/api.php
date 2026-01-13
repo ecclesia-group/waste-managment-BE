@@ -71,7 +71,11 @@ Route::prefix("client")->group(function () {
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
 
         // Report Management
+        Route::get('get_feedbacks', [FeedbackController::class, 'listFeedbacks']);
         Route::post('create_feedback', [FeedbackController::class, 'createFeedback']);
+        Route::get('get_single_feedback/{feedback}', [FeedbackController::class, 'getFeedbackDetails']);
+        Route::delete('delete_feedback/{feedback}', [FeedbackController::class, 'deleteFeedback']);
+        Route::put('update_feedback/{feedback}', [FeedbackController::class, 'updateFeedback']);
 
         // Pickup Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);

@@ -13,6 +13,7 @@ class Feedback extends Model
         'client_slug',
         'ratings',
         'comments',
+        'score',
         'status',
     ];
 
