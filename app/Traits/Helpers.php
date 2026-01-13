@@ -61,7 +61,7 @@ trait Helpers
         }
     }
 
-    protected static function processImages(array $data, array $existingImages = []): array
+    protected static function processImage(array $data, array $existingImages = []): array
     {
         // If images key not sent → keep existing
         if (! array_key_exists('images', $data) && ! request()->hasFile('images')) {
