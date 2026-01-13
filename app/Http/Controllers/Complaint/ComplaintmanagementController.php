@@ -54,10 +54,10 @@ class ComplaintmanagementController extends Controller
         $data['client_slug'] = $user->client_slug;
 
         $image_fields = ['images'];
-        $video_fields = ['videos'];
+        // $video_fields = ['videos'];
 
-        $data      = static::processImage($image_fields, $data);
-        $data      = static::processVideo($video_fields, $data);
+        $data = static::processImage($image_fields, $data);
+        // $data      = static::processVideo($video_fields, $data);
         $complaint = Complaint::create($data);
 
         return self::apiResponse(
@@ -85,17 +85,17 @@ class ComplaintmanagementController extends Controller
 
         $data         = $request->validated();
         $image_fields = ['images'];
-        $video_fields = ['videos'];
+        // $video_fields = ['videos'];
 
         // Get existing images and videos to merge with new ones
         $existingData = [
             'images' => $complaint->images ?? [],
-            'videos' => $complaint->videos ?? [],
+            // 'videos' => $complaint->videos ?? [],
         ];
 
         // Process images and videos (merge with existing)
         $data = static::processImage($image_fields, $data, $existingData);
-        $data = static::processVideo($video_fields, $data, $existingData);
+        // $data = static::processVideo($video_fields, $data, $existingData);
 
         $complaint->update($data);
 

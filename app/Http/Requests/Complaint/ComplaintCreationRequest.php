@@ -24,9 +24,9 @@ class ComplaintCreationRequest extends FormRequest
             "location"    => ["required", "string"],
             "description" => ["nullable", "string"],
             "images"      => ["nullable", "array"],
-            'images.*'    => 'nullable|file|image|max:10240', // 10MB max
-            'videos'      => ['nullable', 'array'],
-            "videos.*"    => ["nullable", "file", "mimes:mp4,avi,mov,wmv,flv", "max:51200"], // 50MB max
+            'images.*'    => ['nullable'],
+            // 'videos'      => ['nullable', 'array'],
+            // "videos.*"    => ["nullable", "mimes:mp4,avi,mov,wmv,flv", "max:51200"], // 50MB max
         ];
     }
 }

@@ -61,58 +61,52 @@ trait Helpers
         }
     }
 
-    protected static function processImage(array $fields, array $data, array $existing = [])
+    protected static function processImages(array $data, array $existingImages = []): array
     {
-        foreach ($fields as $field) {
-
-            // If field not present → keep existing
-            if (! array_key_exists($field, $data) && ! request()->hasFile($field)) {
-                $data[$field] = $existing[$field] ?? [];
-                continue;
-            }
-
-            // If explicitly sent as empty → clear all
-            if (array_key_exists($field, $data) && empty($data[$field]) && ! request()->hasFile($field)) {
-                $data[$field] = [];
-                continue;
-            }
-
-            $normalized = [];
-
-            // Process strings (URLs or base64)
-            if (isset($data[$field]) && is_array($data[$field])) {
-                foreach ($data[$field] as $item) {
-                    if (! is_string($item)) {
-                        continue;
-                    }
-
-                    if (str_starts_with($item, 'data:image')) {
-                        $normalized[] = static::base64ImageDecode($item);
-                    } else {
-                        // Trust frontend-selected URLs
-                        $normalized[] = $item;
-                    }
-                }
-            }
-
-            // Process uploaded files
-            if (request()->hasFile($field)) {
-                foreach ((array) request()->file($field) as $file) {
-                    if (! $file || ! $file->isValid()) {
-                        continue;
-                    }
-
-                    $name = Str::random(20) . '.' . $file->getClientOriginalExtension();
-                    $path = "uploads/images/{$name}";
-                    Storage::disk('public')->put($path, file_get_contents($file));
-
-                    $normalized[] = config('custom.urls.backend_url') . "/storage/{$path}";
-                }
-            }
-
-            // Remove duplicates & reindex
-            $data[$field] = array_values(array_unique($normalized));
+        // If images key not sent → keep existing
+        if (! array_key_exists('images', $data) && ! request()->hasFile('images')) {
+            $data['images'] = $existingImages;
+            return $data;
         }
+
+        // If images sent as empty array → clear all
+        if (array_key_exists('images', $data) && empty($data['images']) && ! request()->hasFile('images')) {
+            $data['images'] = [];
+            return $data;
+        }
+
+        $images = [];
+
+        // Handle URLs or base64
+        if (! empty($data['images'])) {
+            foreach ($data['images'] as $item) {
+                if (! is_string($item)) {
+                    continue;
+                }
+
+                $images[] = str_starts_with($item, 'data:image')
+                    ? static::base64ImageDecode($item)
+                    : $item;
+            }
+        }
+
+        // Handle uploaded files
+        if (request()->hasFile('images')) {
+            foreach ((array) request()->file('images') as $file) {
+                if (! $file || ! $file->isValid()) {
+                    continue;
+                }
+
+                $name = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $path = "uploads/images/{$name}";
+
+                Storage::disk('public')->put($path, file_get_contents($file));
+
+                $images[] = config('custom.urls.backend_url') . "/storage/{$path}";
+            }
+        }
+
+        $data['images'] = array_values(array_unique($images));
 
         return $data;
     }
