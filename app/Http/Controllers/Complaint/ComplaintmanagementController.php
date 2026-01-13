@@ -65,7 +65,6 @@ class ComplaintmanagementController extends Controller
             data: $complaint->toArray()
         );
     }
-
     public function updateComplaint(ComplaintUpdateRequest $request, Complaint $complaint)
     {
         $user = $request->user();
@@ -81,14 +80,12 @@ class ComplaintmanagementController extends Controller
 
         $data = $request->validated();
 
-        if (isset($data['images'])) {
-            // Convert base64 → stored file
+        if (array_key_exists('images', $data)) {
+            // Convert base64 → URL
             $data = static::processImage(['images'], $data);
 
-            // Merge old + new images
-            $data['images'] = array_values(array_unique(
-                array_merge($complaint->images ?? [], $data['images'])
-            ));
+            // ✅ REPLACE images with final list (NO MERGE)
+            $data['images'] = array_values(array_unique($data['images']));
         }
 
         $complaint->update($data);
@@ -98,7 +95,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint updated successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $complaint->fresh()->toArray()
         );
     }
 
