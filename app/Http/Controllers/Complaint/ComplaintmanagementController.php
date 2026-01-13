@@ -72,7 +72,7 @@ class ComplaintmanagementController extends Controller
     public function updateComplaint(ComplaintUpdateRequest $request, Complaint $complaint)
     {
         $user = request()->user();
-
+        dd($request->all(), $request->validated(), $complaint, $user);
         // Verify ownership
         if ($complaint->client_slug !== $user->client_slug) {
             return self::apiResponse(
