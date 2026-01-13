@@ -21,7 +21,7 @@ class ComplaintUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'location'    => ['required', 'string'],
+            'location'    => ['sometimes', 'string'],
             'description' => ['nullable', 'string'],
             // 'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
             'images'      => ['nullable', 'array'],
