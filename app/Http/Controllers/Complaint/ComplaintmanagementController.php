@@ -62,7 +62,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint created successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint
+            data: $complaint->toArray()
         );
     }
 
