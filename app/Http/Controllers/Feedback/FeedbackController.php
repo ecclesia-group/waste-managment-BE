@@ -14,7 +14,8 @@ class FeedbackController extends Controller
     {
         $user                = $request->user();
         $data                = $request->validated();
-        $data['code']        = Str::uuid();
+        $code                = Str::random(5);
+        $data['code']        = $code;
         $data['client_slug'] = $user->client_slug;
 
         // Store feedback logic here
