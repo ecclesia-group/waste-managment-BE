@@ -47,17 +47,14 @@ class ComplaintmanagementController extends Controller
     // create complaint
     public function createComplaint(ComplaintCreationRequest $request)
     {
-        $user                = request()->user();
+        $user = $request->user();
+
         $data                = $request->validated();
-        $code                = Str::random(5);
-        $data['code']        = $code;
+        $data['code']        = Str::random(5);
         $data['client_slug'] = $user->client_slug;
 
-        $image_fields = ['images'];
-        // $video_fields = ['videos'];
+        $data = static::processImage(['images'], $data);
 
-        $data = static::processImage($image_fields, $data);
-        // $data      = static::processVideo($video_fields, $data);
         $complaint = Complaint::create($data);
 
         return self::apiResponse(
@@ -65,37 +62,34 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint created successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $complaint
         );
     }
 
     public function updateComplaint(ComplaintUpdateRequest $request, Complaint $complaint)
     {
-        $user = request()->user();
-        // Verify ownership
+        $user = $request->user();
+
         if ($complaint->client_slug !== $user->client_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Unauthorized to update this complaint",
-                status_code: self::API_FAIL,
-                data: []
+                reason: "Unauthorized",
+                status_code: self::API_FAIL
             );
         }
 
-        $data         = $request->validated();
-        $image_fields = ['images'];
-        // $video_fields = ['videos'];
+        $data = $request->validated();
 
-        // Get existing images and videos to merge with new ones
-        $existingData = [
-            'images' => $complaint->images ?? [],
-            // 'videos' => $complaint->videos ?? [],
-        ];
+        if (isset($data['images'])) {
+            // Convert base64 → stored file
+            $data = static::processImage(['images'], $data);
 
-        // Process images and videos (merge with existing)
-        $data = static::processImage($image_fields, $data, $existingData);
-        // $data = static::processVideo($video_fields, $data, $existingData);
+            // Merge old + new images
+            $data['images'] = array_values(array_unique(
+                array_merge($complaint->images ?? [], $data['images'])
+            ));
+        }
 
         $complaint->update($data);
 

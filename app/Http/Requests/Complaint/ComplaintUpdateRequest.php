@@ -22,13 +22,10 @@ class ComplaintUpdateRequest extends FormRequest
     {
         return [
             'location'    => ['sometimes', 'string'],
-            'description' => ['nullable', 'string'],
+            'description' => ['sometimes', 'nullable', 'string'],
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
-            'images'      => ['present', 'nullable', 'array'],
-            'images.*'    => ['nullable', 'string'],
-            // 'videos'      => ['nullable', 'array'],
-            // 'videos.*'    => ['nullable'],
+            'images'      => ['sometimes', 'nullable', 'array'],
+            'images.*'    => ['nullable', 'string'], // base64 or URL
         ];
     }
-
 }

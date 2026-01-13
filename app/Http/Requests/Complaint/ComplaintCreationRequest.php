@@ -21,12 +21,10 @@ class ComplaintCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "location"    => ["required", "string"],
-            "description" => ["nullable", "string"],
-            "images"      => ["nullable", "array"],
-            'images.*'    => ['nullable'],
-            // 'videos'      => ['nullable', 'array'],
-            // "videos.*"    => ["nullable", "mimes:mp4,avi,mov,wmv,flv", "max:51200"], // 50MB max
+            'location'    => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+            'images'      => ['nullable', 'array'],
+            'images.*'    => ['nullable', 'string'], // base64 or URL
         ];
     }
 }
