@@ -21,7 +21,7 @@ class CreateClientFeedbackRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "client_slug" => ["required", "string", "exists:clients,client_slug"],
+            // "client_slug" => ["required", "string", "exists:clients,client_slug"],
             "ratings"      => ["required", "integer", "min:1", "max:5"],
             "comments"      => ["nullable", "string"],
             "score"       => ["nullable", "integer", "min:0", "max:10"],

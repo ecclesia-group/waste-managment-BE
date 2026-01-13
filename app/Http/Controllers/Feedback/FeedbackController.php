@@ -12,9 +12,9 @@ class FeedbackController extends Controller
     //create a method to store feedback
     public function createFeedback(CreateClientFeedbackRequest $request)
     {
-        $data         = $request->validated();
-        $data['code'] = Str::uuid();
-        $user = $request->user();
+        $user                = $request->user();
+        $data                = $request->validated();
+        $data['code']        = Str::uuid();
         $data['client_slug'] = $user->client_slug;
 
         // Store feedback logic here
