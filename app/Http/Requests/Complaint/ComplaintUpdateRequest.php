@@ -26,7 +26,7 @@ class ComplaintUpdateRequest extends FormRequest
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
             'images'      => ['present', 'nullable', 'array'], // 👈 present is key
             'images.*'    => ['nullable', 'string'],
-            'videos'      => ['present', 'nullable', 'array'],
+            'videos'      => ['nullable', 'array'],
             'videos.*'    => ['nullable', 'string'],
         ];
     }
