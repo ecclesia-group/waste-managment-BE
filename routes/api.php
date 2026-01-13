@@ -235,6 +235,6 @@ Route::prefix("admin")->group(function () {
         Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
 
         // Statictics Management
-        Route::get('statistics_overview', [AdminController::class, 'getStatisticsOverview']);
+        Route::get('actors_statistics', [AdminController::class, 'getStatisticsOverview']);
     });
 });
