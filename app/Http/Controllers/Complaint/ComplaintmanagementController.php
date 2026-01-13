@@ -142,7 +142,7 @@ class ComplaintmanagementController extends Controller
     public function updateComplaintStatus(Complaint $complaint)
     {
         $data = request()->validate([
-            'status' => 'required|string|in:pending,open,in_progress,closed',
+            'status' => 'required|string|in:pending,in_progress,resolved',
         ]);
 
         $complaint->update(['status' => $data['status']]);
