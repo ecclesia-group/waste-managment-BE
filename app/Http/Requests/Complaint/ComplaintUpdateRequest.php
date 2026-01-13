@@ -21,12 +21,12 @@ class ComplaintUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'location'    => ['sometimes', 'string'],
-            'description' => ['sometimes', 'string'],
+            'location'    => ['required', 'string'],
+            'description' => ['nullable', 'string'],
             // 'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
-            'images'      => ['sometimes', 'array'],
+            'images'      => ['nullable', 'array'],
             'images.*'    => ['nullable', 'file', 'image', 'max:10240'], // 10MB max
-            'videos'      => ['sometimes', 'array'],
+            'videos'      => ['nullable', 'array'],
             'videos.*'    => ['nullable', 'file', 'mimes:mp4,avi,mov,wmv,flv', 'max:51200'], // 50MB max
         ];
     }
