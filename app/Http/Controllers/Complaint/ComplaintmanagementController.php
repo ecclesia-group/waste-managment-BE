@@ -90,6 +90,8 @@ class ComplaintmanagementController extends Controller
         $data = static::processImage(['images'], $data);
         $data = static::processVideo(['videos'], $data);
 
+        dd($data);
+
         $complaint->update($data);
 
         return self::apiResponse(
