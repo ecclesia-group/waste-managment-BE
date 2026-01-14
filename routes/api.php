@@ -120,6 +120,7 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_driver/{driver}", [DriverController::class, "show"]);
         Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
         Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
+        Route::delete("delete_driver/{driver}", [DriverController::class, "deleteDriver"]);
 
         // Pickup Management
         Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);

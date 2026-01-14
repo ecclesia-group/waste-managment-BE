@@ -105,4 +105,17 @@ class DriverController extends Controller
             data: $driver->toArray()
         );
     }
+
+    public function deleteDriver(Driver $driver)
+    {
+        $driver->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Driver deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: []
+        );
+    }
 }
