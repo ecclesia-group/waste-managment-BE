@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('owner_last_name')->nullable();
             $table->string('owner_phone_number')->nullable();
             $table->string('owner_address')->nullable();
-            $table->string('provider_id')->nullable();
+            $table->string('provider_slug')->nullable();
             $table->timestamp('insurance_expiry_date')->nullable();
             $table->string('insurance_policy_number')->nullable();
             $table->longText('vehicle_images')->nullable();

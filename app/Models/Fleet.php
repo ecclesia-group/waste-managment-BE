@@ -21,7 +21,7 @@ class Fleet extends Model
         'owner_last_name',
         'owner_phone_number',
         'owner_address',
-        'provider_id',
+        'provider_slug',
         'insurance_expiry_date',
         'insurance_policy_number',
         'vehicle_images',
