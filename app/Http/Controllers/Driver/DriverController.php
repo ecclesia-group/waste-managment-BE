@@ -35,7 +35,6 @@ class DriverController extends Controller
                 $driver->email,
                 $password,
                 $driver->phone_number,
-                $login_url = null,
             ]
         );
 

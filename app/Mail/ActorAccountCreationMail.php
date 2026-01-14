@@ -14,7 +14,7 @@ class ActorAccountCreationMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public string $email, public string $password, public string $phone_number, public string $login_url)
+    public function __construct(public string $email, public string $password, public string $phone_number, public ?string $login_url = null)
     {
         $this->email        = $email;
         $this->password     = $password;
