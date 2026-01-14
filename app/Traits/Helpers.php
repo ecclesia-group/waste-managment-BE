@@ -47,36 +47,79 @@ trait Helpers
         return $actor;
     }
 
-    protected static function base64ImageDecode(string $base64_image)
+    protected static function base64ImageDecode(string $base64_image): ?string
     {
-        if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $matches)) {
-            $image_extension = $matches[1];
-            $image_data      = substr($base64_image, strpos($base64_image, ',') + 1);
-
-            $fileName  = Str::random(15) . '.' . $image_extension;
-            $file_path = "uploads/images/" . $fileName;
-
-            Storage::disk("public")->put($file_path, base64_decode($image_data));
-            return config("custom.urls.backend_url") . "/" . "storage/" . $file_path;
+        if (! preg_match('/^data:image\/(png|jpg|jpeg|gif|webp);base64,/', $base64_image, $matches)) {
+            return null;
         }
+
+        $extension  = $matches[1];
+        $image_data = substr($base64_image, strpos($base64_image, ',') + 1);
+
+        $decoded = base64_decode($image_data, true);
+
+        if ($decoded === false) {
+            return null;
+        }
+
+        $fileName = Str::uuid() . '.' . $extension;
+        $filePath = "uploads/images/{$fileName}";
+
+        Storage::disk('public')->put($filePath, $decoded);
+
+        return config('custom.urls.backend_url') . "/storage/{$filePath}";
     }
 
-    protected static function processImage(array $image_fields, array $data)
+    protected static function handleSingleImage(string $image): ?string
+    {
+        // Base64 image → decode & store
+        if (str_starts_with($image, 'data:image/')) {
+            return static::base64ImageDecode($image);
+        }
+
+        // Already a URL → keep it
+        if (filter_var($image, FILTER_VALIDATE_URL)) {
+            return $image;
+        }
+
+        // Invalid image
+        return null;
+    }
+
+    protected static function processImage(array $image_fields, array $data): array
     {
         foreach ($image_fields as $field) {
-            if (empty($data[$field]) || ! is_array($data[$field])) {
+            if (! isset($data[$field])) {
                 continue;
             }
 
-            foreach ($data[$field] as $index => $image) {
-                if (! is_string($image)) {
-                    continue;
+            // CASE 1: Single image (string)
+            if (is_string($data[$field])) {
+                $processed = static::handleSingleImage($data[$field]);
+                if ($processed !== null) {
+                    $data[$field] = $processed;
+                }
+            }
+
+            // CASE 2: Multiple images (array)
+            if (is_array($data[$field])) {
+                foreach ($data[$field] as $index => $image) {
+                    if (! is_string($image)) {
+                        unset($data[$field][$index]);
+                        continue;
+                    }
+
+                    $processed = static::handleSingleImage($image);
+
+                    if ($processed !== null) {
+                        $data[$field][$index] = $processed;
+                    } else {
+                        unset($data[$field][$index]);
+                    }
                 }
 
-                if (str_starts_with($image, 'data:image')) {
-                    $data[$field][$index] = static::base64ImageDecode($image);
-                }
-                // URLs remain unchanged
+                // Reindex array
+                $data[$field] = array_values($data[$field]);
             }
         }
 
