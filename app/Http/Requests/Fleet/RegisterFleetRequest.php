@@ -21,7 +21,7 @@ class RegisterFleetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'                                   => 'required|string|unique:fleets,code',
+            'code'                                   => 'nullable|string|unique:fleets,code',
             'vehicle_make'                           => 'nullable|string',
             'model'                                  => 'nullable|string',
             'manufacture_year'                       => 'nullable|integer',
@@ -35,10 +35,10 @@ class RegisterFleetRequest extends FormRequest
             'provider_slug'                          => 'nullable|string|exists:providers,provider_slug',
             'insurance_expiry_date'                  => 'nullable|date',
             'insurance_policy_number'                => 'nullable|string|unique:fleets,insurance_policy_number',
-            'vehicle_images'                         => 'nullable|array',
-            'vehicle_registration_certificate_image' => 'nullable|array',
-            'vehicle_insurance_certificate_image'    => 'nullable|array',
-            'vehicle_roadworthy_certificate_image'   => 'nullable|array',
+            'vehicle_images'                         => 'nullable',
+            'vehicle_registration_certificate_image' => 'nullable',
+            'vehicle_insurance_certificate_image'    => 'nullable',
+            'vehicle_roadworthy_certificate_image'   => 'nullable',
             'status'                                 => 'nullable|string|in:active,inactive,maintenance',
         ];
     }
