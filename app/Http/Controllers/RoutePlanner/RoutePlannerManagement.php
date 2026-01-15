@@ -2,31 +2,23 @@
 namespace App\Http\Controllers\RoutePlanner;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RoutePlanner\RegisterRoute;
+use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
+use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
 use App\Models\RoutePlanner;
-use Illuminate\Support\Str;
 
 class RoutePlannerManagement extends Controller
 {
-    public function register(RegisterFleetRequest $request)
+    public function register(RegisterRoute $request)
     {
-        $data               = $request->validated();
-        $data['code']       = Str::random(5);
-        $data['fleet_slug'] = Str::uuid();
+        $data = $request->validated();
 
-        $image_fields = [
-            'vehicle_images',
-            'vehicle_registration_certificate_image',
-            'vehicle_insurance_certificate_image',
-            'vehicle_roadworthy_certificate_image',
-        ];
-
-        $data         = static::processImage($image_fields, $data);
         $routePlanner = RoutePlanner::create($data);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Route create successfully",
+            reason: "Route created successfully",
             status_code: self::API_SUCCESS,
             data: $routePlanner->toArray()
         );
@@ -55,11 +47,11 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function updateStatus(FleetStatusUpdateRequest $request)
+    public function updateStatus(RouteStatusUpdate $request)
     {
         $data                 = $request->validated();
-        $routePlanner         = RoutePlanner::where('fleet_slug', $data['fleet_slug'])->first();
-        $routePlanner->status = $data[' '];
+        $routePlanner         = RoutePlanner::where('id', $data['id'])->first();
+        $routePlanner->status = $data['status'];
         $routePlanner->save();
 
         return self::apiResponse(
@@ -71,22 +63,15 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function updateFleet(UpdateFleetRequest $request, RoutePlanner $routePlanner)
+    public function updateFleet(RouteDetailsUpdate $request, RoutePlanner $routePlanner)
     {
-        $data         = $request->validated();
-        $image_fields = [
-            'vehicle_images',
-            'vehicle_registration_certificate_image',
-            'vehicle_insurance_certificate_image',
-            'vehicle_roadworthy_certificate_image',
-        ];
+        $data = $request->validated();
 
-        $data = static::processImage($image_fields, $data);
         $routePlanner->update($data);
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Route planner details updated successfully",
+            reason: "Route details updated successfully",
             status_code: self::API_SUCCESS,
             data: $routePlanner->toArray()
         );
@@ -99,7 +84,7 @@ class RoutePlannerManagement extends Controller
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Route planner deleted successfully",
+            reason: "Route deleted successfully",
             status_code: self::API_SUCCESS,
             data: []
         );
