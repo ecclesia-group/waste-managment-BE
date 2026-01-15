@@ -35,10 +35,10 @@ class UpdateFleetRequest extends FormRequest
             'provider_slug'                          => 'sometimes|string|exists:providers,provider_slug',
             'insurance_expiry_date'                  => 'sometimes|date',
             'insurance_policy_number'                => 'sometimes|string|unique:fleets,insurance_policy_number,' . $this->fleet->id,
-            'vehicle_images'                         => 'sometimes|array',
-            'vehicle_registration_certificate_image' => 'sometimes|array',
-            'vehicle_insurance_certificate_image'    => 'sometimes|array',
-            'vehicle_roadworthy_certificate_image'   => 'sometimes|array',
+            'vehicle_images'                         => 'sometimes',
+            'vehicle_registration_certificate_image' => 'sometimes',
+            'vehicle_insurance_certificate_image'    => 'sometimes',
+            'vehicle_roadworthy_certificate_image'   => 'sometimes',
             'status'                                 => 'sometimes|string|in:active,inactive,maintenance',
         ];
     }
