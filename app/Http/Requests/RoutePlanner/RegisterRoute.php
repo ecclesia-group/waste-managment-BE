@@ -24,7 +24,7 @@ class RegisterRoute extends FormRequest
             'client_slug' => 'required|string|exists:clients,client_slug',
             'driver_slug' => 'required|string|exists:drivers,driver_slug',
             'fleet_slug'  => 'required|string|exists:fleets,fleet_slug',
-            'zone_slug'   => 'required|string|exists:zones,zone_slug',
+            'group_slug'  => 'required|string|exists:groups,group_slug',
             'status'      => 'nullable|string|in:pending,completed,cancalled,progress',
         ];
     }

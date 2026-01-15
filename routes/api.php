@@ -16,6 +16,7 @@ use App\Http\Controllers\Facility\FacilityController;
 use App\Http\Controllers\Facility\FacilityPasswordController;
 use App\Http\Controllers\Feedback\FeedbackController;
 use App\Http\Controllers\Fleet\FleetManagementController;
+use App\Http\Controllers\Group\GroupController;
 use App\Http\Controllers\Notification\NotificationController;
 use App\Http\Controllers\Pickup\PickupController;
 use App\Http\Controllers\Product\ProductController;
@@ -116,6 +117,14 @@ Route::prefix("provider")->group(function () {
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
         Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
 
+        // Groups Management
+        Route::post("add_group", [GroupController::class, "register"]);
+        Route::get("all_groups", [GroupController::class, "allGroups"]);
+        Route::get("get_single_group/{group}", [GroupController::class, "show"]);
+        Route::post("update_group_status", [GroupController::class, "updateGroupStatus"]);
+        Route::put("update_group_details/{group}", [GroupController::class, "updateGroup"]);
+        Route::delete("delete_group/{group}", [GroupController::class, "deleteGroup"]);
+
         // Drivers Management
         Route::post("register_driver", [DriverController::class, "register"]);
         Route::get("all_drivers", [DriverController::class, "allDrivers"]);
@@ -130,7 +139,7 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
         Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
         Route::put("update_plan_details/{plan}", [RoutePlannerManagement::class, "updatePlan"]);
-        Route::delete("delete_plan/{plan}", [RoutePlannerManagement::class, "deleteFleet"]);
+        Route::delete("delete_plan/{plan}", [RoutePlannerManagement::class, "deletePlan"]);
 
         // Fleet Management
         Route::post("register_fleet", [FleetManagementController::class, "register"]);

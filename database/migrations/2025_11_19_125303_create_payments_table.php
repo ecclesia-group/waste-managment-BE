@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('actor');
-            $table->string('actor_id');
+            $table->string('client_slug');
+            $table->string('provider_slug');
             $table->string('transaction_id')->unique();
             $table->string('payment_method');
             $table->string('network');
             $table->string('phone_number')->nullable();
+            $table->string('name');
             $table->string('client_email')->nullable();
             $table->string('card_name')->nullable();
             $table->string('card_number')->nullable();
@@ -27,6 +28,8 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('currency');
             $table->string('status');
+            $table->string('purchase_id');
+            $table->string('pickup_id');
             $table->timestamps();
             $table->softDeletes();
         });

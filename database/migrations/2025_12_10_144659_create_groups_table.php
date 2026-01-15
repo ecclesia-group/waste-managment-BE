@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('group_slug')->unique();
             $table->text('description')->nullable();
             $table->longText('zones')->nullable();
+            $table->longText('locations')->nullable();
+            $table->string('status')->default('pending');
             $table->timestamps();
             $table->softDeletes();
         });

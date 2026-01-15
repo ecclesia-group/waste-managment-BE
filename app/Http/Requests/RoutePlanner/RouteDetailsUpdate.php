@@ -24,7 +24,7 @@ class RouteDetailsUpdate extends FormRequest
             'client_slug' => 'sometimes|string|exists:clients,client_slug',
             'driver_slug' => 'sometimes|string|exists:drivers,driver_slug',
             'fleet_slug'  => 'sometimes|string|exists:fleets,fleet_slug',
-            'zone_slug'   => 'sometimes|string|exists:zones,zone_slug',
+            'group_slug'  => 'sometimes|string|exists:groups,group_slug',
             'status'      => 'nullable|string|in:pending,completed,cancalled,progress',
         ];
     }

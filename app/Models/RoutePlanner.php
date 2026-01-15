@@ -12,7 +12,7 @@ class RoutePlanner extends Model
         'client_slug',
         'driver_slug',
         'fleet_slug',
-        'zone_slug',
+        'group_slug',
         'status',
     ];
 
@@ -37,8 +37,8 @@ class RoutePlanner extends Model
         return $this->belongsTo(Fleet::class, 'fleet_slug', 'fleet_slug');
     }
 
-    public function zone()
+    public function group()
     {
-        return $this->belongsTo(Zone::class, 'zone_slug', 'zone_slug');
+        return $this->belongsTo(Zone::class, 'group_slug', 'group_slug');
     }
 }

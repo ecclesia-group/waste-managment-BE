@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('client_slug')->nullable();
             $table->string('driver_slug')->nullable();
             $table->string('fleet_slug')->nullable();
-            $table->string('zone_slug')->nullable();
+            $table->string('group_slug')->nullable();
             $table->string('status')->default('pending');
             $table->timestamps();
             $table->softDeletes();
