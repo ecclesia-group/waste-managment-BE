@@ -1,32 +1,33 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuthenticationController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Client\ClientAuthenticationController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Client\ClientPasswordController;
+use App\Http\Controllers\Complaint\ComplaintmanagementController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
+use App\Http\Controllers\Driver\DriverController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Feedback\FeedbackController;
+use App\Http\Controllers\Fleet\FleetManagementController;
+use App\Http\Controllers\Notification\NotificationController;
+use App\Http\Controllers\Pickup\PickupController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\Purchase\PurchaseController;
+use App\Http\Controllers\RoutePlanner\RoutePlannerManagement;
+use App\Http\Controllers\Violation\ViolationManagementController;
+use App\Http\Controllers\ZoneManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Driver\DriverController;
-use App\Http\Controllers\Pickup\PickupController;
-use App\Http\Controllers\ZoneManagementController;
-use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Feedback\FeedbackController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Purchase\PurchaseController;
-use App\Http\Controllers\Admin\AdminPasswordController;
-use App\Http\Controllers\Client\ClientPasswordController;
-use App\Http\Controllers\Fleet\FleetManagementController;
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Notification\NotificationController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\Client\ClientAuthenticationController;
-use App\Http\Controllers\Complaint\ComplaintmanagementController;
-use App\Http\Controllers\Violation\ViolationManagementController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -122,6 +123,14 @@ Route::prefix("provider")->group(function () {
         Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
         Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
         Route::delete("delete_driver/{driver}", [DriverController::class, "deleteDriver"]);
+
+        // Route Planner
+        Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
+        Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
+        Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
+        Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
+        Route::put("update_plan_details/{plan}", [RoutePlannerManagement::class, "updatePlan"]);
+        Route::delete("delete_plan/{plan}", [RoutePlannerManagement::class, "deleteFleet"]);
 
         // Fleet Management
         Route::post("register_fleet", [FleetManagementController::class, "register"]);
