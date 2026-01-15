@@ -62,7 +62,7 @@ class FleetManagementController extends Controller
     {
         $data          = $request->validated();
         $fleet         = Fleet::where('fleet_slug', $data['fleet_slug'])->first();
-        $fleet->status = $data[' '];
+        $fleet->status = $data['status'];
         $fleet->save();
 
         return self::apiResponse(
