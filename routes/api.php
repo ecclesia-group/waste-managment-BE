@@ -128,7 +128,7 @@ Route::prefix("provider")->group(function () {
         Route::get("all_fleets", [FleetManagementController::class, "allFleets"]);
         Route::get("get_single_fleet/{fleet}", [FleetManagementController::class, "show"]);
         Route::post("update_fleet_status", [FleetManagementController::class, "updateStatus"]);
-        Route::put("update_fleet_details/{fleet}", [FleetManagementController::class, "updateFleetProfile"]);
+        Route::put("update_fleet_details/{fleet}", [FleetManagementController::class, "updateFleet"]);
         Route::delete("delete_fleet/{fleet}", [FleetManagementController::class, "deleteFleet"]);
 
         // Pickup Management

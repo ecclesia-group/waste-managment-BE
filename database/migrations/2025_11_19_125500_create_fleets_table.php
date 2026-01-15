@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('fleets', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
+            $table->string('fleet_slug')->unique();
             $table->string('vehicle_make')->nullable();
             $table->string('model')->nullable();
             $table->string('manufacture_year')->nullable();

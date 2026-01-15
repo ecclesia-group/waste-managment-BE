@@ -11,6 +11,7 @@ class Fleet extends Model
 
     protected $fillable = [
         'code',
+        'fleet_slug',
         'vehicle_make',
         'model',
         'manufacture_year',

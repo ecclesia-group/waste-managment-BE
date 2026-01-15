@@ -1,18 +1,19 @@
 <?php
 namespace App\Http\Controllers\Fleet;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Fleet\FleetStatusUpdateRequest;
+use App\Http\Requests\Fleet\RegisterFleetRequest;
+use App\Http\Requests\Fleet\UpdateFleetRequest;
 use App\Models\Fleet;
 use Illuminate\Support\Str;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Fleet\UpdateFleetRequest;
-use App\Http\Requests\Fleet\RegisterFleetRequest;
-use App\Http\Requests\Fleet\FleetStatusUpdateRequest;
 
 class FleetManagementController extends Controller
 {
     public function register(RegisterFleetRequest $request)
     {
         $data               = $request->validated();
+        $data['code']       = Str::random(5);
         $data['fleet_slug'] = Str::uuid();
 
         $image_fields = [
@@ -61,7 +62,7 @@ class FleetManagementController extends Controller
     {
         $data          = $request->validated();
         $fleet         = Fleet::where('fleet_slug', $data['fleet_slug'])->first();
-        $fleet->status = $data['status'];
+        $fleet->status = $data[' '];
         $fleet->save();
 
         return self::apiResponse(
