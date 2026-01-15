@@ -20,7 +20,6 @@ class UpdateFleetRequest extends FormRequest
      */
     public function rules(): array
     {
-        dd($this->fleet);
         return [
             'code'                                   => 'sometimes|string|unique:fleets,code,' . $this->fleet->id,
             'vehicle_make'                           => 'sometimes|string',
