@@ -11,10 +11,11 @@ class Group extends Model
     protected $fillable = [
         'name',
         'group_slug',
+        'provider_slug',
         'zones',
         'locations',
         'description',
-        'status'
+        'status',
     ];
 
     protected $casts = [

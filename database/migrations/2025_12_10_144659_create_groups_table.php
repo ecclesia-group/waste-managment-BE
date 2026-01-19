@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->string('group_slug')->unique();
+            $table->string('provider_slug')->nullable();
             $table->text('description')->nullable();
             $table->longText('zones')->nullable();
             $table->longText('locations')->nullable();

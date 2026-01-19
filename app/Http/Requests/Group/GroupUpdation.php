@@ -22,11 +22,12 @@ class GroupUpdation extends FormRequest
     public function rules(): array
     {
         $group_slug = $this->route('group');
+        dd($group_slug);
         return [
             'name'        => ['sometimes', Rule::unique('groups')->ignore($group_slug, 'group_slug')],
-            'zones'      => 'sometimes|string',
-            'locations'   => 'nullable|array',
-            'description' => 'nullable|string',
+            'description' => 'sometimes|string',
+            'locations'   => 'sometimes|array',
+            'zones'       => 'nullable|string',
         ];
     }
 }
