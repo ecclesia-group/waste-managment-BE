@@ -39,7 +39,8 @@ class FleetManagementController extends Controller
 
     public function allFleets()
     {
-        $fleets = Fleet::all();
+        $user   = auth()->user();
+        $fleets = Fleet::where('provider_slug', $user->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
