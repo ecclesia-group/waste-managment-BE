@@ -27,7 +27,7 @@ class GroupUpdation extends FormRequest
             'name'        => [
                 'sometimes',
                 Rule::unique('groups')
-                    ->where(fn($query) => $query->where('provider_slug', $group_slug))
+                    ->where(fn($query) => $query->where('provider_slug', $provider_slug))
                     ->ignore($group_slug, 'group_slug'),
                 'string',
             ],
