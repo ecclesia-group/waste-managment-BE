@@ -48,6 +48,13 @@ class RoutePlannerManagement extends Controller
 
     public function show(RoutePlanner $routePlanner)
     {
+        // Load relations
+        $routePlanner->load([
+            'client', // provider
+            'driver',
+            'fleet',
+            'group',
+        ]);
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
