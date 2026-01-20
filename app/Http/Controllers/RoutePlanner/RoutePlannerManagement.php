@@ -48,10 +48,9 @@ class RoutePlannerManagement extends Controller
 
     public function show(RoutePlanner $plan)
     {
-        dd($plan);
         // Load relations
         $plan->load([
-            'client', // provider
+            'client',
             'driver',
             'fleet',
             'group',
@@ -81,21 +80,21 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function updateFleet(RouteDetailsUpdate $request, RoutePlanner $routePlanner)
+    public function updatePlan(RouteDetailsUpdate $request, RoutePlanner $plan)
     {
         $data = $request->validated();
 
-        $routePlanner->update($data);
+        $plan->update($data);
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Route details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $routePlanner->toArray()
+            data: $plan->toArray()
         );
     }
 
-    public function deleteFleet(RoutePlanner $routePlanner)
+    public function deletePlan(RoutePlanner $routePlanner)
     {
         $routePlanner->delete();
 
