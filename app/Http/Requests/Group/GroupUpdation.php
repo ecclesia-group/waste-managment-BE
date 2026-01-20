@@ -29,6 +29,8 @@ class GroupUpdation extends FormRequest
                 Rule::unique('groups')
                     ->where(fn($query) => $query->where('provider_slug', $group_slug))
                     ->ignore($group_slug, 'group_slug'),
+                'string',
+                'bail',
             ],
             'description' => 'sometimes|string',
             'locations'   => 'sometimes|array',
