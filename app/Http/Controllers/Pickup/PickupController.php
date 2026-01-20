@@ -14,10 +14,12 @@ class PickupController extends Controller
 {
     public function providerPickupCreation(PickupCreationRequest $request)
     {
-        $code                = Str::random(5);
-        $data                = $request->validated();
-        $data['driver_slug'] = Str::uuid();
-        $data['code']        = $code;
+        $user                  = request()->user();
+        $code                  = Str::random(5);
+        $data                  = $request->validated();
+        $data['driver_slug']   = Str::uuid();
+        $data['provider_slug'] = $user->provider_slug;
+        $data['code']          = $code;
 
         $image_fields = [
             'images',
@@ -41,7 +43,7 @@ class PickupController extends Controller
         $user = request()->user();
 
         // Eager load the provider relationship in the initial query
-        $pickups = Pickup::where('client_slug', $user->client_slug)
+        $pickups = Pickup::where(["client_slug" => $user->client_slug, "provider_slug" => $user->provider_slug])
             ->where('status', 'completed')
             ->with('provider') // Eager load here - reduces to 2 queries total
             ->latest()         // Optional: order by most recent
@@ -68,9 +70,11 @@ class PickupController extends Controller
 
     public function bulkWasteRequest(PickupCreationRequest $request)
     {
-        $code         = Str::random(5);
-        $data         = $request->validated();
-        $data['code'] = $code;
+        $code                  = Str::random(5);
+        $data                  = $request->validated();
+        $data['code']          = $code;
+        $user                  = request()->user();
+        $data['provider_slug'] = $user->provider_slug;
 
         $image_fields = [
             'images',
@@ -214,7 +218,8 @@ class PickupController extends Controller
 
     public function getAllPickups()
     {
-        $pickups = Pickup::get();
+        $user    = request()->user();
+        $pickups = Pickup::where('client_slug', $user->client_slug)->get();
 
         return self::apiResponse(
             in_error: false,
@@ -249,7 +254,7 @@ class PickupController extends Controller
     public function getClientPickups()
     {
         $user    = request()->user();
-        $pickups = Pickup::where('client_slug', $user->client_slug)->get();
+        $pickups = Pickup::where(["client_slug" => $user->client_slug, "provider_slug" => $user->provider_slug])->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -315,7 +320,13 @@ class PickupController extends Controller
 
     public function getPickupDates()
     {
-        $pickup_dates = Pickup::whereNotNull('pickup_date')->get();
+        $user         = request()->user();
+        $pickup_dates = Pickup::where(function ($query) use ($user) {
+            $query->where('client_slug', $user->client_slug)
+                ->where('provider_slug', $user->provider_slug);
+        })
+            ->whereNotNull('pickup_date')
+            ->get();
 
         return self::apiResponse(
             in_error: false,
