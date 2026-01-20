@@ -46,11 +46,11 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function show(RoutePlanner $routePlanner)
+    public function show(RoutePlanner $plan)
     {
-        dd($routePlanner);
+        dd($plan);
         // Load relations
-        $routePlanner->load([
+        $plan->load([
             'client', // provider
             'driver',
             'fleet',
@@ -61,7 +61,7 @@ class RoutePlannerManagement extends Controller
             message: "Action Successful",
             reason: "Route details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $routePlanner->toArray()
+            data: $plan->toArray()
         );
     }
 
