@@ -48,6 +48,7 @@ class RoutePlannerManagement extends Controller
 
     public function show(RoutePlanner $routePlanner)
     {
+        dd($routePlanner);
         // Load relations
         $routePlanner->load([
             'client', // provider
