@@ -23,13 +23,12 @@ class GroupUpdation extends FormRequest
     {
         $group_slug    = $this->route('group');         // current group slug
         $provider_slug = auth()->user()->provider_slug; // owner provider
-        dd($group_slug, $provider_slug);
         return [
             'name'        => [
                 'sometimes',
                 Rule::unique('groups')
-                    ->where(fn($query) => $query->where('provider_slug', $providerSlug))
-                    ->ignore($groupSlug, 'group_slug'),
+                    ->where(fn($query) => $query->where('provider_slug', $group_slug))
+                    ->ignore($group_slug, 'group_slug'),
             ],
             'description' => 'sometimes|string',
             'locations'   => 'sometimes|array',

@@ -13,7 +13,8 @@ class GroupController extends Controller
     // Lists all groups
     public function allGroups()
     {
-        $groups = Group::all();
+        $user   = auth()->user();
+        $groups = Group::where('provider_slug', $user->provider_slug)->get();
         if ($groups->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
