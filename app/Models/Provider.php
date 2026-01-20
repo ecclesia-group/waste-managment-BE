@@ -74,4 +74,9 @@ class Provider extends Actor
     {
         return $this->hasMany(Driver::class, 'provider_slug', 'provider_slug');
     }
+
+    public function customers()
+    {
+        return $this->hasMany(Client::class, 'provider_slug', 'provider_slug');
+    }
 }

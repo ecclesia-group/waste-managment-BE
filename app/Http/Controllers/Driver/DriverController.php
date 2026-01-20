@@ -12,6 +12,8 @@ class DriverController extends Controller
 {
     public function register(RegisterRequest $request)
     {
+        $user                      = auth()->user();
+        $data['provider_slug']     = $user->provider_slug;
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['driver_slug']       = Str::uuid();
@@ -49,7 +51,8 @@ class DriverController extends Controller
 
     public function allDrivers()
     {
-        $drivers = Driver::all();
+        $user    = auth()->user();
+        $drivers = Driver::where('provider_slug', $user->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

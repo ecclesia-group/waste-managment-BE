@@ -12,10 +12,12 @@ class ClientController extends Controller
 {
     public function register(RegisterRequest $request)
     {
+        $user                      = auth()->user();
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['client_slug']       = Str::uuid();
         $data['password']          = $password;
+        $data['provider_slug']     = $user->provider_slug;
         $data['email_verified_at'] = now();
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
@@ -49,7 +51,8 @@ class ClientController extends Controller
 
     public function allClients()
     {
-        $clients = Client::all();
+        $user    = auth()->user();
+        $clients = Client::where('provider_slug', $user()->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -128,7 +131,7 @@ class ClientController extends Controller
         try {
             $qrData = json_decode($data['qrcode_data'], true);
 
-            if (!$qrData || !isset($qrData['client_slug'])) {
+            if (! $qrData || ! isset($qrData['client_slug'])) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -140,7 +143,7 @@ class ClientController extends Controller
 
             $client = Client::where('client_slug', $qrData['client_slug'])->first();
 
-            if (!$client) {
+            if (! $client) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -156,14 +159,14 @@ class ClientController extends Controller
                 reason: "Client details retrieved successfully",
                 status_code: self::API_SUCCESS,
                 data: [
-                    'client_slug' => $client->client_slug,
-                    'name' => $client->first_name . ' ' . ($client->last_name ?? ''),
-                    'phone_number' => $client->phone_number,
-                    'email' => $client->email,
-                    'gps_address' => $client->gps_address,
+                    'client_slug'     => $client->client_slug,
+                    'name'            => $client->first_name . ' ' . ($client->last_name ?? ''),
+                    'phone_number'    => $client->phone_number,
+                    'email'           => $client->email,
+                    'gps_address'     => $client->gps_address,
                     'pickup_location' => $client->pickup_location,
-                    'bin_code' => $client->bin_code,
-                    'bin_size' => $client->bin_size,
+                    'bin_code'        => $client->bin_code,
+                    'bin_size'        => $client->bin_size,
                 ]
             );
         } catch (\Exception $e) {

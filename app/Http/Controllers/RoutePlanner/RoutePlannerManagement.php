@@ -24,7 +24,7 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function allFleets()
+    public function allPlans()
     {
         $routePlanner = RoutePlanner::all();
         return self::apiResponse(

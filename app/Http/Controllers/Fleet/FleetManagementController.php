@@ -12,9 +12,11 @@ class FleetManagementController extends Controller
 {
     public function register(RegisterFleetRequest $request)
     {
-        $data               = $request->validated();
-        $data['code']       = Str::random(5);
-        $data['fleet_slug'] = Str::uuid();
+        $data                  = $request->validated();
+        $data['code']          = Str::random(5);
+        $data['fleet_slug']    = Str::uuid();
+        $user                  = auth()->user();
+        $data['provider_slug'] = $user->provider_slug;
 
         $image_fields = [
             'vehicle_images',

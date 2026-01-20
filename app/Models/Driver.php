@@ -11,6 +11,7 @@ class Driver extends Model
 
     protected $fillable = [
         'driver_slug',
+        'provider_slug',
         'first_name',
         'middle_name',
         'last_name',
@@ -54,5 +55,10 @@ class Driver extends Model
     public function getRouteKeyName(): string
     {
         return "driver_slug";
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 }

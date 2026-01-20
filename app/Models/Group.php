@@ -30,4 +30,9 @@ class Group extends Model
     {
         return "group_slug";
     }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
 }

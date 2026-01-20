@@ -5,6 +5,7 @@ class Client extends Actor
 {
     protected $fillable = [
         'client_slug',
+        'provider_slug',
         'first_name',
         'last_name',
         'phone_number',
@@ -62,6 +63,11 @@ class Client extends Actor
     public function notifications()
     {
         return $this->morphMany(Notification::class, 'actor', 'actor', 'actor_slug', 'actor_id');
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 
     public function getRouteKeyName(): string
