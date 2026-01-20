@@ -39,6 +39,6 @@ class RoutePlanner extends Model
 
     public function group()
     {
-        return $this->belongsTo(Zone::class, 'group_slug', 'group_slug');
+        return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 }
