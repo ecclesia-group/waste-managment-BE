@@ -94,9 +94,19 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function deletePlan(RoutePlanner $routePlanner)
+    public function deletePlan(RoutePlanner $plan)
     {
-        $routePlanner->delete();
+        if (! $plan) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Route plan not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $plan->delete();
 
         return self::apiResponse(
             in_error: false,
