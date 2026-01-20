@@ -21,11 +21,11 @@ class RegisterRoute extends FormRequest
     public function rules(): array
     {
         return [
-            'client_slug' => 'required|string|exists:clients,client_slug',
-            'driver_slug' => 'required|string|exists:drivers,driver_slug',
-            'fleet_slug'  => 'required|string|exists:fleets,fleet_slug',
-            'group_slug'  => 'required|string|exists:groups,group_slug',
-            'status'      => 'nullable|string|in:pending,completed,cancalled,progress',
+            'provider_slug' => 'required|string|exists:providers,provider_slug',
+            'driver_slug'   => 'required|string|exists:drivers,driver_slug',
+            'fleet_slug'    => 'required|string|exists:fleets,fleet_slug',
+            'group_slug'    => 'required|string|exists:groups,group_slug',
+            'status'        => 'nullable|string|in:pending,completed,cancalled,progress',
         ];
     }
 }

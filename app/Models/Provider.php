@@ -54,4 +54,24 @@ class Provider extends Actor
     {
         return $this->hasMany(Zone::class, 'zone_slug', 'zone_slug');
     }
+
+    public function groups()
+    {
+        return $this->hasMany(Group::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function routes()
+    {
+        return $this->hasMany(RoutePlanner::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function fleets()
+    {
+        return $this->hasMany(Fleet::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function drivers()
+    {
+        return $this->hasMany(Driver::class, 'provider_slug', 'provider_slug');
+    }
 }

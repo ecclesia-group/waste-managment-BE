@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('route_planners', function (Blueprint $table) {
             $table->id();
-            $table->string('client_slug')->nullable();
+            $table->string('provider_slug')->nullable();
             $table->string('driver_slug')->nullable();
             $table->string('fleet_slug')->nullable();
             $table->string('group_slug')->nullable();

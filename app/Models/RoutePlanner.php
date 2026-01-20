@@ -9,7 +9,7 @@ class RoutePlanner extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'client_slug',
+        'provider_slug',
         'driver_slug',
         'fleet_slug',
         'group_slug',
@@ -24,7 +24,7 @@ class RoutePlanner extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 
     public function driver()
