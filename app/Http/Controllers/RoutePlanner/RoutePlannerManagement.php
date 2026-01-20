@@ -26,8 +26,17 @@ class RoutePlannerManagement extends Controller
 
     public function allPlans()
     {
-        $user         = auth()->user();
-        $routePlanner = RoutePlanner::where('provider_slug', $user->provider_slug)->get();
+        $user = auth()->user();
+
+        $routePlanner = RoutePlanner::with([
+            'client', // provider
+            'driver',
+            'fleet',
+            'group',
+        ])
+            ->where('provider_slug', $user->provider_slug)
+            ->get();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
