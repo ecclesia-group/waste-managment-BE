@@ -1,17 +1,16 @@
 <?php
-
 namespace App\Http\Controllers\Facility;
 
-use App\Models\Facility;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Facility\FacilityPasswordResetRequest;
 use App\Http\Requests\Facility\FacilityPasswordChangeResetRequest;
+use App\Http\Requests\Facility\FacilityPasswordResetRequest;
+use App\Models\Facility;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FacilityPasswordController extends Controller
 {
-     // Handles password change for vendor
+    // Handles password change for vendor
     public function changePassword(FacilityPasswordChangeResetRequest $http_request): JsonResponse
     {
         $validated_password = $http_request->validated();
@@ -33,6 +32,7 @@ class FacilityPasswordController extends Controller
         $facility = Facility::where("email", request("emailOrPhone"))
             ->orWhere("phone_number", request("emailOrPhone"))
             ->first();
+        dd($facility, request("emailOrPhone"));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $facility, guard: "facility");
