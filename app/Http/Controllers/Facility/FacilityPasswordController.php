@@ -29,10 +29,10 @@ class FacilityPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        dd("here");
         $facility = Facility::where("email", request("emailOrPhone"))
             ->orWhere("phone_number", request("emailOrPhone"))
             ->first();
+        dd("here");
         dd($facility, request("emailOrPhone"));
 
         // Send reset password notification
