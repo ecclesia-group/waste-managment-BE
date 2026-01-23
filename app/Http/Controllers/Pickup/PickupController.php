@@ -366,6 +366,7 @@ class PickupController extends Controller
             );
         }
 
+        dd($bin->client_slug, $bin->provider_slug);
         $pickup = Pickup::where([
             'client_slug'   => $bin->client_slug,
             'provider_slug' => $bin->provider_slug,
