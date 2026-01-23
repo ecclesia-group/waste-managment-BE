@@ -11,6 +11,7 @@ class Complaint extends Model
 
     protected $fillable = [
         'client_slug',
+        'provider_slug',
         'code',
         'location',
         'description',
@@ -30,5 +31,10 @@ class Complaint extends Model
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 }

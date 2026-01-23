@@ -20,6 +20,7 @@ class Pickup extends Model
         'pickup_date',
         'amount',
         'provider_slug',
+        "scan_status",
     ];
 
     protected $casts = [
@@ -33,5 +34,10 @@ class Pickup extends Model
     public function provider()
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
     }
 }

@@ -48,9 +48,10 @@ class GroupController extends Controller
     // Creates a new group
     public function register(GroupCreation $request)
     {
+        $user                  = auth()->user();
         $data                  = $request->validated();
         $data['group_slug']    = Str::uuid();
-        $data['provider_slug'] = $request->user()->provider_slug;
+        $data['provider_slug'] = $user->provider_slug;
         $group                 = Group::create($data);
         return self::apiResponse(
             in_error: false,

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('status')->default('pending');
+            $table->string('scan_status')->default('pending');
             $table->string('location')->nullable();
             $table->string('provider_slug')->nullable();
             $table->longText('images')->nullable();

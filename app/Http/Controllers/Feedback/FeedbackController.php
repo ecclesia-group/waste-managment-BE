@@ -33,8 +33,8 @@ class FeedbackController extends Controller
     //list all feedbacks
     public function listFeedbacks()
     {
-        $user = auth()->user();
-        $feedbacks = Feedback::where('client_slug', $user->client_slug)->get();
+        $user      = auth()->user();
+        $feedbacks = Feedback::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
         if ($feedbacks->isEmpty()) {
             return self::apiResponse(
                 in_error: true,

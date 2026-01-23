@@ -7,6 +7,7 @@ use App\Http\Requests\Pickup\PickupStatusChangeRequest;
 use App\Http\Requests\Pickup\SetPickupDateRequest;
 use App\Http\Requests\Pickup\SetPickupPriceRequest;
 use App\Http\Requests\Pickup\UpdatePickupRequest;
+use App\Models\Client;
 use App\Models\Pickup;
 use Illuminate\Support\Str;
 
@@ -219,7 +220,7 @@ class PickupController extends Controller
     public function getAllPickups()
     {
         $user    = request()->user();
-        $pickups = Pickup::where('client_slug', $user->client_slug)->get();
+        $pickups = Pickup::where(['provider_slug' => $user->provider_slug])->get();
 
         return self::apiResponse(
             in_error: false,
@@ -230,10 +231,10 @@ class PickupController extends Controller
         );
     }
 
-    public function getSinglePickup($pickup_code)
+    public function getSinglePickup($pickup)
     {
-        $pickup = Pickup::where('code', $pickup_code)->first();
-        if (! $pickup) {
+        $pick_up = Pickup::where('code', $pickup)->first();
+        if (! $pick_up) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -247,7 +248,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Pickup retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: $pick_up->toArray()
         );
     }
 
@@ -313,6 +314,80 @@ class PickupController extends Controller
             in_error: false,
             message: "Action Successful",
             reason: "Pickup date and time set successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function setScanStatus()
+    {
+        $data = request()->validate([
+            'code'   => 'required|string|exists:pickups,code',
+            'status' => 'required|string|in:scanned,not_scanned',
+        ]);
+
+        $pickup = Pickup::where('code', $data['code'])->first();
+        if (! $pickup) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Pickup not found",
+                status_code: self::API_NOT_FOUND
+            );
+        }
+
+        $pickup->status = $data['status'];
+        $pickup->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Pickup scan status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $pickup->toArray()
+        );
+    }
+
+    public function manualCodeScan()
+    {
+        $data = request()->validate([
+            'bin_code' => 'required|string|exists:clients,bin_code',
+        ]);
+
+        $bin = Client::where('bin_code', $data['bin_code'])->first();
+
+        if (! $bin) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Bin not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $pickup = Pickup::with(['provider', 'client'])
+            ->where([
+                'client_slug'   => $bin->client_slug,
+                'provider_slug' => $bin->provider_slug,
+                'status'        => 'pending',
+                'scan_status'   => 'pending',
+            ])->get();
+
+        if ($pickup->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "No pending pickups found for this bin",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bin details retrieved successfully",
             status_code: self::API_SUCCESS,
             data: $pickup->toArray()
         );

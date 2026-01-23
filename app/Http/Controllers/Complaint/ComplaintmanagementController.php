@@ -10,10 +10,32 @@ use Illuminate\Support\Str;
 class ComplaintmanagementController extends Controller
 {
     // Lists all complaints
+    public function listClientComplaints()
+    {
+        $user       = request()->user();
+        $complaints = Complaint::where('provider_slug', $user->provider_slug)->get();
+        if ($complaints->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "No complaints found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Complaints retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $complaints?->toArray()
+        );
+    }
+
     public function listComplaints()
     {
         $user       = request()->user();
-        $complaints = Complaint::where('client_slug', $user->client_slug)->get();
+        $complaints = Complaint::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
         if ($complaints->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
@@ -49,9 +71,10 @@ class ComplaintmanagementController extends Controller
     {
         $user = $request->user();
 
-        $data                = $request->validated();
-        $data['code']        = Str::random(5);
-        $data['client_slug'] = $user->client_slug;
+        $data                  = $request->validated();
+        $data['code']          = Str::random(5);
+        $data['client_slug']   = $user->client_slug;
+        $data['provider_slug'] = $user->provider_slug;
 
         $data = static::processImage(['images'], $data);
 

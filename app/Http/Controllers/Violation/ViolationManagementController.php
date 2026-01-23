@@ -10,10 +10,32 @@ use Illuminate\Support\Str;
 class ViolationManagementController extends Controller
 {
     // Lists all violations
+    public function listClientViolations()
+    {
+        $user       = request()->user();
+        $violations = Violation::where('provider_slug', $user->provider_slug)->get();
+        if ($violations->isEmpty()) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "No violations found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Violations retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $violations?->toArray()
+        );
+    }
+
     public function listViolations()
     {
         $user       = request()->user();
-        $violations = Violation::where('client_slug', $user->client_slug)->get();
+        $violations = Violation::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
         if ($violations->isEmpty()) {
             return self::apiResponse(
                 in_error: true,

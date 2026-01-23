@@ -157,12 +157,12 @@ Route::prefix("provider")->group(function () {
         Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
 
         // Complaint Management
-        Route::get("all_complaints", [ComplaintmanagementController::class, "listComplaints"]);
+        Route::get("all_complaints", [ComplaintmanagementController::class, "listClientComplaints"]);
         Route::get("get_single_complaint/{complaint}", [ComplaintmanagementController::class, "getComplaintDetails"]);
         Route::put("update_complaint_status/{complaint}", [ComplaintmanagementController::class, "updateComplaintStatus"]);
 
         // Violation Management
-        Route::get("all_violations", [ViolationManagementController::class, "listViolations"]);
+        Route::get("all_violations", [ViolationManagementController::class, "listClientViolations"]);
         Route::get("get_single_violation/{violation}", [ViolationManagementController::class, "getViolationDetails"]);
         Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
 
@@ -175,6 +175,8 @@ Route::prefix("provider")->group(function () {
 
         // QR Code Scanner (Scan bin QR code to get client details)
         Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
+        Route::post("manual_bin_code_scan", [PickupController::class, "manualCodeScan"]);
+        Route::post("change_scan_status", [PickupController::class, "setScanStatus"]);
     });
 });
 
