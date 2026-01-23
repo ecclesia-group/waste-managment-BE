@@ -369,8 +369,8 @@ class PickupController extends Controller
         $pickup = Pickup::where([
             'client_slug'   => $bin->client_slug,
             'provider_slug' => $bin->provider_slug,
-            'status'        => 'pending',
-            'scan_status'   => 'pending',
+            // 'status'        => 'pending',
+            // 'scan_status'   => 'pending',
         ])->get();
         // $pickup = Pickup::with(['provider', 'client'])
         //     ->where([
