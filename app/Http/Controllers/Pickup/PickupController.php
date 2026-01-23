@@ -366,19 +366,21 @@ class PickupController extends Controller
             );
         }
 
-        $pickup = Pickup::with(['provider:id,provider_slug,name,email', 'client:id,client_slug,name,email'])
-            ->where([
-                'client_slug'   => $bin->client_slug,
-                'provider_slug' => $bin->provider_slug,
-                'status'        => 'pending',
-                'scan_status'   => 'pending',
-            ])->get();
+        $pickup = Pickup::where([
+            'client_slug'   => $bin->client_slug,
+            'provider_slug' => $bin->provider_slug,
+            'status'        => 'pending',
+            'scan_status'   => 'pending',
+        ])->get();
+        // $pickup = Pickup::with(['provider', 'client'])
+        //     ->where([
+        //         'client_slug'   => $bin->client_slug,
+        //         'provider_slug' => $bin->provider_slug,
+        //         'status'        => 'pending',
+        //         'scan_status'   => 'pending',
+        //     ])->get();
 
-        // Check if eager loading worked
-        foreach ($pickup as $p) {
-            echo "Provider loaded: " . ($p->relationLoaded('provider') ? 'Yes' : 'No') . "\n";
-            echo "Client loaded: " . ($p->relationLoaded('client') ? 'Yes' : 'No') . "\n";
-        }
+        dd($pickup, $bin, $data['bin_code']);
 
         if ($pickup->isEmpty()) {
             return self::apiResponse(
