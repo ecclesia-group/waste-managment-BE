@@ -336,7 +336,7 @@ class PickupController extends Controller
             );
         }
 
-        $pickup->status = $data['status'];
+        $pickup->scan_status = $data['status'];
         $pickup->save();
 
         return self::apiResponse(
