@@ -374,6 +374,8 @@ class PickupController extends Controller
                 'scan_status'   => 'pending',
             ])->get();
 
+        dd($pickup, $bin, $data['bin_code']);
+
         if ($pickup->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
