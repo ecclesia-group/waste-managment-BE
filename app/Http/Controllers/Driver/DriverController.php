@@ -27,8 +27,7 @@ class DriverController extends Controller
             'profile_image',
         ];
 
-        $data = static::processImage($image_fields, $data);
-        dd($data);
+        $data   = static::processImage($image_fields, $data);
         $driver = Driver::create($data);
 
         self::sendEmail(
