@@ -14,6 +14,7 @@ class DriverController extends Controller
     {
         $user                      = auth()->user();
         $data['provider_slug']     = $user->provider_slug;
+        dd($data, $user, $user);
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['driver_slug']       = Str::uuid();
