@@ -13,13 +13,12 @@ class DriverController extends Controller
     public function register(RegisterRequest $request)
     {
         $user                      = auth()->user();
-        $data['provider_slug']     = $user->provider_slug;
-        dd($data, $user, $user);
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['driver_slug']       = Str::uuid();
         $data['password']          = $password;
         $data['email_verified_at'] = now();
+        $data['provider_slug']     = $user->provider_slug;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -28,7 +27,8 @@ class DriverController extends Controller
             'profile_image',
         ];
 
-        $data   = static::processImage($image_fields, $data);
+        $data = static::processImage($image_fields, $data);
+        dd($data);
         $driver = Driver::create($data);
 
         self::sendEmail(
