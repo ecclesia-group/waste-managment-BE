@@ -13,11 +13,13 @@ class Purchase extends Model
         'client_slug',
         'number_of_items',
         'total_price',
+        'status',
     ];
 
     protected $casts = [
         'number_of_items' => 'integer',
         'total_price' => 'decimal:2',
+        'status' => 'string',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

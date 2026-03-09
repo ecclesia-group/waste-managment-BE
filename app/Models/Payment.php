@@ -9,8 +9,8 @@ class Payment extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'actor',
-        'actor_id',
+        'client_slug',
+        'provider_slug',
         'transaction_id',
         'payment_method',
         'network',

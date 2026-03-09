@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Violation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Violation\ViolationCreationRequest;
 use App\Http\Requests\Violation\ViolationUpdateRequest;
+use App\Models\Client;
 use App\Models\Violation;
 use Illuminate\Support\Str;
 
@@ -69,11 +70,38 @@ class ViolationManagementController extends Controller
     // create violation
     public function createViolation(ViolationCreationRequest $request)
     {
-        $user                = request()->user();
-        $data                = $request->validated();
-        $code                = Str::random(5);
-        $data['code']        = $code;
-        $data['client_slug'] = $user->client_slug;
+        $user = $request->user();
+        $data = $request->validated();
+
+        // Providers record violations during pickup; clients can only view them.
+        if (! isset($user->provider_slug)) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $client = Client::where('client_slug', $data['client_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Client not found for this provider",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $code                  = Str::random(5);
+        $data['code']          = $code;
+        $data['client_slug']   = $client->client_slug;
+        $data['provider_slug'] = $user->provider_slug;
 
         $image_fields = ['images'];
         $video_fields = ['videos'];

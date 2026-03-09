@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\AdminPasswordController;
 use App\Http\Controllers\Client\ClientPasswordController;
 use App\Http\Controllers\Fleet\FleetManagementController;
 use App\Http\Controllers\WeighBridge\WeighBridgeController;
+use App\Http\Controllers\Content\BannerController;
+use App\Http\Controllers\Content\GuideController;
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Facility\FacilityPasswordController;
 use App\Http\Controllers\Notification\NotificationController;
@@ -27,6 +29,7 @@ use App\Http\Controllers\Complaint\ComplaintmanagementController;
 use App\Http\Controllers\Violation\ViolationManagementController;
 use App\Http\Controllers\Facility\FacilityAuthenticationController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Handover\WasteHandoverController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
@@ -58,11 +61,9 @@ Route::prefix("client")->group(function () {
         Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
 
         // Violation Management
-        Route::post('create_violation', [ViolationManagementController::class, 'createViolation']);
         Route::get('get_violations', [ViolationManagementController::class, 'listViolations']);
         Route::get('get_single_violation/{violation}', [ViolationManagementController::class, 'getViolationDetails']);
-        Route::post('update_violation/{violation}', [ViolationManagementController::class, 'updateViolation']);
-        Route::delete('delete_violation/{violation}', [ViolationManagementController::class, 'deleteViolation']);
+        // Clients only view violations (education). Providers record them during pickup.
 
         // Product Management (View products for purchase)
         Route::get('get_products', [ProductController::class, 'listProducts']);
@@ -94,6 +95,9 @@ Route::prefix("client")->group(function () {
 
         // Notification Management
         Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
+        // Dashboard Content
+        Route::get('banners', [BannerController::class, 'listForAudience']);
+        Route::get('guides', [GuideController::class, 'listForAudience']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
     });
@@ -165,6 +169,7 @@ Route::prefix("provider")->group(function () {
         // Violation Management
         Route::get("all_violations", [ViolationManagementController::class, "listClientViolations"]);
         Route::get("get_single_violation/{violation}", [ViolationManagementController::class, "getViolationDetails"]);
+        Route::post("create_violation", [ViolationManagementController::class, "createViolation"]);
         Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
 
         // Product Management
@@ -178,6 +183,18 @@ Route::prefix("provider")->group(function () {
         Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
         Route::post("manual_bin_code_scan", [PickupController::class, "manualCodeScan"]);
         Route::post("change_scan_status", [PickupController::class, "setScanStatus"]);
+
+        // Waste Handover Requests
+        Route::post("handover_requests", [WasteHandoverController::class, "create"]);
+        Route::get("handover_requests", [WasteHandoverController::class, "list"]);
+        Route::get("handover_requests/{handover}", [WasteHandoverController::class, "show"]);
+        Route::post("handover_requests/{handover}/accept", [WasteHandoverController::class, "accept"]);
+        Route::post("handover_requests/{handover}/decline", [WasteHandoverController::class, "decline"]);
+        Route::post("handover_requests/{handover}/complete", [WasteHandoverController::class, "complete"]);
+
+        // Dashboard Content
+        Route::get('banners', [BannerController::class, 'listForAudience']);
+        Route::get('guides', [GuideController::class, 'listForAudience']);
     });
 });
 
@@ -275,5 +292,16 @@ Route::prefix("admin")->group(function () {
 
         // Statictics Management
         Route::get('actors_statistics', [AdminController::class, 'getStatisticsOverview']);
+
+        // Banner and Guide Management
+        Route::get('banners', [BannerController::class, 'adminList']);
+        Route::post('banners', [BannerController::class, 'adminCreate']);
+        Route::put('banners/{banner}', [BannerController::class, 'adminUpdate']);
+        Route::delete('banners/{banner}', [BannerController::class, 'adminDelete']);
+
+        Route::get('guides', [GuideController::class, 'adminList']);
+        Route::post('guides', [GuideController::class, 'adminCreate']);
+        Route::put('guides/{guide}', [GuideController::class, 'adminUpdate']);
+        Route::delete('guides/{guide}', [GuideController::class, 'adminDelete']);
     });
 });

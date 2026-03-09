@@ -21,6 +21,7 @@ class ViolationCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            "client_slug"  => ["required", "string", "exists:clients,client_slug"],
             "type"        => ["required", "string"],
             "location"    => ["required", "string"],
             "description" => ["nullable", "string"],

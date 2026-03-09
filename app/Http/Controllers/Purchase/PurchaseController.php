@@ -8,9 +8,7 @@ use App\Models\PurchaseItem;
 use App\Models\Product;
 use App\Models\Payment;
 use App\Models\Client;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class PurchaseController extends Controller
 {
@@ -108,6 +106,7 @@ class PurchaseController extends Controller
                 'client_slug' => $user->client_slug,
                 'number_of_items' => $numberOfItems,
                 'total_price' => $totalPrice,
+                'status' => 'pending',
             ]);
 
             // Create purchase items and update product quantities
@@ -170,24 +169,36 @@ class PurchaseController extends Controller
             'payment_method' => 'required|string|in:momo,card',
             'network' => 'nullable|string',
             'phone_number' => 'nullable|string',
-            'name' => 'nullable|string',
+            'name' => 'required|string',
+            'client_email' => 'nullable|email',
+            'card_name' => 'nullable|string',
+            'card_number' => 'nullable|string',
+            'card_expiry' => 'nullable|string',
+            'card_cvv' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
         try {
             // Create payment record
             $payment = Payment::create([
-                'actor' => 'client',
-                'actor_id' => $user->client_slug,
+                'client_slug' => $user->client_slug,
+                'provider_slug' => $user->provider_slug,
                 'transaction_id' => $data['transaction_id'],
                 'payment_method' => $data['payment_method'],
-                'network' => $data['network'] ?? null,
+                'network' => $data['network'] ?? 'unknown',
                 'phone_number' => $data['phone_number'] ?? null,
-                'name' => $data['name'] ?? null,
+                'name' => $data['name'],
+                'client_email' => $data['client_email'] ?? $user->email,
+                'card_name' => $data['card_name'] ?? null,
+                'card_number' => $data['card_number'] ?? null,
+                'card_expiry' => $data['card_expiry'] ?? null,
+                'card_cvv' => $data['card_cvv'] ?? null,
                 'amount' => $purchase->total_price,
                 'currency' => 'GHS',
                 'status' => 'success',
-                'purchase_id' => $purchase->id,
+                'purchase_id' => (string) $purchase->id,
+                // Existing schema requires both ids; keep pickup_id as "0" for store orders.
+                'pickup_id' => '0',
             ]);
 
             // Generate QR code for the bin if this is a bin purchase

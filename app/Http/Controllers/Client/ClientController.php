@@ -52,7 +52,7 @@ class ClientController extends Controller
     public function allClients()
     {
         $user    = auth()->user();
-        $clients = Client::where('provider_slug', $user()->provider_slug)->get();
+        $clients = Client::where('provider_slug', $user->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

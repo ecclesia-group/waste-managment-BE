@@ -86,7 +86,7 @@ trait Helpers
         return null;
     }
 
-    protected static function processImage(array $image_fields, array $data): array
+    protected static function processImage(array $image_fields, array $data, array $existingData = []): array
     {
         foreach ($image_fields as $field) {
             if (! isset($data[$field])) {
@@ -121,13 +121,22 @@ trait Helpers
                 // Reindex array
                 $data[$field] = array_values($data[$field]);
             }
+
+            // Optional merge with existing values (used in some update flows)
+            if (! empty($existingData) && array_key_exists($field, $existingData) && is_array($existingData[$field])) {
+                if (is_string($data[$field])) {
+                    $data[$field] = array_values(array_unique(array_filter(array_merge($existingData[$field], [$data[$field]]))));
+                } elseif (is_array($data[$field])) {
+                    $data[$field] = array_values(array_unique(array_filter(array_merge($existingData[$field], $data[$field]))));
+                }
+            }
         }
 
         return $data;
     }
 
     // process video
-    protected static function processVideo(array $video_fields, array $data)
+    protected static function processVideo(array $video_fields, array $data, array $existingData = [])
     {
         foreach ($video_fields as $field) {
             if (! isset($data[$field])) {
@@ -147,6 +156,15 @@ trait Helpers
                 // Single video URL or base64
                 if (str_starts_with($data[$field], 'data:video')) {
                     $data[$field] = static::base64VideoDecode($data[$field]);
+                }
+            }
+
+            // Optional merge with existing values (used in some update flows)
+            if (! empty($existingData) && array_key_exists($field, $existingData) && is_array($existingData[$field])) {
+                if (is_string($data[$field])) {
+                    $data[$field] = array_values(array_unique(array_filter(array_merge($existingData[$field], [$data[$field]]))));
+                } elseif (is_array($data[$field])) {
+                    $data[$field] = array_values(array_unique(array_filter(array_merge($existingData[$field], $data[$field]))));
                 }
             }
         }

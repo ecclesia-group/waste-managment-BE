@@ -22,7 +22,14 @@ class CreateTicket extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'provider_slug' => ['required', 'string', 'exists:providers,provider_slug'],
+            'fleet_slug' => ['nullable', 'string', 'exists:fleets,fleet_slug'],
+            'fleet_code' => ['nullable', 'string'],
+            'gross_weight' => ['nullable', 'numeric', 'min:0'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'payment_status' => ['required', 'string', 'in:paid,credit'],
+            'scan_status' => ['nullable', 'string', 'in:scanned,unscanned,handover'],
+            'notes' => ['nullable', 'string'],
         ];
     }
 }

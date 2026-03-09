@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseItem extends Model
 {
+    use \Illuminate\Database\Eloquent\SoftDeletes;
+
     protected $fillable = [
         'purchase_id',
         'product_slug',
@@ -18,6 +20,7 @@ class PurchaseItem extends Model
         'purchase_id' => 'integer',
         'price' => 'decimal:2',
         'quantity' => 'integer',
+        'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
