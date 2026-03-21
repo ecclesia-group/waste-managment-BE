@@ -14,6 +14,8 @@ class WasteHandoverController extends Controller
     public function create(Request $request)
     {
         $provider = $request->user();
+        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveZoneSlug = $provider->zone_slug;
 
         $data = $request->validate([
             'title' => ['required', 'string'],
@@ -29,7 +31,7 @@ class WasteHandoverController extends Controller
 
         if (isset($data['target_provider_slug'])) {
             $target = Provider::where('provider_slug', $data['target_provider_slug'])->first();
-            if ($target && $target->zone_slug !== $provider->zone_slug) {
+            if ($target && $target->zone_slug !== $effectiveZoneSlug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -44,7 +46,7 @@ class WasteHandoverController extends Controller
 
         $handover = WasteHandoverRequest::create([
             'code' => Str::upper(Str::random(10)),
-            'requester_provider_slug' => $provider->provider_slug,
+            'requester_provider_slug' => $effectiveProviderSlug,
             'target_provider_slug' => $data['target_provider_slug'] ?? null,
             'title' => $data['title'],
             'waste_types' => $data['waste_types'] ?? [],
@@ -67,11 +69,12 @@ class WasteHandoverController extends Controller
     public function list(Request $request)
     {
         $provider = $request->user();
+        $effectiveProviderSlug = $provider->provider_slug;
 
         $query = WasteHandoverRequest::query()
             ->where(function ($q) use ($provider) {
-                $q->where('requester_provider_slug', $provider->provider_slug)
-                    ->orWhere('target_provider_slug', $provider->provider_slug);
+                $q->where('requester_provider_slug', $effectiveProviderSlug)
+                    ->orWhere('target_provider_slug', $effectiveProviderSlug);
             })
             ->latest();
 
@@ -91,7 +94,8 @@ class WasteHandoverController extends Controller
     public function show(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
-        if ($handover->requester_provider_slug !== $provider->provider_slug && $handover->target_provider_slug !== $provider->provider_slug) {
+        $effectiveProviderSlug = $provider->provider_slug;
+        if ($handover->requester_provider_slug !== $effectiveProviderSlug && $handover->target_provider_slug !== $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -113,6 +117,7 @@ class WasteHandoverController extends Controller
     public function accept(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
+        $effectiveProviderSlug = $provider->provider_slug;
 
         if ($handover->status !== 'pending') {
             return self::apiResponse(
@@ -124,7 +129,7 @@ class WasteHandoverController extends Controller
             );
         }
 
-        if ($handover->target_provider_slug && $handover->target_provider_slug !== $provider->provider_slug) {
+        if ($handover->target_provider_slug && $handover->target_provider_slug !== $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -134,7 +139,7 @@ class WasteHandoverController extends Controller
             );
         }
 
-        $handover->target_provider_slug = $provider->provider_slug;
+        $handover->target_provider_slug = $effectiveProviderSlug;
         $handover->status = 'accepted';
         $handover->accepted_at = now();
         $handover->save();
@@ -151,6 +156,7 @@ class WasteHandoverController extends Controller
     public function decline(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
+        $effectiveProviderSlug = $provider->provider_slug;
 
         if ($handover->status !== 'pending') {
             return self::apiResponse(
@@ -162,7 +168,7 @@ class WasteHandoverController extends Controller
             );
         }
 
-        if ($handover->target_provider_slug && $handover->target_provider_slug !== $provider->provider_slug) {
+        if ($handover->target_provider_slug && $handover->target_provider_slug !== $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -172,7 +178,7 @@ class WasteHandoverController extends Controller
             );
         }
 
-        $handover->target_provider_slug = $provider->provider_slug;
+        $handover->target_provider_slug = $effectiveProviderSlug;
         $handover->status = 'declined';
         $handover->save();
 
@@ -188,6 +194,7 @@ class WasteHandoverController extends Controller
     public function complete(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
+        $effectiveProviderSlug = $provider->provider_slug;
 
         if ($handover->status !== 'accepted') {
             return self::apiResponse(
@@ -199,7 +206,7 @@ class WasteHandoverController extends Controller
             );
         }
 
-        if ($handover->target_provider_slug !== $provider->provider_slug) {
+        if ($handover->target_provider_slug !== $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -221,7 +228,7 @@ class WasteHandoverController extends Controller
         if (($handover->fee_amount ?? 0) > 0 && ! empty($paymentData['transaction_id'])) {
             Payment::create([
                 'client_slug' => 'handover',
-                'provider_slug' => $provider->provider_slug,
+                'provider_slug' => $effectiveProviderSlug,
                 'transaction_id' => $paymentData['transaction_id'],
                 'payment_method' => $paymentData['payment_method'] ?? 'cash',
                 'network' => $paymentData['network'] ?? 'unknown',

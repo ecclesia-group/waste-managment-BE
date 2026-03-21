@@ -21,7 +21,8 @@ class ViolationCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "client_slug"  => ["required", "string", "exists:clients,client_slug"],
+            // Allow nullable/placeholder values; controller will infer from scan-first cache.
+            "client_slug"  => ["nullable", "string"],
             "type"        => ["required", "string"],
             "location"    => ["required", "string"],
             "description" => ["nullable", "string"],

@@ -9,7 +9,12 @@ class NotificationController extends Controller
     public function getAllNotifications()
     {
         $user          = request()->user();
-        $notifications = $user->notifications()->get();
+        // Avoid fragile morph configuration: notifications table already stores actor + actor_id + actor_slug.
+        $notifications = \App\Models\Notification::query()
+            ->where('actor', 'client')
+            ->where('actor_id', (string) $user->id)
+            ->orderByDesc('created_at')
+            ->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

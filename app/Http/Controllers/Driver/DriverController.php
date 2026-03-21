@@ -6,13 +6,14 @@ use App\Http\Requests\Driver\RegisterRequest;
 use App\Http\Requests\Driver\StatusRequest;
 use App\Http\Requests\Driver\UpdateProfileRequest;
 use App\Models\Driver;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class DriverController extends Controller
 {
     public function register(RegisterRequest $request)
     {
-        $user                      = auth()->user();
+        $user                      = Auth::guard('provider')->user();
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['driver_slug']       = Str::uuid();
@@ -51,7 +52,7 @@ class DriverController extends Controller
 
     public function allDrivers()
     {
-        $user    = auth()->user();
+        $user    = Auth::guard('provider')->user();
         $drivers = Driver::where('provider_slug', $user->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
@@ -64,6 +65,17 @@ class DriverController extends Controller
 
     public function show(Driver $driver)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this driver",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -76,7 +88,23 @@ class DriverController extends Controller
     public function updateStatus(StatusRequest $request)
     {
         $data           = $request->validated();
-        $driver         = Driver::where('driver_slug', $data['driver_slug'])->first();
+
+        $user = Auth::guard('provider')->user();
+        $driver = Driver::query()
+            ->where('driver_slug', $data['driver_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $driver) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Driver not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
         $driver->status = $data['status'];
         $driver->save();
 
@@ -91,6 +119,17 @@ class DriverController extends Controller
 
     public function updateDriverProfile(UpdateProfileRequest $request, Driver $driver)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this driver",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data         = $request->validated();
         $image_fields = [
             'license_front_image',
@@ -111,6 +150,17 @@ class DriverController extends Controller
 
     public function deleteDriver(Driver $driver)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to delete this driver",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $driver->delete();
 
         return self::apiResponse(

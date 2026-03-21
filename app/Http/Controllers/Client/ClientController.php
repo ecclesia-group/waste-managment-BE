@@ -6,13 +6,17 @@ use App\Http\Requests\Client\RegisterRequest;
 use App\Http\Requests\Client\StatusRequest;
 use App\Http\Requests\Client\UpdateClientProfileRequest;
 use App\Models\Client;
+use App\Models\Payment;
+use App\Models\Pickup;
+use App\Models\Violation;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
     public function register(RegisterRequest $request)
     {
-        $user                      = auth()->user();
+        $user                      = Auth::user();
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['client_slug']       = Str::uuid();
@@ -51,7 +55,7 @@ class ClientController extends Controller
 
     public function allClients()
     {
-        $user    = auth()->user();
+        $user    = Auth::user();
         $clients = Client::where('provider_slug', $user->provider_slug)->get();
         return self::apiResponse(
             in_error: false,
@@ -64,7 +68,51 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        $client = Client::where('client_slug', $client->client_slug)->first();
+        $providerUser = Auth::guard('provider')->user();
+
+        if ($providerUser) {
+            $client = Client::query()
+                ->where('client_slug', $client->client_slug)
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->first();
+        } else {
+            $client = Client::where('client_slug', $client->client_slug)->first();
+        }
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Client not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        // Provider-facing composition: when accessed via provider auth, append pickups/violations/payments.
+        if ($providerUser) {
+            $client->setAttribute('pickups', Pickup::query()
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->where('client_slug', $client->client_slug)
+                ->orderByDesc('created_at')
+                ->get()
+                ->toArray());
+
+            $client->setAttribute('violations', Violation::query()
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->where('client_slug', $client->client_slug)
+                ->orderByDesc('created_at')
+                ->get()
+                ->toArray());
+
+            $client->setAttribute('payments', Payment::query()
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->where('client_slug', $client->client_slug)
+                ->orderByDesc('created_at')
+                ->get()
+                ->toArray());
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -77,7 +125,25 @@ class ClientController extends Controller
     public function updateStatus(StatusRequest $request)
     {
         $data           = $request->validated();
-        $client         = Client::where('client_slug', $data['client_slug'])->first();
+
+        $user = Auth::guard('provider')->user();
+
+        // Tenant isolation: provider can only update their own clients.
+        $client = Client::query()
+            ->where('client_slug', $data['client_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Client not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
         $client->status = $data['status'];
         $client->save();
 
@@ -92,6 +158,23 @@ class ClientController extends Controller
 
     public function updateClientProfile(UpdateClientProfileRequest $request, Client $client)
     {
+        $user = Auth::guard('provider')->user();
+
+        $client = Client::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Client not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
         $data         = $request->validated();
         $image_fields = [
             'qrcode',
@@ -111,7 +194,23 @@ class ClientController extends Controller
 
     public function deleteClient(Client $client)
     {
-        $client->delete();
+        $user = Auth::guard('provider')->user();
+
+        $deleted = Client::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('provider_slug', $user->provider_slug)
+            ->delete();
+
+        if ($deleted === 0) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Client not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -124,6 +223,8 @@ class ClientController extends Controller
     // Scan QR code to get client details (for providers)
     public function scanQRCode()
     {
+        $providerUser = request()->user();
+
         $data = request()->validate([
             'qrcode_data' => 'required|string',
         ]);
@@ -131,7 +232,7 @@ class ClientController extends Controller
         try {
             $qrData = json_decode($data['qrcode_data'], true);
 
-            if (! $qrData || ! isset($qrData['client_slug'])) {
+            if (! $qrData || ! isset($qrData['client_slug']) || ! isset($qrData['bin_code'])) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -141,7 +242,9 @@ class ClientController extends Controller
                 );
             }
 
-            $client = Client::where('client_slug', $qrData['client_slug'])->first();
+            $client = Client::where('client_slug', $qrData['client_slug'])
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->first();
 
             if (! $client) {
                 return self::apiResponse(
@@ -149,6 +252,17 @@ class ClientController extends Controller
                     message: "Action Failed",
                     reason: "Client not found",
                     status_code: self::API_NOT_FOUND,
+                    data: []
+                );
+            }
+
+            // Prevent old/damaged QR codes from working after regeneration.
+            if ((string) $client->bin_code !== (string) ($qrData['bin_code'] ?? '')) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "QR code does not match the current bin_code",
+                    status_code: self::API_FAIL,
                     data: []
                 );
             }

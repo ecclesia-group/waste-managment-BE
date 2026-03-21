@@ -8,6 +8,7 @@ use App\Models\PurchaseItem;
 use App\Models\Product;
 use App\Models\Payment;
 use App\Models\Client;
+use App\Models\Notification;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
@@ -41,6 +42,19 @@ class PurchaseController extends Controller
     // Gets details of a single purchase
     public function getPurchaseDetails(Purchase $purchase)
     {
+        $user = request()->user();
+
+        // Client-scoped access: ensure the purchase belongs to this client.
+        if (isset($user->client_slug) && (string) $purchase->client_slug !== (string) $user->client_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this purchase",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $purchase->load('items', 'payment');
         return self::apiResponse(
             in_error: false,
@@ -179,6 +193,9 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
+            // Confirm the order as soon as payment is successful.
+            $purchase->status = 'confirmed';
+
             // Create payment record
             $payment = Payment::create([
                 'client_slug' => $user->client_slug,
@@ -200,6 +217,8 @@ class PurchaseController extends Controller
                 // Existing schema requires both ids; keep pickup_id as "0" for store orders.
                 'pickup_id' => '0',
             ]);
+
+            $purchase->save();
 
             // Generate QR code for the bin if this is a bin purchase
             $client = Client::where('client_slug', $user->client_slug)->first();
@@ -239,6 +258,57 @@ class PurchaseController extends Controller
                 data: []
             );
         }
+    }
+
+    // Client-only: show all payments made on the platform.
+    public function getPaymentHistory()
+    {
+        $user = request()->user();
+
+        $payments = Payment::where('client_slug', $user->client_slug)
+            ->latest()
+            ->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Payment history retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $payments->toArray()
+        );
+    }
+
+    // Admin/Super Admin: update order status and notify the client.
+    public function updatePurchaseStatus(Purchase $purchase)
+    {
+        $data = request()->validate([
+            'status' => 'required|string|in:pending,confirmed,out_for_delivery,delivered,cancelled',
+        ]);
+
+        $old = $purchase->status;
+        $purchase->status = $data['status'];
+        $purchase->save();
+
+        $client = Client::where('client_slug', $purchase->client_slug)->first();
+
+        if ($client) {
+            Notification::create([
+                'actor' => 'client',
+                'actor_id' => (string) $client->id,
+                'actor_slug' => $client->client_slug,
+                'title' => 'Order status updated',
+                'message' => "Your order status changed from {$old} to {$data['status']}.",
+                'type' => 'order_status',
+            ]);
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Order status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $purchase->toArray()
+        );
     }
 
     // Generate QR code for client bin

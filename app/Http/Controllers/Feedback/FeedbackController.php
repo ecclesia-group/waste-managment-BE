@@ -6,6 +6,7 @@ use App\Http\Requests\Feedback\CreateClientFeedbackRequest;
 use App\Http\Requests\Feedback\UpdateClientFeedbackRequest;
 use App\Models\Feedback;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class FeedbackController extends Controller
 {
@@ -33,8 +34,9 @@ class FeedbackController extends Controller
     //list all feedbacks
     public function listFeedbacks()
     {
-        $user      = auth()->user();
-        $feedbacks = Feedback::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
+        $user      = Auth::user();
+        // Feedback table does not include provider_slug; feedback is scoped by client.
+        $feedbacks = Feedback::where('client_slug', $user->client_slug)->get();
         if ($feedbacks->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
@@ -56,6 +58,19 @@ class FeedbackController extends Controller
     //get single feedback details
     public function getFeedbackDetails(Feedback $feedback)
     {
+        $user = request()->user();
+
+        // Tenant isolation: clients can only view feedback created by themselves.
+        if (isset($user->client_slug) && (string) $feedback->client_slug !== (string) $user->client_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this feedback",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -68,6 +83,19 @@ class FeedbackController extends Controller
     //delete feedback
     public function deleteFeedback(Feedback $feedback)
     {
+        $user = request()->user();
+
+        // Tenant isolation: clients can only delete their own feedback.
+        if (isset($user->client_slug) && (string) $feedback->client_slug !== (string) $user->client_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to delete this feedback",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $feedback->delete();
         return self::apiResponse(
             in_error: false,
@@ -81,6 +109,19 @@ class FeedbackController extends Controller
     //update feedback
     public function updateFeedback(UpdateClientFeedbackRequest $request, Feedback $feedback)
     {
+        $user = request()->user();
+
+        // Tenant isolation: clients can only update their own feedback.
+        if (isset($user->client_slug) && (string) $feedback->client_slug !== (string) $user->client_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this feedback",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data = $request->validated();
         $feedback->update($data);
         return self::apiResponse(

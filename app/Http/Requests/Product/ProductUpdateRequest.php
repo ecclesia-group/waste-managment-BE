@@ -22,6 +22,7 @@ class ProductUpdateRequest extends FormRequest
     {
         return [
             "name"              => ["sometimes", "string"],
+            "category"         => ["sometimes", "nullable", "string", "max:255"],
             "color"             => ["sometimes", "string"],
             "size"              => ["sometimes", "string"],
             "images"            => ["sometimes", "array"],

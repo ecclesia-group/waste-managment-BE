@@ -9,6 +9,8 @@ use App\Http\Requests\Pickup\SetPickupPriceRequest;
 use App\Http\Requests\Pickup\UpdatePickupRequest;
 use App\Models\Client;
 use App\Models\Pickup;
+use App\Models\RoutePlannerBinAssignment;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class PickupController extends Controller
@@ -21,6 +23,31 @@ class PickupController extends Controller
         $data['driver_slug']   = Str::uuid();
         $data['provider_slug'] = $user->provider_slug;
         $data['code']          = $code;
+
+        if (empty($data['client_slug'])) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "client_slug is required for provider pickup creation",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        // Tenant isolation: provider can only create pickups for their own clients.
+        $client = Client::where('client_slug', $data['client_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to create pickup for this client",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
 
         $image_fields = [
             'images',
@@ -75,6 +102,8 @@ class PickupController extends Controller
         $data                  = $request->validated();
         $data['code']          = $code;
         $user                  = request()->user();
+        // Scopes to authenticated client/provider.
+        $data['client_slug'] = $user->client_slug;
         $data['provider_slug'] = $user->provider_slug;
 
         $image_fields = [
@@ -233,6 +262,8 @@ class PickupController extends Controller
 
     public function getSinglePickup($pickup)
     {
+        $user = request()->user();
+
         $pick_up = Pickup::where('code', $pickup)->first();
         if (! $pick_up) {
             return self::apiResponse(
@@ -241,6 +272,29 @@ class PickupController extends Controller
                 reason: "Pickup not found",
                 status_code: self::API_NOT_FOUND
             );
+        }
+
+        // Prevent cross-tenant leakage when fetching by `code`.
+        if (isset($user->client_slug)) {
+            if ((string) $pick_up->client_slug !== (string) $user->client_slug || (string) $pick_up->provider_slug !== (string) $user->provider_slug) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Unauthorized to view this pickup",
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
+        } elseif (isset($user->provider_slug)) {
+            if ((string) $pick_up->provider_slug !== (string) $user->provider_slug) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Unauthorized to view this pickup",
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
         }
 
         return self::apiResponse(
@@ -268,6 +322,7 @@ class PickupController extends Controller
     public function setPickupPrice(SetPickupPriceRequest $request)
     {
         $data = $request->validated();
+        $user = request()->user();
 
         $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
@@ -276,6 +331,17 @@ class PickupController extends Controller
                 message: "Action Failed",
                 reason: "Pickup not found",
                 status_code: self::API_NOT_FOUND
+            );
+        }
+
+        // Provider-scoped update.
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this pickup price",
+                status_code: self::API_FAIL,
+                data: []
             );
         }
 
@@ -295,6 +361,7 @@ class PickupController extends Controller
     public function setPickupDate(SetPickupDateRequest $request)
     {
         $data = $request->validated();
+        $user = request()->user();
 
         $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
@@ -303,6 +370,17 @@ class PickupController extends Controller
                 message: "Action Failed",
                 reason: "Pickup not found",
                 status_code: self::API_NOT_FOUND
+            );
+        }
+
+        // Provider-scoped update.
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this pickup date",
+                status_code: self::API_FAIL,
+                data: []
             );
         }
 
@@ -321,10 +399,13 @@ class PickupController extends Controller
 
     public function setScanStatus()
     {
+        // Scan status is used by the map UI: scanned => green, unscanned => red.
         $data = request()->validate([
             'code'   => 'required|string|exists:pickups,code',
-            'status' => 'required|string|in:scanned,not_scanned',
+            'status' => 'required|string|in:scanned,not_scanned,unscanned',
         ]);
+
+        $user = request()->user();
 
         $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
@@ -336,8 +417,55 @@ class PickupController extends Controller
             );
         }
 
-        $pickup->scan_status = $data['status'];
+        // Provider-scoped scan updates.
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update scan status for this pickup",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $canonicalStatus = match ($data['status']) {
+            'scanned' => 'scanned',
+            'not_scanned' => 'not_scanned',
+            'unscanned' => 'not_scanned',
+            default => $data['status'],
+        };
+
+        $pickup->scan_status = $canonicalStatus;
+
+        // End-to-end flow: once a bin is scanned successfully, treat the pickup as completed.
+        if ($canonicalStatus === 'scanned') {
+            $pickup->status = 'completed';
+        } elseif ($canonicalStatus === 'not_scanned') {
+            $pickup->status = 'pending';
+        }
         $pickup->save();
+
+        // Keep route planner assignment rows in sync (used for map coloring).
+        $assignment = RoutePlannerBinAssignment::query()
+            ->where('provider_slug', $user->provider_slug)
+            ->where('pickup_code', $pickup->code)
+            ->first();
+        if ($assignment) {
+            $assignment->scan_status = $canonicalStatus;
+            // Keep timestamps mutually exclusive for cleaner map UI.
+            $assignment->scanned_at = $canonicalStatus === 'scanned' ? now() : null;
+            $assignment->unscanned_at = $canonicalStatus === 'not_scanned' ? now() : null;
+            $assignment->save();
+        }
+
+        // Support "scan-first" flows: remember the last scanned client for this provider.
+        if ($canonicalStatus === 'scanned' && $pickup->provider_slug) {
+            Cache::put(
+                key: 'wms:last_scanned_client_slug:' . $pickup->provider_slug,
+                value: $pickup->client_slug,
+                seconds: 15 * 60 // 15 minutes TTL
+            );
+        }
 
         return self::apiResponse(
             in_error: false,
@@ -354,6 +482,8 @@ class PickupController extends Controller
             'bin_code' => 'required|string|exists:clients,bin_code',
         ]);
 
+        $user = request()->user();
+
         $bin = Client::where('bin_code', $data['bin_code'])->first();
 
         if (! $bin) {
@@ -366,15 +496,26 @@ class PickupController extends Controller
             );
         }
 
-        $pickup = Pickup::with(['provider', 'client'])
-            ->where([
-                'client_slug'   => $bin->client_slug,
-                'provider_slug' => $bin->provider_slug,
-                'status'        => 'pending',
-                'scan_status'   => 'pending',
-            ])->get();
+        // Provider-scoped manual scan: ensure this bin belongs to the current provider.
+        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to scan this bin",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
 
-        if ($pickup->isEmpty()) {
+        // Return pending pickups that are tied to an active route-plan scan assignment.
+        $pendingAssignments = RoutePlannerBinAssignment::query()
+            ->where('client_slug', $bin->client_slug)
+            ->where('provider_slug', $bin->provider_slug)
+            ->where('scan_status', 'pending')
+            ->orderByDesc('created_at')
+            ->get(['pickup_code']);
+
+        if ($pendingAssignments->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -384,12 +525,20 @@ class PickupController extends Controller
             );
         }
 
+        $pickupCodes = $pendingAssignments->pluck('pickup_code')->toArray();
+
+        $pickups = Pickup::with(['provider', 'client'])
+            ->whereIn('code', $pickupCodes)
+            ->where('status', 'pending')
+            ->where('scan_status', 'pending')
+            ->get();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Bin details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: $pickups->toArray()
         );
     }
 

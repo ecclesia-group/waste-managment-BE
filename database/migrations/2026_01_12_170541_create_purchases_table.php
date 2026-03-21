@@ -16,8 +16,12 @@ return new class extends Migration
             $table->string('client_slug');
             $table->integer('number_of_items');
             $table->decimal('total_price', 10, 2);
+            $table->string('status')->default('pending'); // pending|confirmed|out_for_delivery|delivered|cancelled
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('status');
+            $table->index(['client_slug', 'status'], 'purchase_client_status_idx');
         });
     }
 

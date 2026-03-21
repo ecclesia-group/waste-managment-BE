@@ -13,17 +13,34 @@ class WeighBridgeController extends Controller
     public function registerEntry(CreateTicket $request)
     {
         $facility = $request->user();
+        $effectiveFacilitySlug = $facility->facility_slug;
+        $effectiveDistrictSlug = $facility->district_assembly;
         $data = $request->validated();
+
+        // Tenant isolation: facility can only scan providers within its district assembly.
+        $providerDistrict = \App\Models\Provider::query()
+            ->where('provider_slug', $data['provider_slug'])
+            ->value('district_assembly');
+
+        if ($providerDistrict !== null && (string) $providerDistrict !== (string) $effectiveDistrictSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Provider is not in this facility's district assembly",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
 
         $record = WeighbridgeRecord::create([
             'code' => Str::upper(Str::random(10)),
-            'facility_slug' => $facility->facility_slug ?? null,
+            'facility_slug' => $effectiveFacilitySlug ?? null,
             'provider_slug' => $data['provider_slug'],
             'fleet_slug' => $data['fleet_slug'] ?? null,
             'fleet_code' => $data['fleet_code'] ?? null,
             'gross_weight' => $data['gross_weight'] ?? null,
             'amount' => $data['amount'],
-            'group_id' => $facility->district_assembly ?? 'unknown',
+            'group_id' => $effectiveDistrictSlug ?? 'unknown',
             'payment_status' => $data['payment_status'],
             'scan_status' => $data['scan_status'] ?? 'scanned',
             'notes' => $data['notes'] ?? null,
@@ -41,9 +58,10 @@ class WeighBridgeController extends Controller
     public function allEntries(Request $request)
     {
         $facility = $request->user();
+        $effectiveFacilitySlug = $facility->facility_slug;
 
         $query = WeighbridgeRecord::query()
-            ->where('facility_slug', $facility->facility_slug ?? null)
+            ->where('facility_slug', $effectiveFacilitySlug ?? null)
             ->latest();
 
         if ($request->filled('provider_slug')) {
@@ -104,8 +122,9 @@ class WeighBridgeController extends Controller
         ]);
 
         $facility = $request->user();
+        $effectiveFacilitySlug = $facility->facility_slug;
         $entry = WeighbridgeRecord::where('id', $data['id'])
-            ->where('facility_slug', $facility->facility_slug ?? null)
+            ->where('facility_slug', $effectiveFacilitySlug ?? null)
             ->first();
 
         if (! $entry) {

@@ -11,6 +11,7 @@ class Product extends Model
     protected $fillable = [
         'product_slug',
         'name',
+        'category',
         'color',
         'size',
         'images',
@@ -27,13 +28,6 @@ class Product extends Model
         'original_price' => 'decimal:2',
         'discounted_price' => 'decimal:2',
         'discount_percentage' => 'decimal:2',
-        'deleted_at' => 'datetime',
-    ];
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'images'     => 'array',
         'deleted_at' => 'datetime',
     ];
 }

@@ -6,6 +6,7 @@ use App\Http\Requests\Group\GroupCreation;
 use App\Http\Requests\Group\GroupStatusUpdate;
 use App\Http\Requests\Group\GroupUpdation;
 use App\Models\Group;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class GroupController extends Controller
@@ -13,7 +14,7 @@ class GroupController extends Controller
     // Lists all groups
     public function allGroups()
     {
-        $user   = auth()->user();
+        $user   = Auth::guard('provider')->user();
         $groups = Group::where('provider_slug', $user->provider_slug)->get();
         if ($groups->isEmpty()) {
             return self::apiResponse(
@@ -36,6 +37,17 @@ class GroupController extends Controller
     // Gets details of a single group
     public function show(Group $group)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this group",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -48,7 +60,7 @@ class GroupController extends Controller
     // Creates a new group
     public function register(GroupCreation $request)
     {
-        $user                  = auth()->user();
+        $user                  = Auth::guard('provider')->user();
         $data                  = $request->validated();
         $data['group_slug']    = Str::uuid();
         $data['provider_slug'] = $user->provider_slug;
@@ -65,6 +77,17 @@ class GroupController extends Controller
     // Updates an existing group
     public function updateGroup(GroupUpdation $request, Group $group)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this group",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data = $request->validated();
         $group->update($data);
 
@@ -81,7 +104,22 @@ class GroupController extends Controller
     public function updateGroupStatus(GroupStatusUpdate $request)
     {
         $data          = $request->validated();
-        $group         = Group::where('group_slug', $data['group_slug'])->first();
+
+        $user          = Auth::guard('provider')->user();
+        $group         = Group::query()
+            ->where('group_slug', $data['group_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $group) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Group not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
         $group->status = $data['status'];
         $group->save();
         return self::apiResponse(
@@ -96,6 +134,17 @@ class GroupController extends Controller
     // Deletes a group
     public function deleteGroup(Group $group)
     {
+        $user = Auth::guard('provider')->user();
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to delete this group",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $group->delete();
         return self::apiResponse(
             in_error: false,

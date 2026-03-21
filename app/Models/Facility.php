@@ -50,5 +50,4 @@ class Facility extends Actor
     {
         return "facility_slug";
     }
-
 }

@@ -1,0 +1,224 @@
+
+  GET|HEAD  api/admin/actors_statistics .................................. Admin\AdminController@getStatisticsOverview
+  POST      api/admin/add_team_member ............................... Teams\TeamMemberController@createAdminTeamMember
+  GET|HEAD  api/admin/all_complaints .......................... Complaint\ComplaintmanagementController@listComplaints
+  GET|HEAD  api/admin/all_district_assemblies ..................... DistrictAssembley\DistrictAssemblyController@index
+  GET|HEAD  api/admin/all_facilities ............................................... Facility\FacilityController@index
+  GET|HEAD  api/admin/all_products ............................................ Product\ProductController@listProducts
+  GET|HEAD  api/admin/all_providers ................................................ Provider\ProviderController@index
+  GET|HEAD  api/admin/all_team_members ............................... Teams\TeamMemberController@listAdminTeamMembers
+  GET|HEAD  api/admin/all_violations .......................... Violation\ViolationManagementController@listViolations
+  GET|HEAD  api/admin/all_zones ................................................... ZoneManagementController@listZones
+  GET|HEAD  api/admin/assignment_logs ............................. RoutePlanner\RoutePlannerManagement@assignmentLogs
+  GET|HEAD  api/admin/banners ..................................................... Content\BannerController@adminList
+  POST      api/admin/banners ................................................... Content\BannerController@adminCreate
+  PUT       api/admin/banners/{banner} .......................................... Content\BannerController@adminUpdate
+  DELETE    api/admin/banners/{banner} .......................................... Content\BannerController@adminDelete
+  POST      api/admin/change_password ................................... Admin\AdminPasswordController@changePassword
+  POST      api/admin/create_product ......................................... Product\ProductController@createProduct
+  POST      api/admin/create_zone ................................................ ZoneManagementController@createZone
+  DELETE    api/admin/delete_district_assembly/{district_assembly} DistrictAssembley\DistrictAssemblyController@delet…
+  DELETE    api/admin/delete_facility/{facility} .......................... Facility\FacilityController@deleteFacility
+  DELETE    api/admin/delete_product/{product} ............................... Product\ProductController@deleteProduct
+  DELETE    api/admin/delete_provider/{provider} .......................... Provider\ProviderController@deleteProvider
+  DELETE    api/admin/delete_zone/{zone} ......................................... ZoneManagementController@deleteZone
+  GET|HEAD  api/admin/get_single_complaint/{complaint} ... Complaint\ComplaintmanagementController@getComplaintDetails
+  GET|HEAD  api/admin/get_single_district_assembly/{district_assembly} DistrictAssembley\DistrictAssemblyController@s…
+  GET|HEAD  api/admin/get_single_facility/{facility} ................................ Facility\FacilityController@show
+  GET|HEAD  api/admin/get_single_plan/{plan} ................................ RoutePlanner\RoutePlannerManagement@show
+  GET|HEAD  api/admin/get_single_product/{product} ....................... Product\ProductController@getProductDetails
+  GET|HEAD  api/admin/get_single_provider/{provider} ................................ Provider\ProviderController@show
+  GET|HEAD  api/admin/get_single_violation/{violation} ... Violation\ViolationManagementController@getViolationDetails
+  GET|HEAD  api/admin/get_single_zone/{zone} ................................. ZoneManagementController@getZoneDetails
+  GET|HEAD  api/admin/guides ....................................................... Content\GuideController@adminList
+  POST      api/admin/guides ..................................................... Content\GuideController@adminCreate
+  PUT       api/admin/guides/{guide} ............................................. Content\GuideController@adminUpdate
+  DELETE    api/admin/guides/{guide} ............................................. Content\GuideController@adminDelete
+  POST      api/admin/login ................................................ Admin\AdminAuthenticationController@login
+  POST      api/admin/logout .............................................. Admin\AdminAuthenticationController@logout
+  GET|HEAD  api/admin/rbac/roles ........................................................... Rbac\RoleController@index
+  POST      api/admin/rbac/roles ........................................................... Rbac\RoleController@store
+  GET|HEAD  api/admin/rbac/roles/{role} ..................................................... Rbac\RoleController@show
+  PUT       api/admin/rbac/roles/{role} ................................................... Rbac\RoleController@update
+  DELETE    api/admin/rbac/roles/{role} .................................................. Rbac\RoleController@destroy
+  POST      api/admin/register_admin .................................................. Admin\AdminController@register
+  POST      api/admin/register_district_assembly ............... DistrictAssembley\DistrictAssemblyController@register
+  POST      api/admin/register_facility ......................................... Facility\FacilityController@register
+  POST      api/admin/register_provider ......................................... Provider\ProviderController@register
+  GET|HEAD  api/admin/reports ................................................. Reports\ReportsController@adminReports
+  POST      api/admin/resend_verificationCode ............ Admin\AdminPasswordController@sendResetPasswordNotification
+  POST      api/admin/reset_password ..................................... Admin\AdminPasswordController@resetPassword
+  POST      api/admin/reset_password_notification ........ Admin\AdminPasswordController@sendResetPasswordNotification
+  PUT       api/admin/update_complaint_status/{complaint} Complaint\ComplaintmanagementController@updateComplaintStat…
+  PUT       api/admin/update_district_assembly_details/{district_assembly} DistrictAssembley\DistrictAssemblyControll…
+  POST      api/admin/update_district_assembly_status ...... DistrictAssembley\DistrictAssemblyController@updateStatus
+  PUT       api/admin/update_facility_details/{facility} ........... Facility\FacilityController@updateFacilityProfile
+  POST      api/admin/update_facility_status ................................ Facility\FacilityController@updateStatus
+  PUT       api/admin/update_product/{product} ............................... Product\ProductController@updateProduct
+  PUT       api/admin/update_provider_details/{provider} ........... Provider\ProviderController@updateProviderProfile
+  POST      api/admin/update_provider_status ................................ Provider\ProviderController@updateStatus
+  PUT       api/admin/update_purchase_status/{purchase} ............. Purchase\PurchaseController@updatePurchaseStatus
+  PUT       api/admin/update_violation_status/{violation} Violation\ViolationManagementController@updateViolationStat…
+  PUT       api/admin/update_zone/{zone} ......................................... ZoneManagementController@updateZone
+  POST      api/admin/update_zone_status ................................... ZoneManagementController@updateZoneStatus
+  GET|HEAD  api/client/banners .............................................. Content\BannerController@listForAudience
+  GET|HEAD  api/client/cart .............................................................. Cart\CartController@getCart
+  POST      api/client/cart/add_item ..................................................... Cart\CartController@addItem
+  POST      api/client/cart/checkout .................................................... Cart\CartController@checkout
+  DELETE    api/client/cart/remove_item/{product_slug} ................................ Cart\CartController@removeItem
+  PUT       api/client/cart/update_item/{product_slug} ................................ Cart\CartController@updateItem
+  POST      api/client/change_password ................................ Client\ClientPasswordController@changePassword
+  POST      api/client/create_bulk_waste_request ............................ Pickup\PickupController@bulkWasteRequest
+  POST      api/client/create_complaint ...................... Complaint\ComplaintmanagementController@createComplaint
+  POST      api/client/create_feedback .................................... Feedback\FeedbackController@createFeedback
+  POST      api/client/create_purchase .................................... Purchase\PurchaseController@createPurchase
+  GET|HEAD  api/client/dashboard ....................................... Dashboard\DashboardController@clientDashboard
+  DELETE    api/client/delete_complaint/{complaint} .......... Complaint\ComplaintmanagementController@deleteComplaint
+  DELETE    api/client/delete_feedback/{feedback} ......................... Feedback\FeedbackController@deleteFeedback
+  DELETE    api/client/delete_pickup/{pickup} ................................... Pickup\PickupController@deletePickup
+  GET|HEAD  api/client/get_all_notifications ................. Notification\NotificationController@getAllNotifications
+  GET|HEAD  api/client/get_client_pickups ................................... Pickup\PickupController@getClientPickups
+  GET|HEAD  api/client/get_complaints ......................... Complaint\ComplaintmanagementController@listComplaints
+  GET|HEAD  api/client/get_completed_pickups ............................. Pickup\PickupController@getCompletedPickups
+  GET|HEAD  api/client/get_feedbacks ....................................... Feedback\FeedbackController@listFeedbacks
+  GET|HEAD  api/client/get_payment_history ............................. Purchase\PurchaseController@getPaymentHistory
+  GET|HEAD  api/client/get_pickup_dates ....................................... Pickup\PickupController@getPickupDates
+  GET|HEAD  api/client/get_products ........................................... Product\ProductController@listProducts
+  GET|HEAD  api/client/get_purchases ....................................... Purchase\PurchaseController@listPurchases
+  GET|HEAD  api/client/get_single_complaint/{complaint} .. Complaint\ComplaintmanagementController@getComplaintDetails
+  GET|HEAD  api/client/get_single_feedback/{feedback} ................. Feedback\FeedbackController@getFeedbackDetails
+  GET|HEAD  api/client/get_single_pickup/{pickup} ............................ Pickup\PickupController@getSinglePickup
+  GET|HEAD  api/client/get_single_product/{product} ...................... Product\ProductController@getProductDetails
+  GET|HEAD  api/client/get_single_purchase/{purchase} ................. Purchase\PurchaseController@getPurchaseDetails
+  GET|HEAD  api/client/get_single_violation/{violation} .. Violation\ViolationManagementController@getViolationDetails
+  GET|HEAD  api/client/get_violations ......................... Violation\ViolationManagementController@listViolations
+  GET|HEAD  api/client/guides ................................................ Content\GuideController@listForAudience
+  POST      api/client/login ............................................. Client\ClientAuthenticationController@login
+  POST      api/client/logout ........................................... Client\ClientAuthenticationController@logout
+  POST      api/client/process_payment/{purchase} ......................... Purchase\PurchaseController@processPayment
+  POST      api/client/reschedule_pickup .................................... Pickup\PickupController@reschedulePickup
+  POST      api/client/resend_verificationCode ......... Client\ClientPasswordController@sendResetPasswordNotification
+  POST      api/client/reset_password .................................. Client\ClientPasswordController@resetPassword
+  POST      api/client/reset_password_notification ..... Client\ClientPasswordController@sendResetPasswordNotification
+  PUT       api/client/update_bulk_waste_request/{pickup} ............. Pickup\PickupController@updateBulkWasteRequest
+  POST      api/client/update_complaint/{complaint} .......... Complaint\ComplaintmanagementController@updateComplaint
+  PUT       api/client/update_feedback/{feedback} ......................... Feedback\FeedbackController@updateFeedback
+  PUT       api/client/update_profile/{client} ........................... Client\ClientController@updateClientProfile
+  POST      api/client/update_status ...................................... Pickup\PickupController@updatePickupStatus
+  POST      api/district_assembly/add_team_member ........ Teams\TeamMemberController@createDistrictAssemblyTeamMember
+  GET|HEAD  api/district_assembly/all_team_members ........ Teams\TeamMemberController@listDistrictAssemblyTeamMembers
+  GET|HEAD  api/district_assembly/assignment_logs ................. RoutePlanner\RoutePlannerManagement@assignmentLogs
+  POST      api/district_assembly/change_password DistrictAssembley\DistrictAssembleyPasswordController@changePassword
+  GET|HEAD  api/district_assembly/complaints ... DistrictAssembley\DistrictAssemblyManagementController@listComplaints
+  GET|HEAD  api/district_assembly/dashboard .................. Dashboard\DashboardController@districtAssemblyDashboard
+  GET|HEAD  api/district_assembly/facilities ... DistrictAssembley\DistrictAssemblyManagementController@listFacilities
+  GET|HEAD  api/district_assembly/get_single_complaint/{complaint} DistrictAssembley\DistrictAssemblyManagementContro…
+  GET|HEAD  api/district_assembly/get_single_facility/{facility} DistrictAssembley\DistrictAssemblyManagementControll…
+  GET|HEAD  api/district_assembly/get_single_plan/{plan} .................... RoutePlanner\RoutePlannerManagement@show
+  GET|HEAD  api/district_assembly/get_single_provider/{provider} DistrictAssembley\DistrictAssemblyManagementControll…
+  POST      api/district_assembly/login ............ DistrictAssembley\DistrictAssembleyAuthenticationController@login
+  POST      api/district_assembly/logout .......... DistrictAssembley\DistrictAssembleyAuthenticationController@logout
+  GET|HEAD  api/district_assembly/providers ..... DistrictAssembley\DistrictAssemblyManagementController@listProviders
+  POST      api/district_assembly/register_facility DistrictAssembley\DistrictAssemblyManagementController@registerFa…
+  POST      api/district_assembly/register_provider DistrictAssembley\DistrictAssemblyManagementController@registerPr…
+  GET|HEAD  api/district_assembly/reports .......................... Reports\ReportsController@districtAssemblyReports
+  POST      api/district_assembly/resend_verificationCode DistrictAssembley\DistrictAssembleyPasswordController@sendR…
+  POST      api/district_assembly/reset_password . DistrictAssembley\DistrictAssembleyPasswordController@resetPassword
+  POST      api/district_assembly/reset_password_notification DistrictAssembley\DistrictAssembleyPasswordController@s…
+  PUT       api/district_assembly/update_complaint_status/{complaint} DistrictAssembley\DistrictAssemblyManagementCon…
+  PUT       api/district_assembly/update_facility_status/{facility} DistrictAssembley\DistrictAssemblyManagementContr…
+  PUT       api/district_assembly/update_provider_status/{provider} DistrictAssembley\DistrictAssemblyManagementContr…
+  GET|HEAD  api/district_assembly/zones ............. DistrictAssembley\DistrictAssemblyManagementController@listZones
+  POST      api/facility/add_team_member ......................... Teams\TeamMemberController@createFacilityTeamMember
+  GET|HEAD  api/facility/all_team_members ......................... Teams\TeamMemberController@listFacilityTeamMembers
+  GET|HEAD  api/facility/all_weigh_bridge_entries ....................... WeighBridge\WeighBridgeController@allEntries
+  POST      api/facility/change_password .......................... Facility\FacilityPasswordController@changePassword
+  GET|HEAD  api/facility/dashboard ................................... Dashboard\DashboardController@facilityDashboard
+  DELETE    api/facility/delete_weigh_bridge_entry/{entry} ............. WeighBridge\WeighBridgeController@deleteEntry
+  GET|HEAD  api/facility/get_single_weigh_bridge_entry/{entry} ................ WeighBridge\WeighBridgeController@show
+  POST      api/facility/login ....................................... Facility\FacilityAuthenticationController@login
+  POST      api/facility/logout ..................................... Facility\FacilityAuthenticationController@logout
+  POST      api/facility/register_weigh_bridge_entry ................. WeighBridge\WeighBridgeController@registerEntry
+  GET|HEAD  api/facility/reports ........................................... Reports\ReportsController@facilityReports
+  POST      api/facility/resend_verificationCode ... Facility\FacilityPasswordController@sendResetPasswordNotification
+  POST      api/facility/reset_password ............................ Facility\FacilityPasswordController@resetPassword
+  POST      api/facility/reset_password_notification Facility\FacilityPasswordController@sendResetPasswordNotification
+  PUT       api/facility/update_weigh_bridge_entry_details/{entry} ..... WeighBridge\WeighBridgeController@updateEntry
+  POST      api/facility/update_weigh_bridge_entry_status ............. WeighBridge\WeighBridgeController@updateStatus
+  POST      api/provider/add_group .................................................... Group\GroupController@register
+  POST      api/provider/add_team_member ......................... Teams\TeamMemberController@createProviderTeamMember
+  GET|HEAD  api/provider/all_clients .............................................. Client\ClientController@allClients
+  GET|HEAD  api/provider/all_complaints ................. Complaint\ComplaintmanagementController@listClientComplaints
+  GET|HEAD  api/provider/all_drivers .............................................. Driver\DriverController@allDrivers
+  GET|HEAD  api/provider/all_fleets ........................................ Fleet\FleetManagementController@allFleets
+  GET|HEAD  api/provider/all_groups .................................................. Group\GroupController@allGroups
+  GET|HEAD  api/provider/all_plans ...................................... RoutePlanner\RoutePlannerManagement@allPlans
+  GET|HEAD  api/provider/all_products ......................................... Product\ProductController@listProducts
+  GET|HEAD  api/provider/all_team_members ......................... Teams\TeamMemberController@listProviderTeamMembers
+  GET|HEAD  api/provider/all_violations ................. Violation\ViolationManagementController@listClientViolations
+  GET|HEAD  api/provider/assignment_logs .......................... RoutePlanner\RoutePlannerManagement@assignmentLogs
+  GET|HEAD  api/provider/banners ............................................ Content\BannerController@listForAudience
+  POST      api/provider/change_password .......................... Provider\ProviderPasswordController@changePassword
+  POST      api/provider/change_scan_status .................................... Pickup\PickupController@setScanStatus
+  POST      api/provider/create_plan .................................... RoutePlanner\RoutePlannerManagement@register
+  POST      api/provider/create_product ...................................... Product\ProductController@createProduct
+  POST      api/provider/create_violation .................... Violation\ViolationManagementController@createViolation
+  GET|HEAD  api/provider/dashboard ................................... Dashboard\DashboardController@providerDashboard
+  DELETE    api/provider/delete_client/{client} ................................. Client\ClientController@deleteClient
+  DELETE    api/provider/delete_driver/{driver} ................................. Driver\DriverController@deleteDriver
+  DELETE    api/provider/delete_fleet/{fleet} ............................ Fleet\FleetManagementController@deleteFleet
+  DELETE    api/provider/delete_group/{group} ...................................... Group\GroupController@deleteGroup
+  DELETE    api/provider/delete_plan/{plan} ........................... RoutePlanner\RoutePlannerManagement@deletePlan
+  DELETE    api/provider/delete_product/{product} ............................ Product\ProductController@deleteProduct
+  GET|HEAD  api/provider/get_all_client_pickups ................................ Pickup\PickupController@getAllPickups
+  GET|HEAD  api/provider/get_single_client/{client} ..................................... Client\ClientController@show
+  GET|HEAD  api/provider/get_single_client_pickup/{pickup} ................... Pickup\PickupController@getSinglePickup
+  GET|HEAD  api/provider/get_single_complaint/{complaint} Complaint\ComplaintmanagementController@getComplaintDetails
+  GET|HEAD  api/provider/get_single_driver/{driver} ..................................... Driver\DriverController@show
+  GET|HEAD  api/provider/get_single_fleet/{fleet} ............................... Fleet\FleetManagementController@show
+  GET|HEAD  api/provider/get_single_group/{group} ......................................... Group\GroupController@show
+  GET|HEAD  api/provider/get_single_payment/{payment} ................... Payment\ProviderPaymentController@getPayment
+  GET|HEAD  api/provider/get_single_plan/{plan} ............................. RoutePlanner\RoutePlannerManagement@show
+  GET|HEAD  api/provider/get_single_product/{product} .................... Product\ProductController@getProductDetails
+  GET|HEAD  api/provider/get_single_violation/{violation} Violation\ViolationManagementController@getViolationDetails
+  GET|HEAD  api/provider/guides .............................................. Content\GuideController@listForAudience
+  POST      api/provider/handover_requests ................................... Handover\WasteHandoverController@create
+  GET|HEAD  api/provider/handover_requests ..................................... Handover\WasteHandoverController@list
+  GET|HEAD  api/provider/handover_requests/{handover} .......................... Handover\WasteHandoverController@show
+  POST      api/provider/handover_requests/{handover}/accept ................. Handover\WasteHandoverController@accept
+  POST      api/provider/handover_requests/{handover}/complete ............. Handover\WasteHandoverController@complete
+  POST      api/provider/handover_requests/{handover}/decline ............... Handover\WasteHandoverController@decline
+  POST      api/provider/login ....................................... Provider\ProviderAuthenticationController@login
+  POST      api/provider/logout ..................................... Provider\ProviderAuthenticationController@logout
+  POST      api/provider/manual_bin_code_scan ................................. Pickup\PickupController@manualCodeScan
+  GET|HEAD  api/provider/payments ..................................... Payment\ProviderPaymentController@listPayments
+  POST      api/provider/provider_pickup_creation ..................... Pickup\PickupController@providerPickupCreation
+  POST      api/provider/register_client ............................................ Client\ClientController@register
+  POST      api/provider/register_driver ............................................ Driver\DriverController@register
+  POST      api/provider/register_fleet ..................................... Fleet\FleetManagementController@register
+  GET|HEAD  api/provider/reports ........................................... Reports\ReportsController@providerReports
+  POST      api/provider/resend_verificationCode ... Provider\ProviderPasswordController@sendResetPasswordNotification
+  POST      api/provider/reset_password ............................ Provider\ProviderPasswordController@resetPassword
+  POST      api/provider/reset_password_notification Provider\ProviderPasswordController@sendResetPasswordNotification
+  POST      api/provider/scan_qrcode .............................................. Client\ClientController@scanQRCode
+  POST      api/provider/set_pickup_date ....................................... Pickup\PickupController@setPickupDate
+  POST      api/provider/set_pickup_price ..................................... Pickup\PickupController@setPickupPrice
+  PUT       api/provider/update_client_details/{client} .................. Client\ClientController@updateClientProfile
+  POST      api/provider/update_client_status ................................... Client\ClientController@updateStatus
+  PUT       api/provider/update_complaint_status/{complaint} Complaint\ComplaintmanagementController@updateComplaintS…
+  PUT       api/provider/update_driver_details/{driver} .................. Driver\DriverController@updateDriverProfile
+  POST      api/provider/update_driver_status ................................... Driver\DriverController@updateStatus
+  PUT       api/provider/update_fleet_details/{fleet} .................... Fleet\FleetManagementController@updateFleet
+  POST      api/provider/update_fleet_status ............................ Fleet\FleetManagementController@updateStatus
+  PUT       api/provider/update_group_details/{group} .............................. Group\GroupController@updateGroup
+  POST      api/provider/update_group_status ................................. Group\GroupController@updateGroupStatus
+  PUT       api/provider/update_plan_details/{plan} ................... RoutePlanner\RoutePlannerManagement@updatePlan
+  POST      api/provider/update_plan_status ......................... RoutePlanner\RoutePlannerManagement@updateStatus
+  PUT       api/provider/update_product/{product} ............................ Product\ProductController@updateProduct
+  PUT       api/provider/update_profile/{provider} ................. Provider\ProviderController@updateProviderProfile
+  PUT       api/provider/update_violation_status/{violation} Violation\ViolationManagementController@updateViolationS…
+  GET|HEAD  api/user ................................................................................................. 
+  GET|HEAD  api/yes .................................................................................................. 
+
+                                                                                                  Showing [220] routes
+

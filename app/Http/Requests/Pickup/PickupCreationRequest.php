@@ -21,7 +21,9 @@ class PickupCreationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_slug' => 'required|string|exists:clients,client_slug',
+            // For client flows, the authenticated user scope sets client_slug automatically.
+            // For provider flows, client_slug may be provided explicitly.
+            'client_slug' => 'nullable|string|exists:clients,client_slug',
             'title'       => 'required|string',
             'category'    => 'required|string',
             'description' => 'nullable|string',

@@ -33,6 +33,11 @@ use App\Http\Controllers\Handover\WasteHandoverController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyManagementController;
+use App\Http\Controllers\Reports\ReportsController;
+use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Payment\ProviderPaymentController;
+use App\Http\Controllers\Dashboard\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -67,6 +72,11 @@ Route::prefix("client")->group(function () {
 
         // Product Management (View products for purchase)
         Route::get('get_products', [ProductController::class, 'listProducts']);
+        Route::get('cart', [CartController::class, 'getCart']);
+        Route::post('cart/add_item', [CartController::class, 'addItem']);
+        Route::put('cart/update_item/{product_slug}', [CartController::class, 'updateItem']);
+        Route::delete('cart/remove_item/{product_slug}', [CartController::class, 'removeItem']);
+        Route::post('cart/checkout', [CartController::class, 'checkout']);
         Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
 
         // Purchase Management
@@ -74,6 +84,7 @@ Route::prefix("client")->group(function () {
         Route::get('get_purchases', [PurchaseController::class, 'listPurchases']);
         Route::get('get_single_purchase/{purchase}', [PurchaseController::class, 'getPurchaseDetails']);
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
+        Route::get('get_payment_history', [PurchaseController::class, 'getPaymentHistory']);
 
         // Report Management
         Route::get('get_feedbacks', [FeedbackController::class, 'listFeedbacks']);
@@ -98,6 +109,7 @@ Route::prefix("client")->group(function () {
         // Dashboard Content
         Route::get('banners', [BannerController::class, 'listForAudience']);
         Route::get('guides', [GuideController::class, 'listForAudience']);
+        Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
     });
@@ -113,6 +125,15 @@ Route::prefix("provider")->group(function () {
         Route::post("change_password", [ProviderPasswordController::class, "changePassword"]);
         Route::put("update_profile/{provider}", [ProviderController::class, "updateProviderProfile"]);
         Route::post("logout", [ProviderAuthenticationController::class, "logout"]);
+
+        // Provider reports/analytics
+        Route::get("reports", [ReportsController::class, "providerReports"]);
+
+        Route::get("dashboard", [DashboardController::class, "providerDashboard"]);
+
+        // Provider payment management
+        Route::get("payments", [ProviderPaymentController::class, "listPayments"]);
+        Route::get("get_single_payment/{payment}", [ProviderPaymentController::class, "getPayment"]);
 
         // Clients Management
         Route::post("register_client", [ClientController::class, "register"]);
@@ -142,6 +163,7 @@ Route::prefix("provider")->group(function () {
         Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
         Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
+        Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
         Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
         Route::put("update_plan_details/{plan}", [RoutePlannerManagement::class, "updatePlan"]);
         Route::delete("delete_plan/{plan}", [RoutePlannerManagement::class, "deletePlan"]);
@@ -208,6 +230,9 @@ Route::prefix("facility")->group(function () {
         Route::post("change_password", [FacilityPasswordController::class, "changePassword"]);
         Route::post("logout", [FacilityAuthenticationController::class, "logout"]);
 
+        // Facility reports/analytics
+        Route::get("reports", [ReportsController::class, "facilityReports"]);
+
         // Weigh Bridge Management
         Route::post("register_weigh_bridge_entry", [WeighBridgeController::class, "registerEntry"]);
         Route::get("all_weigh_bridge_entries", [WeighBridgeController::class, "allEntries"]);
@@ -215,6 +240,7 @@ Route::prefix("facility")->group(function () {
         Route::post("update_weigh_bridge_entry_status", [WeighBridgeController::class, "updateStatus"]);
         Route::put("update_weigh_bridge_entry_details/{entry}", [WeighBridgeController::class, "updateEntry"]);
         Route::delete("delete_weigh_bridge_entry/{entry}", [WeighBridgeController::class, "deleteEntry"]);
+        Route::get("dashboard", [DashboardController::class, "facilityDashboard"]);
     });
 });
 
@@ -227,6 +253,34 @@ Route::prefix("district_assembly")->group(function () {
     Route::middleware(["auth:district_assembly"])->group(function () {
         Route::post("change_password", [DistrictAssembleyPasswordController::class, "changePassword"]);
         Route::post("logout", [DistrictAssembleyAuthenticationController::class, "logout"]);
+
+        // District Assembly reports/analytics (MMDA dashboard data)
+        Route::get("reports", [ReportsController::class, "districtAssemblyReports"]);
+
+        // District Assembly assignment logs + plan details for map/dashboard
+        Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
+        Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
+
+        Route::get("dashboard", [DashboardController::class, "districtAssemblyDashboard"]);
+
+        // District Assembly management (providers, facilities, zones, complaints)
+        Route::get("providers", [DistrictAssemblyManagementController::class, "listProviders"]);
+        Route::get("get_single_provider/{provider}", [DistrictAssemblyManagementController::class, "getProvider"]);
+
+        Route::get("facilities", [DistrictAssemblyManagementController::class, "listFacilities"]);
+        Route::get("get_single_facility/{facility}", [DistrictAssemblyManagementController::class, "getFacility"]);
+
+        Route::get("zones", [DistrictAssemblyManagementController::class, "listZones"]);
+
+        Route::get("complaints", [DistrictAssemblyManagementController::class, "listComplaints"]);
+        Route::get("get_single_complaint/{complaint}", [DistrictAssemblyManagementController::class, "getComplaint"]);
+        Route::put("update_complaint_status/{complaint}", [DistrictAssemblyManagementController::class, "updateComplaintStatus"]);
+
+        Route::post("register_provider", [DistrictAssemblyManagementController::class, "registerProvider"]);
+        Route::post("register_facility", [DistrictAssemblyManagementController::class, "registerFacility"]);
+
+        Route::put("update_provider_status/{provider}", [DistrictAssemblyManagementController::class, "updateProviderStatus"]);
+        Route::put("update_facility_status/{facility}", [DistrictAssemblyManagementController::class, "updateFacilityStatus"]);
     });
 });
 
@@ -240,6 +294,9 @@ Route::prefix("admin")->group(function () {
     Route::middleware(["auth:admin", "verified"])->group(function () {
         Route::post("logout", [AdminAuthenticationController::class, "logout"]);
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
+
+        // Admin reports/analytics (Super Admin)
+        Route::get("reports", [ReportsController::class, "adminReports"]);
 
         // Provider Management
         Route::post("register_provider", [ProviderController::class, "register"]);
@@ -292,6 +349,13 @@ Route::prefix("admin")->group(function () {
 
         // Statictics Management
         Route::get('actors_statistics', [AdminController::class, 'getStatisticsOverview']);
+
+        // Store order management
+        Route::put('update_purchase_status/{purchase}', [PurchaseController::class, 'updatePurchaseStatus']);
+
+        // Assignment logs (super admin map/dashboard filtering)
+        Route::get('assignment_logs', [RoutePlannerManagement::class, 'assignmentLogs']);
+        Route::get('get_single_plan/{plan}', [RoutePlannerManagement::class, 'show']);
 
         // Banner and Guide Management
         Route::get('banners', [BannerController::class, 'adminList']);

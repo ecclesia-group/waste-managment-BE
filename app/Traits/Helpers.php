@@ -283,16 +283,22 @@ trait Helpers
      */
     protected static function generateQRCodeImage(string $data, string $clientSlug): string
     {
-        // Using a simple API to generate QR code
-        // For production, consider installing: composer require simplesoftwareio/simple-qrcode
-        $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($data);
+        // Deterministic local caching to avoid re-hitting the QR server on every purchase/regeneration.
+        // If QR generation fails, we fall back to returning the API URL.
+        $hash = hash('sha256', $data . '|' . $clientSlug);
+        $fileName = substr($hash, 0, 24) . '.png';
+        $filePath = "uploads/qrcodes/" . $fileName;
 
-        // Download and save the QR code
+        $disk = Storage::disk("public");
+        if ($disk->exists($filePath)) {
+            return config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
+        }
+
+        $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($data);
         $qrCodeContent = @file_get_contents($qrCodeUrl);
+
         if ($qrCodeContent) {
-            $fileName = Str::random(15) . '.png';
-            $filePath = "uploads/qrcodes/" . $fileName;
-            Storage::disk("public")->put($filePath, $qrCodeContent);
+            $disk->put($filePath, $qrCodeContent);
             return config("custom.urls.backend_url") . "/" . "storage/" . $filePath;
         }
 

@@ -14,11 +14,20 @@ return new class extends Migration
         Schema::create('weighbridge_records', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('client_id');
-            $table->decimal('amount', 10, 2);
-            $table->string('group_id');
+            $table->string('facility_slug')->nullable();
+            $table->string('provider_slug')->nullable();
+            $table->string('fleet_slug')->nullable();
+            $table->string('fleet_code')->nullable();
+            $table->decimal('gross_weight', 10, 2)->nullable();
+            $table->decimal('amount', 10, 2)->nullable();
+            $table->string('payment_status')->default('paid'); // paid|credit
+            $table->string('scan_status')->default('scanned'); // scanned|unscanned|handover
+            $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['facility_slug', 'provider_slug'], 'weighbridge_facility_provider_idx');
+            $table->index(['payment_status', 'scan_status'], 'weighbridge_status_idx');
         });
     }
 

@@ -6,13 +6,26 @@ use App\Http\Requests\Product\ProductCreationRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
 use App\Models\Product;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     // Lists all products
-    public function listProducts()
+    public function listProducts(Request $request)
     {
-        $products = Product::all();
+        $category = $request->query('category');
+        $q = $request->query('q');
+
+        $query = Product::query();
+        if (! empty($category)) {
+            $query->where('category', (string) $category);
+        }
+
+        if (! empty($q)) {
+            $query->where('name', 'like', '%' . $q . '%');
+        }
+
+        $products = $query->get();
         if ($products->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
