@@ -21,6 +21,7 @@ const BODY_BY_KEY = {
   "POST api/client/update_status": `{"code":"{{pickup_code}}","status":"cancelled"}`,
   "POST api/client/reschedule_pickup": `{"code":"{{pickup_code}}","new_date":"2026-03-25"}`,
   "POST api/provider/login": `{"emailOrPhone":"provider@example.com","password":"your-password"}`,
+  "POST api/provider/create_complaint": `{"location":"Accra Central","description":"Provider support request","images":[]}`,
   "POST api/provider/register_client": `{"first_name":"Ama","last_name":"Mensah","phone_number":"233500000001","email":"ama@example.com","gps_address":"GA-123-4567","type":"residential","pickup_location":"Front gate","bin_size":"120L","bin_code":"BIN-0001","group_id":"{{group_slug}}"}`,
   "POST api/provider/create_violation": `{"client_slug":"{{client_slug}}","type":"waste_contamination","location":"GA-123","description":"Optional","images":[]}`,
   "POST api/provider/create_plan": `{"provider_slug":"{{provider_slug}}","driver_slug":"{{driver_slug}}","fleet_slug":"{{fleet_slug}}","group_slug":"{{group_slug}}"}`,

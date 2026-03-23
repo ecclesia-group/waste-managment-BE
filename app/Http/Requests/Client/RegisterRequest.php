@@ -30,7 +30,7 @@ class RegisterRequest extends FormRequest
             'pickup_location' => 'required|string',
             'bin_size'        => 'required|string',
             'bin_code'        => 'nullable|string',
-            'group_id'        => 'nullable|string',
+            'group_slug'      => 'nullable|string',
             'qrcode'          => 'nullable|starts_with:data:,http://,https://',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',
         ];

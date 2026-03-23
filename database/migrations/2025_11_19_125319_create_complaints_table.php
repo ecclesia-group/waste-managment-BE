@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('complaints', function (Blueprint $table) {
             $table->id();
-            $table->string('client_slug');
+            $table->string('client_slug')->nullable();
             $table->string('provider_slug');
             $table->string('code')->unique();
             $table->string('location');

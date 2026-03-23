@@ -23,8 +23,8 @@ class GroupCreation extends FormRequest
         return [
             'name'        => 'required|string|unique:groups,name',
             'description' => 'nullable|string',
-            'locations'   => 'required|array',
-            'zones'       => 'nullable|array',
+            // 'locations'   => 'required|array',
+            // 'zones'       => 'nullable|array',
         ];
     }
 }

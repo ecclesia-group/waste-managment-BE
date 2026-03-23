@@ -48,7 +48,7 @@ class UpdateProviderProfileRequest extends FormRequest
                 'max:100',
                 Rule::unique('providers', 'business_registration_number')->ignore($provider_slug, 'provider_slug'),
             ],
-
+            'business_name'                    => 'nullable|string|max:255',
             'gps_address'                      => 'required|string|max:255',
             'district_assembly'                => 'nullable|string|max:255',
 
@@ -57,7 +57,6 @@ class UpdateProviderProfileRequest extends FormRequest
             'tax_certificate_image'            => 'nullable|starts_with:data:,http://,https://',
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
 
-            'zone_slug'                        => 'nullable|exists:zones,zone_slug',
             'region'                           => 'required|string|max:100',
             'location'                         => 'required|string|max:255',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',

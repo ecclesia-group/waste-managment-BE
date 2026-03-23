@@ -123,7 +123,7 @@ Route::prefix("provider")->group(function () {
 
     Route::middleware(["auth:provider"])->group(function () {
         Route::post("change_password", [ProviderPasswordController::class, "changePassword"]);
-        Route::put("update_profile/{provider}", [ProviderController::class, "updateProviderProfile"]);
+        Route::put("update_profile/{provider}", [ProviderController::class, "updateProfile"]);
         Route::post("logout", [ProviderAuthenticationController::class, "logout"]);
 
         // Provider reports/analytics
@@ -184,6 +184,8 @@ Route::prefix("provider")->group(function () {
         Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
 
         // Complaint Management
+        // Providers can file complaints to platform support from the provider dashboard.
+        Route::post("create_complaint", [ComplaintmanagementController::class, "createComplaint"]);
         Route::get("all_complaints", [ComplaintmanagementController::class, "listClientComplaints"]);
         Route::get("get_single_complaint/{complaint}", [ComplaintmanagementController::class, "getComplaintDetails"]);
         Route::put("update_complaint_status/{complaint}", [ComplaintmanagementController::class, "updateComplaintStatus"]);
@@ -193,13 +195,6 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_violation/{violation}", [ViolationManagementController::class, "getViolationDetails"]);
         Route::post("create_violation", [ViolationManagementController::class, "createViolation"]);
         Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
-
-        // Product Management
-        Route::post("create_product", [ProductController::class, "createProduct"]);
-        Route::get("all_products", [ProductController::class, "listProducts"]);
-        Route::get("get_single_product/{product}", [ProductController::class, "getProductDetails"]);
-        Route::put("update_product/{product}", [ProductController::class, "updateProduct"]);
-        Route::delete("delete_product/{product}", [ProductController::class, "deleteProduct"]);
 
         // QR Code Scanner (Scan bin QR code to get client details)
         Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);

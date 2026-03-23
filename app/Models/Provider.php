@@ -19,7 +19,6 @@ class Provider extends Actor
         'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
-        'zone_slug',
         'status',
         'suspension_reason',
         'corrective_action',
@@ -63,8 +62,10 @@ class Provider extends Actor
         return $this->belongsToMany(
             Zone::class,
             'provider_zone_assignments',
-            'provider_slug',
-            'zone_slug'
+            'provider_slug', // FK on pivot -> providers.provider_slug
+            'zone_slug', // FK on pivot -> zones.zone_slug
+            'provider_slug', // providers parent key
+            'zone_slug' // zones related key
         )
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();

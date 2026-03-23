@@ -52,6 +52,7 @@ const BODY_BY_KEY = {
   "POST api/client/reset_password": `{\n  "password": "NewPass1!",\n  "confirm_password": "NewPass1!",\n  "client_slug": "{{client_slug}}",\n  "otp": "000000"\n}`,
   "POST api/client/change_password": `{\n  "current_password": "old",\n  "password": "NewPass1!",\n  "password_confirmation": "NewPass1!"\n}`,
   "POST api/client/create_complaint": `{\n  "title": "Missed pickup",\n  "location": "House 12",\n  "description": "Details",\n  "images": []\n}`,
+  "POST api/provider/create_complaint": `{\n  "location": "Accra Central",\n  "description": "Provider support request",\n  "images": []\n}`,
   "POST api/client/create_bulk_waste_request": `{\n  "title": "Bulk pickup",\n  "category": "bulky",\n  "description": "Description",\n  "location": "Accra",\n  "images": []\n}`,
   "POST api/client/create_feedback": `{\n  "title": "Feedback",\n  "message": "Text"\n}`,
   "POST api/client/create_purchase": `{\n  "items": [\n    { "product_slug": "{{product_slug}}", "quantity": 1 }\n  ]\n}`,

@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('bin_size')->nullable();
             $table->string('bin_registration_number')->nullable();
             $table->string('status')->default('active');
-            $table->string('group_id')->nullable();
+            $table->string('group_slug')->nullable();
             $table->longText('qrcode')->nullable();
             $table->longText('profile_image')->nullable();
             $table->softDeletes();

@@ -32,8 +32,8 @@ class GroupUpdation extends FormRequest
                 'string',
             ],
             'description' => 'sometimes|string',
-            'locations'   => 'sometimes|array',
-            'zones'       => 'nullable|string',
+            // 'locations'   => 'sometimes|array',
+            // 'zones'       => 'nullable|string',
         ];
     }
 }

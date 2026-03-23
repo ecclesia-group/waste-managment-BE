@@ -31,15 +31,15 @@ class ClientController extends Controller
         ];
 
         $data     = static::processImage($image_fields, $data);
-        $provider = Client::create($data);
+        $client = Client::create($data);
 
         self::sendEmail(
-            $provider->email,
+            $client->email,
             email_class: "App\Mail\ActorAccountCreationMail",
             parameters: [
-                $provider->email,
+                $client->email,
                 $password,
-                $provider->phone_number,
+                $client->phone_number,
                 $login_url = "https://wasteclient.tripsecuregh.com/login",
             ]
         );
@@ -47,16 +47,18 @@ class ClientController extends Controller
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Provider registered successfully",
+            reason: "Client registered successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $client->load('group')->toArray()
         );
     }
 
     public function allClients()
     {
         $user    = Auth::user();
-        $clients = Client::where('provider_slug', $user->provider_slug)->get();
+        $clients = Client::where('provider_slug', $user->provider_slug)
+            ->with('group')
+            ->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -118,7 +120,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->toArray()
+            data: $client->load('group')->toArray()
         );
     }
 
@@ -152,7 +154,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->toArray()
+            data: $client->load('group')->toArray()
         );
     }
 
@@ -188,7 +190,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->toArray()
+            data: $client->load('group')->toArray()
         );
     }
 

@@ -140,7 +140,10 @@ class ComplaintmanagementController extends Controller
 
         $data                  = $request->validated();
         $data['code']          = Str::random(5);
-        $data['client_slug']   = $user->client_slug;
+        // Client-auth actors have `client_slug`, provider-auth actors may not.
+        // The complaints table allows `client_slug` to be NULL so providers can file
+        // complaints to platform support from the provider dashboard.
+        $data['client_slug']   = $user->client_slug ?? null;
         $data['provider_slug'] = $user->provider_slug;
 
         $data = static::processImage(['images'], $data);

@@ -12,15 +12,15 @@ class Group extends Model
         'name',
         'group_slug',
         'provider_slug',
-        'zones',
-        'locations',
+        // 'zones',
+        // 'locations',
         'description',
         'status',
     ];
 
     protected $casts = [
-        'zones'      => 'array',
-        'locations'  => 'array',
+        // 'zones'      => 'array',
+        // 'locations'  => 'array',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -34,5 +34,10 @@ class Group extends Model
     public function provider()
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'group_slug', 'group_slug');
     }
 }

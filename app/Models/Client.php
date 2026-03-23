@@ -18,7 +18,7 @@ class Client extends Actor
         'bin_size',
         'bin_code',
         'status',
-        'group_id',
+        'group_slug',
         'qrcode',
         'profile_image',
     ];
@@ -73,5 +73,10 @@ class Client extends Actor
     public function getRouteKeyName(): string
     {
         return "client_slug";
+    }
+
+    public function group()
+    {
+        return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 }

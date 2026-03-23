@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
 use App\Models\DistrictAssembly;
 use App\Models\Facility;
-use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\RoutePlannerBinAssignment;
 use App\Models\WasteHandoverRequest;
@@ -14,7 +12,6 @@ use App\Models\WeighbridgeRecord;
 use App\Models\Zone;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -43,7 +40,7 @@ class DashboardController extends Controller
     {
         $provider = $request->user();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $provider->district_assembly)->first();
-        $zone = Zone::query()->where('zone_slug', $provider->zone_slug)->first();
+        $zones = $provider->zones()->get();
         $effectiveProviderSlug = $provider->provider_slug;
 
         $pendingHandover = WasteHandoverRequest::query()
@@ -59,6 +56,8 @@ class DashboardController extends Controller
             ->where('scan_status', 'scanned')
             ->count();
 
+        $groups = $provider->groups()->get();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -67,9 +66,18 @@ class DashboardController extends Controller
             data: [
                 'provider' => $provider->toArray(),
                 'district_assembly' => $district?->toArray(),
-                'zone' => $zone?->toArray(),
+                'zones' => $zones?->toArray(),
+                'groups' => $groups->load('clients')->toArray(),
                 'pending_handover_requests_count' => $pendingHandover,
                 'scanned_bins_count' => $scannedBins,
+                'groups_count' => $groups->count(),
+                'zones_count' => $zones->count(),
+                'customers_count' => $provider->customers()->count(),
+                'drivers_count' => $provider->drivers()->count(),
+                'fleets_count' => $provider->fleets()->count(),
+                'routes_count' => $provider->routes()->count(),
+                'plans_count' => $provider->routes()->count(),
+                'assignments_count' => $provider->routes()->count(),
             ]
         );
     }
@@ -157,4 +165,3 @@ class DashboardController extends Controller
         );
     }
 }
-

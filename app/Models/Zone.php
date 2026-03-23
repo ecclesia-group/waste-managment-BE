@@ -38,8 +38,10 @@ class Zone extends Model
         return $this->belongsToMany(
             Provider::class,
             'provider_zone_assignments',
-            'zone_slug',
-            'provider_slug'
+            'zone_slug', // FK on pivot -> zones.zone_slug
+            'provider_slug', // FK on pivot -> providers.provider_slug
+            'zone_slug', // zones parent key
+            'provider_slug' // providers related key
         )
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();

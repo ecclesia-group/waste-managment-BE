@@ -46,7 +46,7 @@ class UpdateClientProfileRequest extends FormRequest
             'pickup_location' => 'nullable|string|max:255',
             'bin_size'        => 'nullable|string|max:255',
             'bin_code'        => 'nullable|string|max:255',
-            'group_id'        => 'nullable|string|max:255',
+            'group_slug'      => 'nullable|string|max:255',
 
             'qrcode'          => 'nullable|starts_with:data:,http://,https://',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',

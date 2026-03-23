@@ -33,6 +33,9 @@ return new class extends Migration
             $table->string('type')->nullable();
             $table->string('ownership')->nullable();
             $table->string('status')->default('active');
+            $table->text('suspension_reason')->nullable();
+            $table->text('corrective_action')->nullable();
+            $table->timestamp('suspended_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

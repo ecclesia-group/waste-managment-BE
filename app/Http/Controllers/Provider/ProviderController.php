@@ -88,28 +88,20 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider registered successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $provider->load('zones')->toArray()
         );
     }
 
     public function index()
     {
-        $provider = Provider::all();
-        if ($provider->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "No Providers Found",
-                reason: "No providers are registered in the system",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
+        $providers = Provider::with('zones')->withCount('customers')->orderByDesc('created_at')->get();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Providers retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $providers->toArray()
         );
     }
 
@@ -205,7 +197,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $provider->load('zones')->toArray()
         );
     }
 
@@ -253,7 +245,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $provider->load('zones')->toArray()
         );
     }
 
@@ -277,7 +269,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: request()->user()->toArray()
+            data: request()->user()->load('zones')->toArray()
         );
     }
 
@@ -299,7 +291,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->toArray()
+            data: $provider->load('zones')->toArray()
         );
     }
 

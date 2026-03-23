@@ -30,7 +30,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Groups retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $groups->toArray()
+            data: $groups->load('clients')->toArray()
         );
     }
 
@@ -53,7 +53,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $group->toArray()
+            data: $group->load('clients')->toArray()
         );
     }
 
@@ -64,13 +64,14 @@ class GroupController extends Controller
         $data                  = $request->validated();
         $data['group_slug']    = Str::uuid();
         $data['provider_slug'] = $user->provider_slug;
+        $data['status']        = 'active';
         $group                 = Group::create($data);
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Group created successfully",
             status_code: self::API_SUCCESS,
-            data: $group->toArray()
+            data: $group->load('clients')->toArray()
         );
     }
 
@@ -96,7 +97,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group updated successfully",
             status_code: self::API_SUCCESS,
-            data: $group->toArray()
+            data: $group->load('clients')->toArray()
         );
     }
 
@@ -127,7 +128,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $group->toArray()
+            data: $group->load('clients')->toArray()
         );
     }
 

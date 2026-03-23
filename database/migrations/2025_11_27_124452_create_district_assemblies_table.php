@@ -23,6 +23,9 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('phone_number')->nullable();
             $table->string('status')->default('active');
+            $table->text('suspension_reason')->nullable();
+            $table->text('corrective_action')->nullable();
+            $table->timestamp('suspended_at')->nullable();
             $table->longText('profile_image')->nullable();
             $table->timestamps();
             $table->softDeletes();

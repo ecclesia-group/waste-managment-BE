@@ -3485,42 +3485,6 @@
           }
         },
         {
-          "name": "GET api/provider/all_products",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{provider_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": null,
-            "url": {
-              "raw": "{{base_url}}/api/provider/all_products",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "provider",
-                "all_products"
-              ]
-            },
-            "description": "Middleware: api, auth:provider"
-          }
-        },
-        {
           "name": "GET api/provider/all_violations",
           "request": {
             "method": "GET",
@@ -3755,50 +3719,6 @@
                 "api",
                 "provider",
                 "create_plan"
-              ]
-            },
-            "description": "Middleware: api, auth:provider"
-          }
-        },
-        {
-          "name": "POST api/provider/create_product",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{provider_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/provider/create_product",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "provider",
-                "create_product"
               ]
             },
             "description": "Middleware: api, auth:provider"
@@ -4064,43 +3984,6 @@
                 "provider",
                 "delete_plan",
                 "{plan}"
-              ]
-            },
-            "description": "Middleware: api, auth:provider"
-          }
-        },
-        {
-          "name": "DELETE api/provider/delete_product/{product}",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{provider_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": null,
-            "url": {
-              "raw": "{{base_url}}/api/provider/delete_product/{product}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "provider",
-                "delete_product",
-                "{product}"
               ]
             },
             "description": "Middleware: api, auth:provider"
@@ -4433,43 +4316,6 @@
                 "provider",
                 "get_single_plan",
                 "{plan}"
-              ]
-            },
-            "description": "Middleware: api, auth:provider"
-          }
-        },
-        {
-          "name": "GET api/provider/get_single_product/{product}",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{provider_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": null,
-            "url": {
-              "raw": "{{base_url}}/api/provider/get_single_product/{product}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "provider",
-                "get_single_product",
-                "{product}"
               ]
             },
             "description": "Middleware: api, auth:provider"
@@ -5918,51 +5764,6 @@
           }
         },
         {
-          "name": "PUT api/provider/update_product/{product}",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{provider_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/provider/update_product/{product}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "provider",
-                "update_product",
-                "{product}"
-              ]
-            },
-            "description": "Middleware: api, auth:provider"
-          }
-        },
-        {
           "name": "PUT api/provider/update_profile/{provider}",
           "request": {
             "method": "PUT",
@@ -6051,6 +5852,54 @@
             },
             "description": "Middleware: api, auth:provider"
           }
+        },
+        {
+          "name": "Route coverage (auto — from artisan)",
+          "item": [
+            {
+              "name": "POST provider/create_complaint",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{provider_live_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{wms_domain}}/api/provider/create_complaint",
+                  "host": [
+                    "{{wms_domain}}"
+                  ],
+                  "path": [
+                    "api",
+                    "provider",
+                    "create_complaint"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"location\": \"Accra Central\",\n  \"description\": \"Provider support request\",\n  \"images\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
         }
       ]
     },
