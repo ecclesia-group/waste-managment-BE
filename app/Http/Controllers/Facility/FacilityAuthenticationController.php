@@ -18,6 +18,23 @@ class FacilityAuthenticationController extends Controller
         if ($facility) {
             $bool = Hash::check(request('password'), $facility->password);
             if ($bool) {
+                if (($facility->status ?? 'active') !== 'active') {
+                    return self::apiResponse(
+                        in_error: true,
+                        message: "Action Unsuccessful",
+                        reason: "Facility account is suspended or deactivated",
+                        status_code: self::API_FAIL,
+                        data: [
+                            'status' => $facility->status,
+                            'popup' => [
+                                'title' => 'Account suspended',
+                                'reason' => $facility->suspension_reason,
+                                'corrective_action' => $facility->corrective_action,
+                                'suspended_at' => $facility->suspended_at?->toISOString(),
+                            ],
+                        ]
+                    );
+                }
                 $facility = self::apiToken($facility, "facility");
                 return self::apiResponse(
                     in_error: false,

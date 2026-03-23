@@ -23,6 +23,8 @@ class FacilityAccountStatusRequest extends FormRequest
         return [
             "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
             "facility_slug" => ["required", "string", "exists:facilities,facility_slug", "bail"],
+            "suspension_reason" => ["nullable", "string", "max:1000"],
+            "corrective_action" => ["nullable", "string", "max:1000"],
         ];
     }
 }

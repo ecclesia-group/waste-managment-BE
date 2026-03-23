@@ -14,6 +14,9 @@ class DistrictAssembly extends Actor
         'first_name',
         'last_name',
         'status',
+        'suspension_reason',
+        'corrective_action',
+        'suspended_at',
         'profile_image',
     ];
 
@@ -25,6 +28,7 @@ class DistrictAssembly extends Actor
         'created_at'    => 'datetime',
         'updated_at'    => 'datetime',
         'deleted_at'    => 'datetime',
+        'suspended_at'  => 'datetime',
         'profile_image' => 'array',
         "password"      => "hashed",
     ];

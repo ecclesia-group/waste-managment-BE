@@ -28,6 +28,10 @@ class Facility extends Actor
         'profile_image',
         'type',
         'ownership',
+        'status',
+        'suspension_reason',
+        'corrective_action',
+        'suspended_at',
     ];
 
     protected $hidden = [
@@ -38,6 +42,7 @@ class Facility extends Actor
         'created_at'                       => 'datetime',
         'updated_at'                       => 'datetime',
         'deleted_at'                       => 'datetime',
+        'suspended_at'                     => 'datetime',
         'business_certificate_image'       => 'array',
         'district_assembly_contract_image' => 'array',
         'tax_certificate_image'            => 'array',

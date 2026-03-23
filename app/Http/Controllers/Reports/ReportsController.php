@@ -383,15 +383,267 @@ class ReportsController extends Controller
 
     public function adminReports(Request $request)
     {
-        // Super-admin platform-wide summary
+        $providerSlug = $request->query('provider_slug');
+        $facilitySlug = $request->query('facility_slug');
+
+        // Provider-filtered analytics (super admin).
+        if (! empty($providerSlug)) {
+            $activeStatuses = ['activate', 'active'];
+            $inactiveStatuses = ['deactivate', 'inactive'];
+            $suspendedStatuses = ['pending', 'suspended'];
+
+            $customersOverview = [
+                'active' => Client::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->whereIn('status', $activeStatuses)
+                    ->count(),
+                'inactive' => Client::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->whereIn('status', $inactiveStatuses)
+                    ->count(),
+                'suspended' => Client::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->whereIn('status', $suspendedStatuses)
+                    ->count(),
+            ];
+
+            $fleetOverview = [
+                'active' => Fleet::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('status', 'active')
+                    ->count(),
+                'inactive' => Fleet::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('status', '!=', 'active')
+                    ->count(),
+            ];
+
+            $utilization = [
+                'scanned_bins' => RoutePlannerBinAssignment::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('scan_status', 'scanned')
+                    ->count(),
+                'unscanned_bins' => RoutePlannerBinAssignment::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->whereIn('scan_status', ['pending', 'not_scanned'])
+                    ->count(),
+                'handover_requests_total' => WasteHandoverRequest::query()
+                    ->where(function ($q) use ($providerSlug) {
+                        $q->where('requester_provider_slug', $providerSlug)
+                            ->orWhere('target_provider_slug', $providerSlug);
+                    })
+                    ->count(),
+                'handover_requests_accepted' => WasteHandoverRequest::query()
+                    ->where(function ($q) use ($providerSlug) {
+                        $q->where('requester_provider_slug', $providerSlug)
+                            ->orWhere('target_provider_slug', $providerSlug);
+                    })
+                    ->where('status', 'accepted')
+                    ->count(),
+                'handover_requests_completed' => WasteHandoverRequest::query()
+                    ->where(function ($q) use ($providerSlug) {
+                        $q->where('requester_provider_slug', $providerSlug)
+                            ->orWhere('target_provider_slug', $providerSlug);
+                    })
+                    ->where('status', 'completed')
+                    ->count(),
+            ];
+
+            $routingAnalytics = [
+                'avg_seconds_to_scan' => null,
+                'by_group' => [],
+            ];
+
+            $scannedAssignments = RoutePlannerBinAssignment::query()
+                ->where('provider_slug', $providerSlug)
+                ->where('scan_status', 'scanned')
+                ->whereNotNull('scanned_at')
+                ->get(['created_at', 'scanned_at', 'group_slug']);
+
+            if (! $scannedAssignments->isEmpty()) {
+                $routingAnalytics['avg_seconds_to_scan'] = $scannedAssignments->avg(function ($row) {
+                    if (! $row->scanned_at || ! $row->created_at) {
+                        return null;
+                    }
+                    return Carbon::parse($row->created_at)->diffInSeconds(Carbon::parse($row->scanned_at));
+                });
+
+                $routingAnalytics['by_group'] = $scannedAssignments
+                    ->groupBy('group_slug')
+                    ->map(function ($groupRows, $groupSlug) {
+                        return [
+                            'group_slug' => $groupSlug,
+                            'avg_seconds_to_scan' => $groupRows->avg(function ($row) {
+                                return Carbon::parse($row->created_at)->diffInSeconds(Carbon::parse($row->scanned_at));
+                            }),
+                            'scanned_bins' => $groupRows->count(),
+                        ];
+                    })
+                    ->values()
+                    ->toArray();
+            }
+
+            $paymentAnalytics = [
+                'payments_success_total_amount' => Payment::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('status', 'success')
+                    ->sum('amount'),
+                'payments_success_count' => Payment::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('status', 'success')
+                    ->count(),
+            ];
+
+            $violationOverview = [
+                'total_violations' => Violation::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->count(),
+                'by_type' => Violation::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->select('type', DB::raw('count(*) as total'))
+                    ->groupBy('type')
+                    ->get()
+                    ->toArray(),
+            ];
+
+            $overallPerformance = [
+                'total_customers_served' => Client::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->whereIn('status', ['activate', 'active'])
+                    ->count(),
+                'total_waste_collected_amount' => (float) WeighbridgeRecord::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->sum('amount'),
+                'revenue_generated_amount' => (float) Payment::query()
+                    ->where('provider_slug', $providerSlug)
+                    ->where('status', 'success')
+                    ->sum('amount'),
+                'outstanding_revenue_amount' => (float) Purchase::query()
+                    ->whereIn('status', ['pending', 'confirmed', 'out_for_delivery'])
+                    ->whereIn('client_slug', Client::query()->where('provider_slug', $providerSlug)->pluck('client_slug')->toArray())
+                    ->sum('total_price'),
+            ];
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Provider analytics retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: [
+                    'customers_overview' => $customersOverview,
+                    'fleet_overview' => $fleetOverview,
+                    'utilization' => $utilization,
+                    'routing_analytics' => $routingAnalytics,
+                    'payment_analytics' => $paymentAnalytics,
+                    'violation_overview' => $violationOverview,
+                    'overall_performance' => $overallPerformance,
+                ]
+            );
+        }
+
+        // Facility-filtered analytics (super admin).
+        if (! empty($facilitySlug)) {
+            $weighbridgeQuery = WeighbridgeRecord::query()->where('facility_slug', $facilitySlug);
+
+            $wasteOverview = [
+                'total_entries' => (clone $weighbridgeQuery)->count(),
+                'total_amount' => (float) (clone $weighbridgeQuery)->sum('amount'),
+                'total_gross_weight' => (float) (clone $weighbridgeQuery)->sum('gross_weight'),
+                'scan_status_breakdown' => (clone $weighbridgeQuery)
+                    ->select('scan_status', DB::raw('count(*) as total'))
+                    ->groupBy('scan_status')
+                    ->get()
+                    ->values()
+                    ->toArray(),
+            ];
+
+            $paymentAnalytics = [
+                'paid_entries' => (clone $weighbridgeQuery)->where('payment_status', 'paid')->count(),
+                'credit_entries' => (clone $weighbridgeQuery)->where('payment_status', 'credit')->count(),
+                'paid_total_amount' => (float) (clone $weighbridgeQuery)->where('payment_status', 'paid')->sum('amount'),
+                'credit_total_amount' => (float) (clone $weighbridgeQuery)->where('payment_status', 'credit')->sum('amount'),
+            ];
+
+            $providerBreakdown = (clone $weighbridgeQuery)
+                ->select('provider_slug', DB::raw('count(*) as total_entries'), DB::raw('sum(amount) as total_amount'))
+                ->groupBy('provider_slug')
+                ->orderByDesc('total_amount')
+                ->get()
+                ->toArray();
+
+            $handoverVsDirect = [
+                'handover_entries' => (clone $weighbridgeQuery)->where('scan_status', 'handover')->count(),
+                'direct_entries' => (clone $weighbridgeQuery)->where('scan_status', '!=', 'handover')->count(),
+            ];
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Facility analytics retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: [
+                    'waste_overview' => $wasteOverview,
+                    'payment_analytics' => $paymentAnalytics,
+                    'provider_breakdown' => $providerBreakdown,
+                    'handover_vs_direct' => $handoverVsDirect,
+                ]
+            );
+        }
+
+        // Platform-wide analytics (super admin).
         $customersTotal = Client::count();
         $providersTotal = DB::table('providers')->count();
         $facilitiesTotal = DB::table('facilities')->count();
         $assignmentsScannedTotal = RoutePlannerBinAssignment::query()
             ->where('scan_status', 'scanned')
             ->count();
-
         $totalViolations = Violation::query()->count();
+
+        $overallPerformance = [
+            'total_customers_served' => Client::query()->whereIn('status', ['activate', 'active'])->count(),
+            'total_waste_collected_amount' => (float) WeighbridgeRecord::query()->sum('amount'),
+            'revenue_generated_amount' => (float) Payment::query()->where('status', 'success')->sum('amount'),
+            'outstanding_revenue_amount' => (float) Purchase::query()
+                ->whereIn('status', ['pending', 'confirmed', 'out_for_delivery'])
+                ->sum('total_price'),
+        ];
+
+        // Provider rankings.
+        $topProvidersByRevenue = DB::table('payments')
+            ->select('provider_slug', DB::raw('SUM(amount) as revenue_total'))
+            ->where('status', 'success')
+            ->groupBy('provider_slug')
+            ->orderByDesc('revenue_total')
+            ->limit(5)
+            ->get()
+            ->toArray();
+
+        $lowProvidersByRevenue = DB::table('payments')
+            ->select('provider_slug', DB::raw('SUM(amount) as revenue_total'))
+            ->where('status', 'success')
+            ->groupBy('provider_slug')
+            ->orderBy('revenue_total', 'asc')
+            ->limit(5)
+            ->get()
+            ->toArray();
+
+        $topProvidersByScannedBins = DB::table('route_planner_bin_assignments')
+            ->select('provider_slug', DB::raw('COUNT(*) as scanned_bins_total'))
+            ->where('scan_status', 'scanned')
+            ->groupBy('provider_slug')
+            ->orderByDesc('scanned_bins_total')
+            ->limit(5)
+            ->get()
+            ->toArray();
+
+        $lowProvidersByScannedBins = DB::table('route_planner_bin_assignments')
+            ->select('provider_slug', DB::raw('COUNT(*) as scanned_bins_total'))
+            ->where('scan_status', 'scanned')
+            ->groupBy('provider_slug')
+            ->orderBy('scanned_bins_total', 'asc')
+            ->limit(5)
+            ->get()
+            ->toArray();
 
         return self::apiResponse(
             in_error: false,
@@ -404,6 +656,13 @@ class ReportsController extends Controller
                 'facilities_total' => $facilitiesTotal,
                 'assignments_scanned_total' => $assignmentsScannedTotal,
                 'total_violations' => $totalViolations,
+                'overall_performance' => $overallPerformance,
+                'rankings' => [
+                    'top_by_revenue' => $topProvidersByRevenue,
+                    'low_by_revenue' => $lowProvidersByRevenue,
+                    'top_by_scanned_bins' => $topProvidersByScannedBins,
+                    'low_by_scanned_bins' => $lowProvidersByScannedBins,
+                ],
             ]
         );
     }

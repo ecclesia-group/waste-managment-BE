@@ -30,8 +30,18 @@ class Zone extends Model
         return "zone_slug";
     }
 
-    public function provider()
+    /**
+     * Zones can be assigned to multiple providers (admin-configurable).
+     */
+    public function providers()
     {
-        return $this->belongsTo(Provider::class, 'zone_slug', 'zone_slug');
+        return $this->belongsToMany(
+            Provider::class,
+            'provider_zone_assignments',
+            'zone_slug',
+            'provider_slug'
+        )
+            ->withPivot(['assigned_at', 'status'])
+            ->withTimestamps();
     }
 }

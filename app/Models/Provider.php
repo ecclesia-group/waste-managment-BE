@@ -21,6 +21,9 @@ class Provider extends Actor
         'epa_permit_image',
         'zone_slug',
         'status',
+        'suspension_reason',
+        'corrective_action',
+        'suspended_at',
         'region',
         'location',
         'profile_image',
@@ -38,6 +41,7 @@ class Provider extends Actor
         'deleted_at'                       => 'datetime',
         'created_at'                       => 'datetime',
         'updated_at'                       => 'datetime',
+        'suspended_at'                     => 'datetime',
         "business_certificate_image"       => "array",
         "district_assembly_contract_image" => "array",
         "tax_certificate_image"            => "array",
@@ -50,9 +54,20 @@ class Provider extends Actor
         return "provider_slug";
     }
 
+    /**
+     * Admin can assign multiple zones to a provider.
+     * Operational code can still use `providers.zone_slug` as a primary zone if needed.
+     */
     public function zones()
     {
-        return $this->hasMany(Zone::class, 'zone_slug', 'zone_slug');
+        return $this->belongsToMany(
+            Zone::class,
+            'provider_zone_assignments',
+            'provider_slug',
+            'zone_slug'
+        )
+            ->withPivot(['assigned_at', 'status'])
+            ->withTimestamps();
     }
 
     public function groups()

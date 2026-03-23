@@ -23,6 +23,8 @@ class AccountStatusRequest extends FormRequest
         return [
             "status"                 => ["required", "string", "in:pending,deactivate,active", "bail"],
             "district_assembly_slug" => ["required", "string", "exists:district_assemblies,district_assembly_slug", "bail"],
+            "suspension_reason" => ["nullable", "string", "max:1000"],
+            "corrective_action" => ["nullable", "string", "max:1000"],
         ];
     }
 }

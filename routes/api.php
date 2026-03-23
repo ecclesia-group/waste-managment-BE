@@ -330,6 +330,11 @@ Route::prefix("admin")->group(function () {
         Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
 
+        // Provider <-> Zone assignments (multi-zone support) (Super Admin)
+        Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
+        Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
+        Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
+
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);

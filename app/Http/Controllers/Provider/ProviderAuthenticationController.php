@@ -18,6 +18,23 @@ class ProviderAuthenticationController extends Controller
         if ($provider) {
             $bool = Hash::check(request('password'), $provider->password);
             if ($bool) {
+                if (($provider->status ?? 'active') !== 'active') {
+                    return self::apiResponse(
+                        in_error: true,
+                        message: "Action Unsuccessful",
+                        reason: "Provider account is suspended or deactivated",
+                        status_code: self::API_FAIL,
+                        data: [
+                            'status' => $provider->status,
+                            'popup' => [
+                                'title' => 'Account suspended',
+                                'reason' => $provider->suspension_reason,
+                                'corrective_action' => $provider->corrective_action,
+                                'suspended_at' => $provider->suspended_at?->toISOString(),
+                            ],
+                        ]
+                    );
+                }
                 $provider = self::apiToken($provider, "provider");
                 return self::apiResponse(
                     in_error: false,

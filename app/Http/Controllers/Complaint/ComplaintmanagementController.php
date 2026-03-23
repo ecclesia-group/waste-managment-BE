@@ -6,6 +6,7 @@ use App\Http\Requests\Complaint\ComplaintCreationRequest;
 use App\Http\Requests\Complaint\ComplaintUpdateRequest;
 use App\Models\Complaint;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ComplaintmanagementController extends Controller
 {
@@ -35,7 +36,35 @@ class ComplaintmanagementController extends Controller
     public function listComplaints()
     {
         $user       = request()->user();
-        $complaints = Complaint::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
+
+        // Platform-wide listing for Super Admin.
+        if (isset($user->admin_slug)) {
+            $complaints = Complaint::latest()->get();
+            $stats = Complaint::query()
+                ->select('status', DB::raw('count(*) as total'))
+                ->groupBy('status')
+                ->get()
+                ->keyBy('status')
+                ->toArray();
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Complaints retrieved successfully",
+                status_code: self::API_SUCCESS,
+                data: [
+                    'complaints' => $complaints->toArray(),
+                    'stats' => $stats,
+                ]
+            );
+        }
+
+        // Client listing.
+        $complaints = Complaint::where([
+            'client_slug' => $user->client_slug,
+            'provider_slug' => $user->provider_slug,
+        ])->get();
+
         if ($complaints->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
