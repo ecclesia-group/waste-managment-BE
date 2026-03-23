@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('fleets', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->string('fleet_slug')->unique();
+            $table->string('provider_slug')->nullable();
             $table->string('vehicle_make')->nullable();
             $table->string('model')->nullable();
             $table->string('manufacture_year')->nullable();
@@ -25,14 +25,13 @@ return new class extends Migration
             $table->string('owner_last_name')->nullable();
             $table->string('owner_phone_number')->nullable();
             $table->string('owner_address')->nullable();
-            $table->string('provider_slug')->nullable();
             $table->timestamp('insurance_expiry_date')->nullable();
             $table->string('insurance_policy_number')->nullable();
             $table->longText('vehicle_images')->nullable();
             $table->longText('vehicle_registration_certificate_image')->nullable();
             $table->longText('vehicle_insurance_certificate_image')->nullable();
             $table->longText('vehicle_roadworthy_certificate_image')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('active');
             $table->timestamps();
             $table->softDeletes();
         });

@@ -10,7 +10,6 @@ class Fleet extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code',
         'fleet_slug',
         'vehicle_make',
         'model',
@@ -46,5 +45,10 @@ class Fleet extends Model
     public function provider()
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return "fleet_slug";
     }
 }

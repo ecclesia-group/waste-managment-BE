@@ -21,7 +21,7 @@ class RegisterFleetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'                                   => 'nullable|string|unique:fleets,code',
+            // 'code'                                   => 'nullable|string|unique:fleets,code',
             'vehicle_make'                           => 'nullable|string',
             'model'                                  => 'nullable|string',
             'manufacture_year'                       => 'nullable|integer',

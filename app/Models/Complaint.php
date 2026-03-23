@@ -28,6 +28,11 @@ class Complaint extends Model
         'updated_at' => 'datetime',
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return "code";
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_slug', 'client_slug');

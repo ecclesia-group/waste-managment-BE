@@ -14,7 +14,6 @@ class FleetManagementController extends Controller
     public function register(RegisterFleetRequest $request)
     {
         $data                  = $request->validated();
-        $data['code']          = Str::random(5);
         $data['fleet_slug']    = Str::uuid();
         $user                  = Auth::guard('provider')->user();
         $data['provider_slug'] = $user->provider_slug;
@@ -34,7 +33,7 @@ class FleetManagementController extends Controller
             message: "Action Successful",
             reason: "Fleet registered successfully",
             status_code: self::API_SUCCESS,
-            data: $fleet->toArray()
+            data: $fleet->load('provider')->toArray()
         );
     }
 
@@ -47,29 +46,18 @@ class FleetManagementController extends Controller
             message: "Action Successful",
             reason: "Fleets retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $fleets->toArray()
+            data: $fleets->load('provider')->toArray()
         );
     }
 
     public function show(Fleet $fleet)
     {
-        $user = Auth::guard('provider')->user();
-        if ((string) $fleet->provider_slug !== (string) $user->provider_slug) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Unauthorized to view this fleet",
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Fleet details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $fleet->toArray()
+            data: $fleet->load('provider')->toArray()
         );
     }
 
@@ -100,7 +88,7 @@ class FleetManagementController extends Controller
             message: "Action Successful",
             reason: "Fleet status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $fleet->toArray()
+            data: $fleet->load('provider')->toArray()
         );
     }
 

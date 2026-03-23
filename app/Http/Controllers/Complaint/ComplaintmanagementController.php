@@ -29,7 +29,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaints retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaints?->toArray()
+            data: $complaints?->load('client', 'provider')->toArray()
         );
     }
 
@@ -53,7 +53,7 @@ class ComplaintmanagementController extends Controller
                 reason: "Complaints retrieved successfully",
                 status_code: self::API_SUCCESS,
                 data: [
-                    'complaints' => $complaints->toArray(),
+                    'complaints' => $complaints->load('client', 'provider')->toArray(),
                     'stats' => $stats,
                 ]
             );
@@ -79,7 +79,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaints retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaints?->toArray()
+            data: $complaints?->load('client', 'provider')->toArray()
         );
     }
 
@@ -129,7 +129,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $complaint->load('client', 'provider')->toArray()
         );
     }
 
@@ -144,7 +144,7 @@ class ComplaintmanagementController extends Controller
         // The complaints table allows `client_slug` to be NULL so providers can file
         // complaints to platform support from the provider dashboard.
         $data['client_slug']   = $user->client_slug ?? null;
-        $data['provider_slug'] = $user->provider_slug;
+        $data['provider_slug'] = $user->provider_slug ?? null;
 
         $data = static::processImage(['images'], $data);
 
@@ -155,9 +155,11 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint created successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $complaint->load('client', 'provider')->toArray()
         );
     }
+
+    // Update complaint
     public function updateComplaint(ComplaintUpdateRequest $request, Complaint $complaint)
     {
         $user = $request->user();
@@ -188,10 +190,11 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint updated successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->fresh()->toArray()
+            data: $complaint->fresh()->load('client', 'provider')->toArray()
         );
     }
 
+    // Delete complaint
     public function deleteComplaint(Complaint $complaint)
     {
         $user = request()->user();
@@ -230,6 +233,7 @@ class ComplaintmanagementController extends Controller
         );
     }
 
+    // Update complaint status
     public function updateComplaintStatus(Complaint $complaint)
     {
         $user = request()->user();
@@ -256,7 +260,7 @@ class ComplaintmanagementController extends Controller
             message: "Action Successful",
             reason: "Complaint status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $complaint->toArray()
+            data: $complaint->load('client', 'provider')->toArray()
         );
     }
 

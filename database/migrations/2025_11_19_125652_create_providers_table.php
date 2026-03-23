@@ -28,7 +28,6 @@ return new class extends Migration
             $table->longText('district_assembly_contract_image')->nullable();
             $table->longText('tax_certificate_image')->nullable();
             $table->longText('epa_permit_image')->nullable();
-            // $table->string('zone_slug')->nullable();
             $table->text('suspension_reason')->nullable();
             $table->text('corrective_action')->nullable();
             $table->timestamp('suspended_at')->nullable();
