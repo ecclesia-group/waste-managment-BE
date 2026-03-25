@@ -95,4 +95,19 @@ class Provider extends Actor
     {
         return $this->hasMany(Client::class, 'provider_slug', 'provider_slug');
     }
+
+    public function violations()
+    {
+        return $this->hasMany(Violation::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'provider_slug', 'provider_slug');
+    }
 }

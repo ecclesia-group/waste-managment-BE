@@ -41,4 +41,21 @@ class RoutePlanner extends Model
     {
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
+
+    /**
+     * Active clients in this route’s group (same provider + group as the plan).
+     */
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'group_slug', 'group_slug')
+            ->where('clients.provider_slug', $this->provider_slug);
+    }
+
+    /**
+     * Bin assignment rows for this route (one per client pickup in the plan).
+     */
+    public function assignments()
+    {
+        return $this->hasMany(RoutePlannerBinAssignment::class, 'route_planner_id');
+    }
 }

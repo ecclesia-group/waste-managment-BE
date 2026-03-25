@@ -33,4 +33,14 @@ class Violation extends Model
     {
         return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
     }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return "code";
+    }
 }

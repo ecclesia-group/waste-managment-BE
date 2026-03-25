@@ -122,6 +122,8 @@ class RoutePlannerManagement extends Controller
                     ->where('provider_slug', $user->provider_slug)
                     ->first();
                 if (! $driver) {
+                    DB::rollBack();
+
                     return self::apiResponse(
                         in_error: true,
                         message: "Action Failed",
@@ -136,6 +138,8 @@ class RoutePlannerManagement extends Controller
                     ->where('provider_slug', $user->provider_slug)
                     ->first();
                 if (! $fleet) {
+                    DB::rollBack();
+
                     return self::apiResponse(
                         in_error: true,
                         message: "Action Failed",
@@ -150,6 +154,8 @@ class RoutePlannerManagement extends Controller
                     ->where('provider_slug', $user->provider_slug)
                     ->first();
                 if (! $group) {
+                    DB::rollBack();
+
                     return self::apiResponse(
                         in_error: true,
                         message: "Action Failed",
@@ -165,7 +171,7 @@ class RoutePlannerManagement extends Controller
             // Create a pending pickup + assignment row for every active client in this group.
             $clients = Client::query()
                 ->where('provider_slug', $routePlanner->provider_slug)
-                ->where('group_id', $routePlanner->group_slug)
+                ->where('group_slug', $routePlanner->group_slug)
                 ->where('status', 'active')
                 ->get();
 
@@ -214,7 +220,15 @@ class RoutePlannerManagement extends Controller
 
             DB::commit();
 
-            $routePlanner->load(['driver', 'fleet', 'group']);
+            $routePlanner->load([
+                'driver',
+                'fleet',
+                'provider',
+                'group',
+                // 'clients.pickups',
+                'assignments.pickup',
+                'assignments.client',
+            ]);
 
             return self::apiResponse(
                 in_error: false,

@@ -31,7 +31,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violations retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $violations?->toArray()
+            data: $violations?->load('client', 'provider')->toArray()
         );
     }
 
@@ -53,7 +53,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violations retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $violations?->toArray()
+            data: $violations?->load('client', 'provider')->toArray()
         );
     }
 
@@ -103,7 +103,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->toArray()
+            data: $violation->load('client', 'provider')->toArray()
         );
     }
 
@@ -165,10 +165,10 @@ class ViolationManagementController extends Controller
         $data['provider_slug'] = $user->provider_slug;
 
         $image_fields = ['images'];
-        $video_fields = ['videos'];
+        // $video_fields = ['videos'];
 
         $data      = static::processImage($image_fields, $data);
-        $data      = static::processVideo($video_fields, $data);
+        // $data      = static::processVideo($video_fields, $data);
         $violation = Violation::create($data);
 
         // Always notify the client about the violation (education + transparency).
@@ -199,7 +199,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation created successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->toArray()
+            data: $violation->load('client', 'provider')->toArray()
         );
     }
 
@@ -300,7 +300,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation updated successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->toArray()
+            data: $violation->load('client', 'provider')->toArray()
         );
     }
 
@@ -363,7 +363,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->toArray()
+            data: $violation->load('client', 'provider')->toArray()
         );
     }
 }
