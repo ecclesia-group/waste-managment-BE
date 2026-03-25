@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('provider_slug')->nullable();
             $table->string('fleet_slug')->nullable();
             $table->string('fleet_code')->nullable();
+            $table->string('group_slug')->nullable();
             $table->decimal('gross_weight', 10, 2)->nullable();
             $table->decimal('amount', 10, 2)->nullable();
             $table->string('payment_status')->default('paid'); // paid|credit

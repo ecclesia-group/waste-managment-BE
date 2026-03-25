@@ -40,7 +40,7 @@ class WeighBridgeController extends Controller
             'fleet_code' => $data['fleet_code'] ?? null,
             'gross_weight' => $data['gross_weight'] ?? null,
             'amount' => $data['amount'],
-            'group_id' => $effectiveDistrictSlug ?? 'unknown',
+            'group_slug' => $data['group_slug'] ?? null,
             'payment_status' => $data['payment_status'],
             'scan_status' => $data['scan_status'] ?? 'scanned',
             'notes' => $data['notes'] ?? null,

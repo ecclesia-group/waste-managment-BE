@@ -173,7 +173,7 @@ Clients **only view** violations.
   "pickup_location": "Front gate",
   "bin_size": "120L",
   "bin_code": "BIN-0001",
-  "group_id": "GROUP-001"
+  "group_slug": "GROUP-001"
 }
 ```
 
