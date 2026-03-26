@@ -10,11 +10,14 @@ use App\Http\Requests\Pickup\UpdatePickupRequest;
 use App\Models\Client;
 use App\Models\Pickup;
 use App\Models\RoutePlannerBinAssignment;
+use App\Traits\HasClientMapPayload;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class PickupController extends Controller
 {
+    use HasClientMapPayload;
+
     public function providerPickupCreation(PickupCreationRequest $request)
     {
         $user                  = request()->user();
@@ -92,7 +95,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Client completed pickups retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
+            data: $pickups->load('client', 'provider')->toArray()
         );
     }
 
@@ -119,7 +122,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request created successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: $pickup->load('client', 'provider')->toArray()
         );
     }
 
@@ -150,39 +153,39 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request updated successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: $pickup->load('client', 'provider')->toArray()
         );
     }
 
-    public function updatePickupStatus(PickupStatusChangeRequest $request)
-    {
-        $data   = $request->validated();
-        $user   = request()->user();
-        $pickup = Pickup::where([
-            'id'          => $data['id'],
-            'client_slug' => $user->client_slug,
-        ])->first();
+    // public function updatePickupStatus(PickupStatusChangeRequest $request)
+    // {
+    //     $data   = $request->validated();
+    //     $user   = request()->user();
+    //     $pickup = Pickup::where([
+    //         'id'          => $data['id'],
+    //         'client_slug' => $user->client_slug,
+    //     ])->first();
 
-        if (! $pickup) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Pickup not found",
-                status_code: self::API_NOT_FOUND
-            );
-        }
+    //     if (! $pickup) {
+    //         return self::apiResponse(
+    //             in_error: true,
+    //             message: "Action Failed",
+    //             reason: "Pickup not found",
+    //             status_code: self::API_NOT_FOUND
+    //         );
+    //     }
 
-        $pickup->status = $data['status'];
-        $pickup->save();
+    //     $pickup->status = $data['status'];
+    //     $pickup->save();
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Pickup status updated successfully",
-            status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
-        );
-    }
+    //     return self::apiResponse(
+    //         in_error: false,
+    //         message: "Action Successful",
+    //         reason: "Pickup status updated successfully",
+    //         status_code: self::API_SUCCESS,
+    //         data: $pickup->load('client', 'provider')->toArray()
+    //     );
+    // }
 
     public function deletePickup(Pickup $pickup)
     {
@@ -242,21 +245,23 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Pickup rescheduled successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: $pickup->load('client', 'provider')->toArray()
         );
     }
 
     public function getAllPickups()
     {
         $user    = request()->user();
-        $pickups = Pickup::where(['provider_slug' => $user->provider_slug])->get();
+        $pickups = Pickup::with(['client.group'])
+            ->where(['provider_slug' => $user->provider_slug])
+            ->get();
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Bulk waste requests retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
+            data: $pickups->map(fn (Pickup $p) => self::enrichPickupForPickupUi($p))->values()->all()
         );
     }
 
@@ -264,7 +269,7 @@ class PickupController extends Controller
     {
         $user = request()->user();
 
-        $pick_up = Pickup::where('code', $pickup)->first();
+        $pick_up = Pickup::with(['client.group'])->where('code', $pickup)->first();
         if (! $pick_up) {
             return self::apiResponse(
                 in_error: true,
@@ -302,20 +307,23 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Pickup retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pick_up->toArray()
+            data: self::enrichPickupForPickupUi($pick_up)
         );
     }
 
     public function getClientPickups()
     {
         $user    = request()->user();
-        $pickups = Pickup::where(["client_slug" => $user->client_slug, "provider_slug" => $user->provider_slug])->get();
+        $pickups = Pickup::with(['client.group'])
+            ->where(["client_slug" => $user->client_slug, "provider_slug" => $user->provider_slug])
+            ->get();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Client pickups retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
+            data: $pickups->map(fn (Pickup $p) => self::enrichPickupForPickupUi($p))->values()->all()
         );
     }
 
@@ -467,12 +475,15 @@ class PickupController extends Controller
             );
         }
 
+        $pickup->refresh();
+        $pickup->loadMissing(['client.group']);
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Pickup scan status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->toArray()
+            data: self::enrichPickupForPickupUi($pickup)
         );
     }
 
@@ -527,7 +538,7 @@ class PickupController extends Controller
 
         $pickupCodes = $pendingAssignments->pluck('pickup_code')->toArray();
 
-        $pickups = Pickup::with(['provider', 'client'])
+        $pickups = Pickup::with(['provider', 'client.group'])
             ->whereIn('code', $pickupCodes)
             ->where('status', 'pending')
             ->where('scan_status', 'pending')
@@ -538,7 +549,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bin details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
+            data: $pickups->map(fn (Pickup $p) => self::enrichPickupForPickupUi($p))->values()->all()
         );
     }
 

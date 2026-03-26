@@ -27,7 +27,7 @@ class FeedbackController extends Controller
             message: "Action Successful",
             reason: "Feedback created successfully",
             status_code: self::API_SUCCESS,
-            data: $feedback->toArray()
+            data: $feedback->load('client')->toArray()
         );
     }
 
@@ -51,7 +51,7 @@ class FeedbackController extends Controller
             message: "Action Successful",
             reason: "Feedbacks retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $feedbacks->toArray()
+            data: $feedbacks->load('client')->toArray()
         );
     }
 
@@ -76,7 +76,7 @@ class FeedbackController extends Controller
             message: "Action Successful",
             reason: "Feedback details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $feedback->toArray()
+            data: $feedback->load('client')->toArray()
         );
     }
 
@@ -129,7 +129,7 @@ class FeedbackController extends Controller
             message: "Action Successful",
             reason: "Feedback updated successfully",
             status_code: self::API_SUCCESS,
-            data: $feedback->toArray()
+            data: $feedback->load('client')->toArray()
         );
     }
 }

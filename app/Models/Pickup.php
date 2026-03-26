@@ -40,4 +40,9 @@ class Pickup extends Model
     {
         return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
     }
+
+    public function getRouteKeyName(): string
+    {
+        return "code";
+    }
 }

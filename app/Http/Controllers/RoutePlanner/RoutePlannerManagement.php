@@ -13,6 +13,7 @@ use App\Models\Pickup;
 use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
 use App\Models\Group;
+use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -20,6 +21,8 @@ use Illuminate\Support\Str;
 
 class RoutePlannerManagement extends Controller
 {
+    use TransformsRoutePlannerResponse;
+
     // Provider (and admin/super-admin) can use this to power assignment logs filtering.
     public function assignmentLogs(Request $request)
     {
@@ -220,22 +223,12 @@ class RoutePlannerManagement extends Controller
 
             DB::commit();
 
-            $routePlanner->load([
-                'driver',
-                'fleet',
-                'provider',
-                'group',
-                // 'clients.pickups',
-                'assignments.pickup',
-                'assignments.client',
-            ]);
-
             return self::apiResponse(
                 in_error: false,
                 message: "Action Successful",
                 reason: "Route created successfully",
                 status_code: self::API_SUCCESS,
-                data: $routePlanner->toArray()
+                data: self::transformRoutePlannerForFrontend($routePlanner)
             );
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -254,7 +247,7 @@ class RoutePlannerManagement extends Controller
         $user = Auth::user();
 
         $routePlanner = RoutePlanner::with([
-            'client', // provider
+            'provider',
             'driver',
             'fleet',
             'group',
@@ -303,7 +296,7 @@ class RoutePlannerManagement extends Controller
 
         // Load relations
         $plan->load([
-            'client',
+            'provider',
             'driver',
             'fleet',
             'group',
@@ -313,31 +306,57 @@ class RoutePlannerManagement extends Controller
         $assignments = RoutePlannerBinAssignment::query()
             ->where('route_planner_id', $plan->id)
             ->with([
-                'client',
+                'client.group',
                 'pickup',
             ])
             ->get();
 
-        $bins = $assignments->map(function (RoutePlannerBinAssignment $assignment) {
+        $scanned = 0;
+        $unscanned = 0;
+
+        $bins = $assignments->map(function (RoutePlannerBinAssignment $assignment) use (&$scanned, &$unscanned) {
+            $pickup = $assignment->pickup;
+            $assignmentScan = $assignment->scan_status ?? 'pending';
+            $effective = $assignmentScan === 'scanned' || ($pickup?->scan_status === 'scanned');
+            if ($effective) {
+                $scanned++;
+            } else {
+                $unscanned++;
+            }
+
             // Frontend expects `scanned` vs `unscanned` colors.
-            $uiStatus = match ($assignment->scan_status) {
+            $uiStatus = match ($assignmentScan) {
                 'scanned' => 'scanned',
                 'pending', 'not_scanned' => 'unscanned',
                 default => 'unscanned',
             };
 
+            $client = $assignment->client;
+            $coords = static::clientCoordinatesForMap($client);
+
             return [
                 'pickup_code' => $assignment->pickup_code,
+                'client_slug' => $assignment->client_slug,
                 'scan_status' => $uiStatus,
+                'map_marker_color' => $uiStatus === 'scanned' ? 'green' : 'red',
+                'is_scanned' => $effective,
                 'scanned_at' => $assignment->scanned_at?->toISOString(),
                 'unscanned_at' => $assignment->unscanned_at?->toISOString(),
-                'client' => $assignment->client?->toArray(),
-                'pickup' => $assignment->pickup?->toArray(),
+                'coordinates' => $coords,
+                'client' => $client ? array_merge($client->toArray(), [
+                    'coordinates' => $coords,
+                ]) : null,
+                'pickup' => $pickup?->toArray(),
             ];
         })->toArray();
 
         $payload = $plan->toArray();
         $payload['bins'] = $bins;
+        $payload['map_summary'] = [
+            'scanned' => $scanned,
+            'unscanned' => $unscanned,
+            'total' => $assignments->count(),
+        ];
 
         return self::apiResponse(
             in_error: false,

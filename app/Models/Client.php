@@ -13,6 +13,8 @@ class Client extends Actor
         'password',
         'email_verified_at',
         'gps_address',
+        'latitude',
+        'longitude',
         'type',
         'pickup_location',
         'bin_size',
@@ -38,6 +40,8 @@ class Client extends Actor
         "password"          => "hashed",
         "profile_image"     => "array",
         "qrcode"            => "array",
+        'latitude'          => 'float',
+        'longitude'         => 'float',
     ];
 
     public function complaints()

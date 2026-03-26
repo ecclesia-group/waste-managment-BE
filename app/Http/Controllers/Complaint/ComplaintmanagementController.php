@@ -175,13 +175,7 @@ class ComplaintmanagementController extends Controller
 
         $data = $request->validated();
 
-        if (array_key_exists('images', $data)) {
-            // Convert base64 → URL
-            $data = static::processImage(['images'], $data);
-
-            // ✅ REPLACE images with final list (NO MERGE)
-            $data['images'] = array_values(array_unique($data['images']));
-        }
+        $data = static::processImage(['images'], $data);
 
         $complaint->update($data);
 
@@ -214,11 +208,6 @@ class ComplaintmanagementController extends Controller
         if ($complaint->images) {
             foreach ($complaint->images as $image) {
                 static::deleteImage($image);
-            }
-        }
-        if ($complaint->videos) {
-            foreach ($complaint->videos as $video) {
-                static::deleteImage($video); // Reuse deleteImage for videos
             }
         }
 

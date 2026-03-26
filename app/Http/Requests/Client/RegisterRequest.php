@@ -26,6 +26,8 @@ class RegisterRequest extends FormRequest
             'email'           => 'required|string|email|unique:clients,email',
             'phone_number'    => 'required|string|unique:clients,phone_number',
             'gps_address'     => 'required|string',
+            'latitude'        => 'nullable|numeric|between:-90,90',
+            'longitude'       => 'nullable|numeric|between:-180,180',
             'type'            => 'required|string',
             'pickup_location' => 'required|string',
             'bin_size'        => 'required|string',

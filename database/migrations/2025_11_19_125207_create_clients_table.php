@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('password');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('gps_address')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->string('type')->nullable();
             $table->string('pickup_location')->nullable();
             $table->string('bin_code')->nullable();

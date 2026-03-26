@@ -96,7 +96,7 @@ Route::prefix("client")->group(function () {
         // Pickup Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
         Route::put('update_bulk_waste_request/{pickup}', [PickupController::class, 'updateBulkWasteRequest']);
-        Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
+        // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
         Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
         Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
         Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);

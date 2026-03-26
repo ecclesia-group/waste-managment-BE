@@ -22,7 +22,7 @@ class RoutePlanner extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function client()
+    public function provider()
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
