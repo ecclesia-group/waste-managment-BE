@@ -37,27 +37,28 @@ trait HasClientMapPayload
     {
         $pickup->loadMissing(['client.group']);
         $client = $pickup->client;
-        $group = $client?->group;
+        // $group = $client?->group;
         $coords = static::clientCoordinatesForMap($client);
 
         return array_merge($pickup->toArray(), [
             'map' => [
                 'coordinates' => $coords,
             ],
-            'customer' => $client ? [
-                'client_slug' => $client->client_slug,
-                'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
-                'phone_number' => $client->phone_number,
-                'email' => $client->email,
-                'gps_address' => $client->gps_address,
-                'pickup_location' => $client->pickup_location,
-                'category' => $client->type,
-                'bin_code' => $client->bin_code,
-                'group_slug' => $client->group_slug,
-                'group_name' => $group?->name,
-                'group_tag' => $group?->name ?? $group?->group_slug ?? $client->group_slug,
-                'coordinates' => $coords,
-            ] : null,
+            'provider' => $pickup->provider->toArray(),
+            // 'customer' => $client ? [
+            //     'client_slug' => $client->client_slug,
+            //     'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+            //     'phone_number' => $client->phone_number,
+            //     'email' => $client->email,
+            //     'gps_address' => $client->gps_address,
+            //     'pickup_location' => $client->pickup_location,
+            //     'category' => $client->type,
+            //     'bin_code' => $client->bin_code,
+            //     'group_slug' => $client->group_slug,
+            //     'group_name' => $group?->name,
+            //     'group_tag' => $group?->name ?? $group?->group_slug ?? $client->group_slug,
+            //     'coordinates' => $coords,
+            // ] : null,
         ]);
     }
 }

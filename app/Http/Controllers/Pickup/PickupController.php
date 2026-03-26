@@ -215,7 +215,7 @@ class PickupController extends Controller
     {
         $data = $request->validated();
 
-        $pickup = Pickup::where('id', $data['id'])->first();
+        $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
             return self::apiResponse(
                 in_error: true,
@@ -230,13 +230,13 @@ class PickupController extends Controller
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Pickup not found",
+                reason: "Unauthorized to reschedule this pickup",
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
         }
 
-        $pickup->pickup_date = null;
+        $pickup->pickup_date = $data['pickup_date'];
         $pickup->status      = 'rescheduled';
         $pickup->save();
 
@@ -245,7 +245,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Pickup rescheduled successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->load('client', 'provider')->toArray()
+            data: self::enrichPickupForPickupUi($pickup)
         );
     }
 

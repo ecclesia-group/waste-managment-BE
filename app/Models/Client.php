@@ -83,4 +83,12 @@ class Client extends Actor
     {
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
+
+    public function getCoordinatesAttribute(): array
+    {
+        return [
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+        ];
+    }
 }
