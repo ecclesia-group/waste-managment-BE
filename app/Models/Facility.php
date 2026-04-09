@@ -10,6 +10,9 @@ class Facility extends Actor
 
     protected $fillable = [
         'facility_slug',
+        'parent_slug',
+        'is_main',
+        'role_slug',
         'region',
         'district',
         'name',
@@ -43,6 +46,7 @@ class Facility extends Actor
         'updated_at'                       => 'datetime',
         'deleted_at'                       => 'datetime',
         'suspended_at'                     => 'datetime',
+        'is_main'                          => 'boolean',
         'business_certificate_image'       => 'array',
         'district_assembly_contract_image' => 'array',
         'tax_certificate_image'            => 'array',

@@ -5,6 +5,9 @@ class Provider extends Actor
 {
     protected $fillable = [
         'provider_slug',
+        'parent_slug',
+        'is_main',
+        'role_slug',
         'first_name',
         'last_name',
         'business_name',
@@ -41,6 +44,7 @@ class Provider extends Actor
         'created_at'                       => 'datetime',
         'updated_at'                       => 'datetime',
         'suspended_at'                     => 'datetime',
+        'is_main'                          => 'boolean',
         "business_certificate_image"       => "array",
         "district_assembly_contract_image" => "array",
         "tax_certificate_image"            => "array",

@@ -38,6 +38,7 @@ use App\Http\Controllers\Reports\ReportsController;
 use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Payment\ProviderPaymentController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Teams\RoleController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -212,6 +213,13 @@ Route::prefix("provider")->group(function () {
         // Dashboard Content
         Route::get('banners', [BannerController::class, 'listForAudience']);
         Route::get('guides', [GuideController::class, 'listForAudience']);
+
+        // Team RBAC (provider only)
+        Route::get("permissions", [RoleController::class, "permissions"]);
+        Route::get("roles", [RoleController::class, "index"]);
+        Route::post("roles", [RoleController::class, "store"]);
+        Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
+        Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
     });
 });
 
@@ -236,6 +244,13 @@ Route::prefix("facility")->group(function () {
         Route::put("update_weigh_bridge_entry_details/{entry}", [WeighBridgeController::class, "updateEntry"]);
         Route::delete("delete_weigh_bridge_entry/{entry}", [WeighBridgeController::class, "deleteEntry"]);
         Route::get("dashboard", [DashboardController::class, "facilityDashboard"]);
+
+        // Team RBAC (facility only)
+        Route::get("permissions", [RoleController::class, "permissions"]);
+        Route::get("roles", [RoleController::class, "index"]);
+        Route::post("roles", [RoleController::class, "store"]);
+        Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
+        Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
     });
 });
 
@@ -276,6 +291,13 @@ Route::prefix("district_assembly")->group(function () {
 
         Route::put("update_provider_status/{provider}", [DistrictAssemblyManagementController::class, "updateProviderStatus"]);
         Route::put("update_facility_status/{facility}", [DistrictAssemblyManagementController::class, "updateFacilityStatus"]);
+
+        // Team RBAC (district assembly only)
+        Route::get("permissions", [RoleController::class, "permissions"]);
+        Route::get("roles", [RoleController::class, "index"]);
+        Route::post("roles", [RoleController::class, "store"]);
+        Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
+        Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
     });
 });
 
@@ -367,5 +389,12 @@ Route::prefix("admin")->group(function () {
         Route::post('guides', [GuideController::class, 'adminCreate']);
         Route::put('guides/{guide}', [GuideController::class, 'adminUpdate']);
         Route::delete('guides/{guide}', [GuideController::class, 'adminDelete']);
+
+        // Team RBAC (admin only)
+        Route::get("permissions", [RoleController::class, "permissions"]);
+        Route::get("roles", [RoleController::class, "index"]);
+        Route::post("roles", [RoleController::class, "store"]);
+        Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
+        Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
     });
 });

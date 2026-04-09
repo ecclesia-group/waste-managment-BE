@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(App\Http\Middleware\ForceJsonResponse::class);
         $middleware->append(App\Http\Middleware\CrossOrigin::class);
+        $middleware->alias([
+            'permission' => App\Http\Middleware\CheckPermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {

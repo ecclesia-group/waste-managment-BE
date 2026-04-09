@@ -5,6 +5,9 @@ class Admin extends Actor
 {
     protected $fillable = [
         'admin_slug',
+        'parent_slug',
+        'is_main',
+        'role_slug',
         'first_name',
         'last_name',
         'phone_number',
@@ -24,6 +27,7 @@ class Admin extends Actor
         'deleted_at'        => 'datetime',
         'created_at'     => 'datetime',
         'updated_at'     => 'datetime',
+        'is_main'           => 'boolean',
         "password"          => "hashed",
         "profile_image"     => "array",
     ];
