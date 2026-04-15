@@ -23,27 +23,12 @@ class RoleController extends Controller
             ->latest()
             ->get();
 
-        $permissionsByModule = Permission::query()
-            ->where('actor', $actor)
-            ->orderBy('module')
-            ->orderBy('name')
-            ->get(['module', 'name', 'permission_slug'])
-            ->groupBy('module')
-            ->map(fn ($items) => $items->map(fn ($p) => [
-                'name' => $p->name,
-                'slug' => $p->permission_slug,
-            ])->values())
-            ->toArray();
-
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
             reason: 'Roles retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'roles' => $roles->toArray(),
-                'permissions' => $permissionsByModule,
-            ]
+            data: $roles->toArray()
         );
     }
 
