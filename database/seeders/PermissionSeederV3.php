@@ -10,45 +10,163 @@ class PermissionSeederV3 extends Seeder
 {
     public function run(): void
     {
-        $actions = ['View', 'Create', 'Edit', 'Delete', 'Manage'];
+        $permissionsByActor = [
+            'admin' => [
+                ['module' => 'Dashboard', 'name' => 'View_Dashboard_Details'],
+                ['module' => 'Dashboard', 'name' => 'View_Assignment_Details'],
+                ['module' => 'Dashboard', 'name' => 'View_Assignment_Logs'],
+                // ['module' => 'Dashboard', 'name' => 'View_Customer_Assigned_Dashboard'],
+                // ['module' => 'Dashboard', 'name' => 'View_Scanned_Customer_Dashboard'],
 
-        $modulesByActor = [
+                ['module' => 'Provider_Management', 'name' => 'View_Provider'],
+                ['module' => 'Provider_Management', 'name' => 'Edit_Provider'],
+                ['module' => 'Provider_Management', 'name' => 'Suspend_Provider'],
+                // ['module' => 'Provider_Management', 'name' => 'Deactivate_Provider'],
+
+                ['module' => 'Zone_Management', 'name' => 'View_Assigned_Location'],
+                ['module' => 'Zone_Management', 'name' => 'Revoke_Zone'],
+
+                ['module' => 'Facilities_Management', 'name' => 'Suspend_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'View_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'Edit_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'Deactivate_Facility'],
+
+                ['module' => 'Complaints', 'name' => 'View_Details'],
+
+                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'View_MMDAs_Management_General_Access'],
+                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'Edit_MMDAs_Management_General_Access'],
+                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'Deactivate_MMDAs_Management_General_Access'],
+                // ['module' => 'MMDAs_Management_Provider_Access', 'name' => 'View_MMDAs_Management_Provider_Access'],
+                // ['module' => 'MMDAs_Management_Provider_Access', 'name' => 'Edit_MMDAs_Management_Provider_Access'],
+                // ['module' => 'MMDAs_Management_Facilities_Access', 'name' => 'View_MMDAs_Management_Facilities_Access'],
+                // ['module' => 'MMDAs_Management_Facilities_Access', 'name' => 'Edit_MMDAs_Management_Facilities_Access'],
+
+                ['module' => 'Onboarding', 'name' => 'Invite_User'],
+                ['module' => 'Onboarding', 'name' => 'View_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Edit_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Deactivate_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Suspend_Onboarding'],
+
+                ['module' => 'Teams', 'name' => 'Add_Team'],
+                ['module' => 'Teams', 'name' => 'View_Team'],
+                ['module' => 'Teams', 'name' => 'Edit_Team'],
+                ['module' => 'Teams', 'name' => 'Deactivate_Team'],
+            ],
             'provider' => [
-                'Dashboard', 'Customers', 'Drivers', 'Fleet_Management', 'Route_Planner',
-                'Pickup', 'Payment_Management', 'Weighbridge_Records', 'Teams', 'Reports_Analytics',
+                ['module' => 'Dashboard', 'name' => 'View_Dashboard'],
+                ['module' => 'Dashboard', 'name' => 'Handover_Request'],
+
+                ['module' => 'Customer', 'name' => 'Add_Customer'],
+                ['module' => 'Customer', 'name' => 'View_Customer'],
+                ['module' => 'Customer', 'name' => 'Edit_Customer'],
+                ['module' => 'Customer', 'name' => 'Deactivate_Customer'],
+                ['module' => 'Customer', 'name' => 'Assign_Bin_Code'],
+                ['module' => 'Customer', 'name' => 'Schedule_Pickup'],
+
+                ['module' => 'Drivers', 'name' => 'Add_Driver'],
+                ['module' => 'Drivers', 'name' => 'View_Driver'],
+                ['module' => 'Drivers', 'name' => 'Edit_Driver'],
+                ['module' => 'Drivers', 'name' => 'Deactivate_Driver'],
+                ['module' => 'Drivers', 'name' => 'Change_Status'],
+
+                ['module' => 'Fleet_Management', 'name' => 'Add_Fleet'],
+                ['module' => 'Fleet_Management', 'name' => 'View_Fleet'],
+                ['module' => 'Fleet_Management', 'name' => 'Edit_Fleet'],
+                ['module' => 'Fleet_Management', 'name' => 'Deactivate_Fleet'],
+                ['module' => 'Fleet_Management', 'name' => 'Change_Status'],
+
+                ['module' => 'Pickup_Planner', 'name' => 'View_Assign_Pickup_Details'],
+                ['module' => 'Pickup_Planner', 'name' => 'Assign_Pickup'],
+                ['module' => 'Pickup_Planner', 'name' => 'View_Assignment_Logs'],
+                ['module' => 'Pickup_Planner', 'name' => 'View_Pickup_Planner'],
+                ['module' => 'Pickup_Planner', 'name' => 'Start_Pickups'],
+                ['module' => 'Pickup_Planner', 'name' => 'Scan_Bin'],
+                ['module' => 'Pickup_Planner', 'name' => 'Issue_Command'],
+                ['module' => 'Pickup_Planner', 'name' => 'View_Assigned_Customers'],
+                ['module' => 'Pickup_Planner', 'name' => 'View_Scanned_Customers'],
+
+                ['module' => 'Payment_Management', 'name' => 'View_Payment'],
+                ['module' => 'Payment_Management', 'name' => 'View_Handover_Logs'],
+                ['module' => 'Report_Analytics', 'name' => 'View_Report_Analytics'],
+                ['module' => 'Weighbridge_Records', 'name' => 'View_Weighbridge_Records'],
+
+                ['module' => 'Complaints', 'name' => 'View_Complaints'],
+                ['module' => 'Complaints', 'name' => 'Change_Status'],
+
+                ['module' => 'Teams', 'name' => 'Add_Team'],
+                ['module' => 'Teams', 'name' => 'View_Team'],
+                ['module' => 'Teams', 'name' => 'Edit_Team'],
+                ['module' => 'Teams', 'name' => 'Deactivate_Team'],
             ],
             'facility' => [
-                'Dashboard', 'Weighbridge', 'Payment_Management', 'Reports_Analytics', 'Teams',
+                ['module' => 'Dashboard', 'name' => 'View_Dashboard'],
+                ['module' => 'Weighbridge', 'name' => 'Scan_Weighbridge'],
+                ['module' => 'Weighbridge', 'name' => 'View_Current_Scan'],
+                ['module' => 'Weighbridge', 'name' => 'View_Previous_Scan'],
+                ['module' => 'Payment_Management', 'name' => 'View_Payment'],
+                ['module' => 'Report_Analytics', 'name' => 'View_Report_Analytics'],
+                ['module' => 'Teams', 'name' => 'Add_Team'],
+                ['module' => 'Teams', 'name' => 'View_Team'],
+                ['module' => 'Teams', 'name' => 'Edit_Team'],
+                ['module' => 'Teams', 'name' => 'Deactivate_Team'],
             ],
             'district_assembly' => [
-                'Dashboard', 'Provider_Management', 'Facility_Management', 'Zone_Management',
-                'Complaints', 'Onboarding', 'Reports_Analytics', 'Teams',
-            ],
-            'admin' => [
-                'Dashboard', 'Provider_Management', 'Zone_Management', 'Complaints_Management',
-                'MMDA_Management', 'Facility_Management', 'Onboarding', 'Reports_Analytics',
-                'Order_Management', 'Banner_Guide_Management', 'Teams',
+                ['module' => 'Dashboard', 'name' => 'View_Dashboard'],
+                ['module' => 'Dashboard', 'name' => 'View_Assignment_Details'],
+                ['module' => 'Dashboard', 'name' => 'View_Assignment_Logs'],
+
+                ['module' => 'Provider_Management', 'name' => 'View_Provider'],
+                ['module' => 'Provider_Management', 'name' => 'Edit_Provider'],
+                ['module' => 'Provider_Management', 'name' => 'Suspend_Provider'],
+
+                ['module' => 'Zone_Management', 'name' => 'View_Assign_Location'],
+                ['module' => 'Zone_Management', 'name' => 'Revoke_Zone'],
+
+                ['module' => 'Facilities_Management', 'name' => 'Revoke_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'View_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'Edit_Facility'],
+                ['module' => 'Facilities_Management', 'name' => 'Suspend_Facility'],
+
+                ['module' => 'Report_Analytics', 'name' => 'View_Report_Analytics'],
+                ['module' => 'Complaints', 'name' => 'View_Details'],
+
+                ['module' => 'Onboarding', 'name' => 'Invite_User'],
+                ['module' => 'Onboarding', 'name' => 'View_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Edit_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Suspend_Onboarding'],
+                ['module' => 'Onboarding', 'name' => 'Deactivate_Onboarding'],
+
+                ['module' => 'Teams', 'name' => 'Add_Team'],
+                ['module' => 'Teams', 'name' => 'View_Team'],
+                ['module' => 'Teams', 'name' => 'Edit_Team'],
+                ['module' => 'Teams', 'name' => 'Deactivate_Team'],
             ],
         ];
 
-        foreach ($modulesByActor as $actor => $modules) {
-            foreach ($modules as $module) {
-                foreach ($actions as $action) {
-                    $name = "{$action}_{$module}";
+        foreach ($permissionsByActor as $actor => $permissions) {
+            $intendedNames = [];
 
-                    Permission::query()->updateOrCreate(
-                        ['actor' => $actor, 'name' => $name],
-                        [
-                            'module' => $module,
-                            'permission_slug' => Permission::query()
-                                ->where('actor', $actor)
-                                ->where('name', $name)
-                                ->value('permission_slug') ?? (string) Str::uuid(),
-                        ]
-                    );
-                }
+            foreach ($permissions as $permission) {
+                $name = $permission['name'];
+                $module = $permission['module'];
+                $intendedNames[] = $name;
+
+                Permission::query()->updateOrCreate(
+                    ['actor' => $actor, 'name' => $name],
+                    [
+                        'module' => $module,
+                        'permission_slug' => Permission::query()
+                            ->where('actor', $actor)
+                            ->where('name', $name)
+                            ->value('permission_slug') ?? (string) Str::uuid(),
+                    ]
+                );
             }
+
+            Permission::query()
+                ->where('actor', $actor)
+                ->whereNotIn('name', $intendedNames)
+                ->delete();
         }
     }
 }
-
