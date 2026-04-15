@@ -36,12 +36,14 @@ class FacilityAuthenticationController extends Controller
                     );
                 }
                 $facility = self::apiToken($facility, "facility");
+                $data = $facility->toArray();
+                $data['rbac'] = $facility->rbacForFrontend();
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",
                     reason: "Facility logged in successful",
                     status_code: self::API_SUCCESS,
-                    data: $facility->toArray()
+                    data: $data
                 );
             }
         }

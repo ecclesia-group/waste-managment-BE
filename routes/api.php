@@ -220,6 +220,9 @@ Route::prefix("provider")->group(function () {
         Route::post("roles", [RoleController::class, "store"]);
         Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
         Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
+
+        // Provider team members
+        Route::post("team_members", [ProviderController::class, "createTeamMember"]);
     });
 });
 

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Provider\CreateProviderTeamMemberRequest;
 use App\Http\Requests\Provider\ProviderStatusRequest;
 use App\Http\Requests\Provider\StoreProviderRegisterRequest;
 use App\Http\Requests\Provider\UpdateProviderProfileRequest;
@@ -10,6 +11,7 @@ use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Provider;
+use App\Models\Role;
 use App\Models\Violation;
 use App\Models\WeighbridgeRecord;
 use function Symfony\Component\Clock\now;
@@ -19,6 +21,77 @@ use Illuminate\Support\Facades\DB;
 
 class ProviderController extends Controller
 {
+    public function createTeamMember(CreateProviderTeamMemberRequest $request)
+    {
+        /** @var \App\Models\Provider $provider */
+        $provider = $request->user();
+        if (! (bool) ($provider->is_main ?? true)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Only main provider accounts can add team members',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $data = $request->validated();
+        $ownerSlug = $provider->provider_slug;
+
+        $role = Role::query()
+            ->where('role_slug', $data['role_slug'])
+            ->where('actor', 'provider')
+            ->where('actor_slug', $ownerSlug)
+            ->first();
+
+        if (! $role) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Role not found for this provider',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $plainPassword = Str::random(8);
+        $teamMember = Provider::create([
+            'provider_slug' => (string) Str::uuid(),
+            'parent_slug' => $ownerSlug,
+            'is_main' => false,
+            'role_slug' => $role->role_slug,
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone_number' => $data['phone_number'],
+            'password' => $plainPassword,
+            'email_verified_at' => now(),
+            'status' => $data['status'] ?? 'active',
+        ]);
+
+        self::sendEmail(
+            $teamMember->email,
+            email_class: "App\Mail\ActorAccountCreationMail",
+            parameters: [
+                $teamMember->email,
+                $plainPassword,
+                $teamMember->phone_number,
+                'https://wasteprovider.tripsecuregh.com/login',
+            ]
+        );
+
+        $payload = $teamMember->toArray();
+        $payload['rbac'] = $teamMember->rbacForFrontend();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider team member created successfully',
+            status_code: self::API_CREATED,
+            data: $payload
+        );
+    }
+
     public function register(StoreProviderRegisterRequest $request)
     {
         $password = Str::random(8);

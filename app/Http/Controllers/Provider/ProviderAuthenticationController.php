@@ -36,12 +36,14 @@ class ProviderAuthenticationController extends Controller
                     );
                 }
                 $provider = self::apiToken($provider, "provider");
+                $data = $provider->toArray();
+                $data['rbac'] = $provider->rbacForFrontend();
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",
                     reason: "Provider logged in successful",
                     status_code: self::API_SUCCESS,
-                    data: $provider->toArray()
+                    data: $data
                 );
             }
         }

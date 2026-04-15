@@ -57,8 +57,8 @@
                                             📞 Phone Number: <strong>{{ $phone_number }}</strong><br>
                                             📧 Email: <strong>{{ $email }}</strong><br>
                                             🔑 Password: <strong>{{ $password }}</strong><br>
-                                            🔗 Sign in here: <a href={{ $login_url }} 🔗 Sign in here: <a
-                                                href="{{ $login_url }}" style="color: #1a73e8;">Login Here</a>
+                                            🔗 Sign in here: <a href="{{ $login_url }}"
+                                                style="color: #1a73e8;">Login Here</a>
                                         </p>
                                     </td>
                                 </tr>
