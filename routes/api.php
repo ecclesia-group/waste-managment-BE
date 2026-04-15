@@ -39,6 +39,7 @@ use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Payment\ProviderPaymentController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Teams\RoleController;
+use App\Http\Controllers\Teams\TeamMemberController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -222,7 +223,12 @@ Route::prefix("provider")->group(function () {
         Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
 
         // Provider team members
-        Route::post("team_members", [ProviderController::class, "createTeamMember"]);
+        Route::get("team_members", [TeamMemberController::class, "index"]);
+        Route::post("team_members", [TeamMemberController::class, "store"]);
+        Route::get("team_members/{memberSlug}", [TeamMemberController::class, "show"]);
+        Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
+        Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
+        Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
     });
 });
 
@@ -254,6 +260,14 @@ Route::prefix("facility")->group(function () {
         Route::post("roles", [RoleController::class, "store"]);
         Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
         Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
+
+        // Facility team members
+        Route::get("team_members", [TeamMemberController::class, "index"]);
+        Route::post("team_members", [TeamMemberController::class, "store"]);
+        Route::get("team_members/{memberSlug}", [TeamMemberController::class, "show"]);
+        Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
+        Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
+        Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
     });
 });
 
@@ -301,6 +315,14 @@ Route::prefix("district_assembly")->group(function () {
         Route::post("roles", [RoleController::class, "store"]);
         Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
         Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
+
+        // District Assembly/MMDA team members
+        Route::get("team_members", [TeamMemberController::class, "index"]);
+        Route::post("team_members", [TeamMemberController::class, "store"]);
+        Route::get("team_members/{memberSlug}", [TeamMemberController::class, "show"]);
+        Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
+        Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
+        Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
     });
 });
 
@@ -399,5 +421,13 @@ Route::prefix("admin")->group(function () {
         Route::post("roles", [RoleController::class, "store"]);
         Route::put("roles/{roleSlug}", [RoleController::class, "update"]);
         Route::delete("roles/{roleSlug}", [RoleController::class, "destroy"]);
+
+        // Admin team members
+        Route::get("team_members", [TeamMemberController::class, "index"]);
+        Route::post("team_members", [TeamMemberController::class, "store"]);
+        Route::get("team_members/{memberSlug}", [TeamMemberController::class, "show"]);
+        Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
+        Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
+        Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
     });
 });
