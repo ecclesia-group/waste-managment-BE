@@ -15,13 +15,10 @@ class PermissionSeederV3 extends Seeder
                 ['module' => 'Dashboard', 'name' => 'View_Dashboard_Details'],
                 ['module' => 'Dashboard', 'name' => 'View_Assignment_Details'],
                 ['module' => 'Dashboard', 'name' => 'View_Assignment_Logs'],
-                // ['module' => 'Dashboard', 'name' => 'View_Customer_Assigned_Dashboard'],
-                // ['module' => 'Dashboard', 'name' => 'View_Scanned_Customer_Dashboard'],
 
                 ['module' => 'Provider_Management', 'name' => 'View_Provider'],
                 ['module' => 'Provider_Management', 'name' => 'Edit_Provider'],
                 ['module' => 'Provider_Management', 'name' => 'Suspend_Provider'],
-                // ['module' => 'Provider_Management', 'name' => 'Deactivate_Provider'],
 
                 ['module' => 'Zone_Management', 'name' => 'View_Assigned_Location'],
                 ['module' => 'Zone_Management', 'name' => 'Revoke_Zone'],
@@ -32,14 +29,6 @@ class PermissionSeederV3 extends Seeder
                 ['module' => 'Facilities_Management', 'name' => 'Deactivate_Facility'],
 
                 ['module' => 'Complaints', 'name' => 'View_Details'],
-
-                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'View_MMDAs_Management_General_Access'],
-                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'Edit_MMDAs_Management_General_Access'],
-                // ['module' => 'MMDAs_Management_General_Access', 'name' => 'Deactivate_MMDAs_Management_General_Access'],
-                // ['module' => 'MMDAs_Management_Provider_Access', 'name' => 'View_MMDAs_Management_Provider_Access'],
-                // ['module' => 'MMDAs_Management_Provider_Access', 'name' => 'Edit_MMDAs_Management_Provider_Access'],
-                // ['module' => 'MMDAs_Management_Facilities_Access', 'name' => 'View_MMDAs_Management_Facilities_Access'],
-                // ['module' => 'MMDAs_Management_Facilities_Access', 'name' => 'Edit_MMDAs_Management_Facilities_Access'],
 
                 ['module' => 'Onboarding', 'name' => 'Invite_User'],
                 ['module' => 'Onboarding', 'name' => 'View_Onboarding'],
