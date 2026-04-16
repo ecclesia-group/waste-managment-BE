@@ -36,8 +36,7 @@ class DistrictAssembleyAuthenticationController extends Controller
                     );
                 }
                 $district_assembly = self::apiToken($district_assembly, "district_assembly");
-                $data = $district_assembly->toArray();
-                $data['rbac'] = $district_assembly->rbacForFrontend();
+                $data = array_merge($district_assembly->toArray(), $district_assembly->rbacForFrontend());
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",

@@ -36,8 +36,7 @@ class FacilityAuthenticationController extends Controller
                     );
                 }
                 $facility = self::apiToken($facility, "facility");
-                $data = $facility->toArray();
-                $data['rbac'] = $facility->rbacForFrontend();
+                $data = array_merge($facility->toArray(), $facility->rbacForFrontend());
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",

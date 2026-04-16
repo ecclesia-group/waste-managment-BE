@@ -36,8 +36,7 @@ class ProviderAuthenticationController extends Controller
                     );
                 }
                 $provider = self::apiToken($provider, "provider");
-                $data = $provider->toArray();
-                $data['rbac'] = $provider->rbacForFrontend();
+                $data = array_merge($provider->toArray(), $provider->rbacForFrontend());
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",
