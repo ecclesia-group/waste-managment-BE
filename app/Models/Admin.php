@@ -34,6 +34,9 @@ class Admin extends Actor
         'is_main'           => 'boolean',
         "password"          => "hashed",
         "profile_image"     => "array",
-        "status"            => "boolean",
+        "status"            => "string",
+        "suspension_reason" => "string",
+        "corrective_action" => "string",
+        "suspended_at"      => "datetime",
     ];
 }
