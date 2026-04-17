@@ -3,14 +3,15 @@ namespace App\Http\Controllers\Pickup;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pickup\PickupCreationRequest;
-use App\Http\Requests\Pickup\PickupStatusChangeRequest;
 use App\Http\Requests\Pickup\SetPickupDateRequest;
 use App\Http\Requests\Pickup\SetPickupPriceRequest;
 use App\Http\Requests\Pickup\UpdatePickupRequest;
+use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Pickup;
 use App\Models\RoutePlannerBinAssignment;
 use App\Traits\HasClientMapPayload;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -24,7 +25,8 @@ class PickupController extends Controller
         $code                  = Str::random(5);
         $data                  = $request->validated();
         $data['driver_slug']   = Str::uuid();
-        $data['provider_slug'] = $user->provider_slug;
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $data['provider_slug'] = $providerSlug;
         $data['code']          = $code;
 
         if (empty($data['client_slug'])) {
@@ -39,7 +41,7 @@ class PickupController extends Controller
 
         // Tenant isolation: provider can only create pickups for their own clients.
         $client = Client::where('client_slug', $data['client_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->where('provider_slug', $providerSlug)
             ->first();
 
         if (! $client) {
@@ -103,11 +105,11 @@ class PickupController extends Controller
     {
         $code                  = Str::random(5);
         $data                  = $request->validated();
-        $data['code']          = $code;
         $user                  = request()->user();
+        $providerSlug = $this->resolveProviderScopeSlug($user);
         // Scopes to authenticated client/provider.
         $data['client_slug'] = $user->client_slug;
-        $data['provider_slug'] = $user->provider_slug;
+        $data['provider_slug'] = $providerSlug;
 
         $image_fields = [
             'images',
@@ -115,22 +117,38 @@ class PickupController extends Controller
 
         $data = static::processImage($image_fields, $data);
 
-        $pickup = Pickup::create($data);
+        $bulkRequest = BulkWasteRequest::create([
+            'request_code' => $code,
+            'client_slug' => $data['client_slug'],
+            'provider_slug' => $data['provider_slug'],
+            'title' => $data['title'],
+            'category' => $data['category'],
+            'description' => $data['description'] ?? null,
+            'location' => $data['location'] ?? null,
+            'images' => $data['images'] ?? null,
+            'requested_pickup_date' => $data['pickup_date'] ?? null,
+            'status' => 'pending_approval',
+            'approval_status' => 'pending',
+        ]);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Bulk waste request created successfully",
+            reason: "Bulk waste request submitted and pending provider approval",
             status_code: self::API_SUCCESS,
-            data: $pickup->load('client', 'provider')->toArray()
+            data: $bulkRequest->load('client', 'provider')->toArray()
         );
     }
 
-    public function updateBulkWasteRequest(UpdatePickupRequest $request, Pickup $pickup)
+    public function updateBulkWasteRequest(UpdatePickupRequest $request, string $requestCode)
     {
         $data = $request->validated();
         $user = request()->user();
-        if ($pickup->client_slug !== $user->client_slug) {
+        $bulkRequest = BulkWasteRequest::query()
+            ->where('request_code', $requestCode)
+            ->where('client_slug', $user->client_slug)
+            ->first();
+        if (! $bulkRequest) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -146,15 +164,90 @@ class PickupController extends Controller
 
         $data = static::processImage($image_fields, $data);
 
-        $pickup->update($data);
+        if ($bulkRequest->status !== 'pending_approval') {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Only pending approval requests can be edited",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $bulkRequest->update([
+            'title' => $data['title'] ?? $bulkRequest->title,
+            'category' => $data['category'] ?? $bulkRequest->category,
+            'description' => $data['description'] ?? $bulkRequest->description,
+            'location' => $data['location'] ?? $bulkRequest->location,
+            'images' => $data['images'] ?? $bulkRequest->images,
+            'requested_pickup_date' => $data['pickup_date'] ?? $bulkRequest->requested_pickup_date,
+        ]);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Bulk waste request updated successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup->load('client', 'provider')->toArray()
+            data: $bulkRequest->fresh()->load('client', 'provider')->toArray()
         );
+    }
+
+    public function providerBulkWasteRequests(Request $request)
+    {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $query = BulkWasteRequest::query()
+            ->with(['client.group'])
+            ->where('provider_slug', $providerSlug);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bulk waste requests retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $query->latest()->get()->toArray()
+        );
+    }
+
+    public function updateBulkWasteRequestStatus(Request $request, string $requestCode)
+    {
+        $data = $request->validate([
+            'status' => 'required|string|in:approved,rejected',
+            'rejection_reason' => 'nullable|string|max:500',
+        ]);
+
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $bulkRequest = BulkWasteRequest::query()
+            ->where('request_code', $requestCode)
+            ->where('provider_slug', $providerSlug)
+            ->first();
+
+        if (! $bulkRequest) {
+            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+        }
+
+        if ($bulkRequest->status !== 'pending_approval') {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "This request is already processed",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $approved = $data['status'] === 'approved';
+        $bulkRequest->status = $approved ? 'approved' : 'rejected';
+        $bulkRequest->approval_status = $approved ? 'approved' : 'rejected';
+        $bulkRequest->approved_at = $approved ? now() : null;
+        $bulkRequest->rejected_at = $approved ? null : now();
+        $bulkRequest->rejection_reason = $data['rejection_reason'] ?? null;
+        $bulkRequest->save();
+
+        return self::apiResponse(false, "Action Successful", "Bulk request status updated successfully", self::API_SUCCESS, $bulkRequest->toArray());
     }
 
     // public function updatePickupStatus(PickupStatusChangeRequest $request)
@@ -252,8 +345,9 @@ class PickupController extends Controller
     public function getAllPickups()
     {
         $user    = request()->user();
+        $providerSlug = $this->resolveProviderScopeSlug($user);
         $pickups = Pickup::with(['client.group'])
-            ->where(['provider_slug' => $user->provider_slug])
+            ->where(['provider_slug' => $providerSlug])
             ->get();
 
         return self::apiResponse(
@@ -291,7 +385,7 @@ class PickupController extends Controller
                 );
             }
         } elseif (isset($user->provider_slug)) {
-            if ((string) $pick_up->provider_slug !== (string) $user->provider_slug) {
+            if ((string) $pick_up->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -343,7 +437,8 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+        if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -382,7 +477,8 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+        if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -426,7 +522,8 @@ class PickupController extends Controller
         }
 
         // Provider-scoped scan updates.
-        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) $user->provider_slug) {
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+        if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -455,7 +552,7 @@ class PickupController extends Controller
 
         // Keep route planner assignment rows in sync (used for map coloring).
         $assignment = RoutePlannerBinAssignment::query()
-            ->where('provider_slug', $user->provider_slug)
+            ->where('provider_slug', $providerSlug)
             ->where('pickup_code', $pickup->code)
             ->first();
         if ($assignment) {
@@ -508,7 +605,8 @@ class PickupController extends Controller
         }
 
         // Provider-scoped manual scan: ensure this bin belongs to the current provider.
-        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) $user->provider_slug) {
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+        if ($providerSlug && (string) $bin->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -570,5 +668,16 @@ class PickupController extends Controller
             status_code: self::API_SUCCESS,
             data: $pickup_dates->toArray()
         );
+    }
+
+    private function resolveProviderScopeSlug(object $user): ?string
+    {
+        if (! isset($user->provider_slug)) {
+            return null;
+        }
+
+        return (bool) ($user->is_main ?? true)
+            ? (string) $user->provider_slug
+            : (string) ($user->parent_slug ?: $user->provider_slug);
     }
 }

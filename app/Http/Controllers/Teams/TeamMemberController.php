@@ -21,7 +21,7 @@ class TeamMemberController extends Controller
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can view team members', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can view team members', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
@@ -37,33 +37,30 @@ class TeamMemberController extends Controller
             return $payload;
         })->values()->toArray();
 
-        return self::apiResponse(false, 'Action Successful', 'Team members retrieved successfully', self::API_SUCCESS, $data);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team members retrieved successfully', status_code: self::API_SUCCESS, data: $data);
     }
 
     public function show(Request $request, string $memberSlug)
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can view team members', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can view team members', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
         $member = $this->findOwnedMember($context, $memberSlug);
         if (! $member) {
-            return self::apiResponse(true, 'Action Failed', 'Team member not found', self::API_NOT_FOUND, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Team member not found', status_code: self::API_NOT_FOUND, data: []);
         }
 
-        $payload = $member->toArray();
-        $payload['rbac'] = $member->rbacForFrontend();
-
-        return self::apiResponse(false, 'Action Successful', 'Team member retrieved successfully', self::API_SUCCESS, $payload);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team member retrieved successfully', status_code: self::API_SUCCESS, data: $member->toArray());
     }
 
     public function store(Request $request)
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can add team members', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can add team members', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
@@ -77,58 +74,50 @@ class TeamMemberController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return self::apiResponse(true, 'Action Failed', $validator->errors()->first(), self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: $validator->errors()->first(), status_code: self::API_FAIL, data: []);
         }
 
         $data = $validator->validated();
         $role = $this->findOwnedRole($context, $data['role_slug']);
         if (! $role) {
-            return self::apiResponse(true, 'Action Failed', 'Role not found for this account', self::API_NOT_FOUND, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Role not found for this account', status_code: self::API_NOT_FOUND, data: []);
         }
 
         $plainPassword = Str::random(8);
-        $member = $context['modelClass']::create([
+        $payload = [
             $context['slug_column'] => (string) Str::uuid(),
             'parent_slug' => $context['owner_slug'],
             'is_main' => false,
             'role_slug' => $role->role_slug,
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone_number' => $data['phone_number'],
+            'first_name' => $request->input('first_name'),
+            'last_name' => $request->input('last_name'),
+            'email' => $request->input('email'),
+            'phone_number' => $request->input('phone_number'),
             'password' => $plainPassword,
             'email_verified_at' => now(),
             'status' => $data['status'] ?? 'active',
-        ]);
+        ];
+        $payload = $this->addActorRequiredDefaults($context, $owner, $payload);
 
-        self::sendEmail(
-            $member->email,
-            email_class: 'App\Mail\ActorAccountCreationMail',
-            parameters: [
-                $member->email,
-                $plainPassword,
-                $member->phone_number,
-                $context['login_url'],
-            ]
-        );
+        $member = $context['modelClass']::create($payload);
 
-        $payload = $member->toArray();
-        $payload['rbac'] = $member->rbacForFrontend();
+        $memberPayload = $member->toArray();
+        $memberPayload['rbac'] = $member->rbacForFrontend();
 
-        return self::apiResponse(false, 'Action Successful', 'Team member created successfully', self::API_CREATED, $payload);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team member created successfully', status_code: self::API_CREATED, data: $memberPayload);
     }
 
     public function update(Request $request, string $memberSlug)
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can update team members', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can update team members', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
         $member = $this->findOwnedMember($context, $memberSlug);
         if (! $member) {
-            return self::apiResponse(true, 'Action Failed', 'Team member not found', self::API_NOT_FOUND, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Team member not found', status_code: self::API_NOT_FOUND, data: []);
         }
 
         $validator = Validator::make($request->all(), [
@@ -141,14 +130,14 @@ class TeamMemberController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return self::apiResponse(true, 'Action Failed', $validator->errors()->first(), self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: $validator->errors()->first(), status_code: self::API_FAIL, data: []);
         }
 
         $data = $validator->validated();
         if (array_key_exists('role_slug', $data)) {
             $role = $this->findOwnedRole($context, $data['role_slug']);
             if (! $role) {
-                return self::apiResponse(true, 'Action Failed', 'Role not found for this account', self::API_NOT_FOUND, []);
+                return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Role not found for this account', status_code: self::API_NOT_FOUND, data: []);
             }
             $data['role_slug'] = $role->role_slug;
         }
@@ -157,37 +146,37 @@ class TeamMemberController extends Controller
         $payload = $member->fresh()->toArray();
         $payload['rbac'] = $member->fresh()->rbacForFrontend();
 
-        return self::apiResponse(false, 'Action Successful', 'Team member updated successfully', self::API_SUCCESS, $payload);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team member updated successfully', status_code: self::API_SUCCESS, data: $payload);
     }
 
     public function destroy(Request $request, string $memberSlug)
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can delete team members', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can delete team members', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
         $member = $this->findOwnedMember($context, $memberSlug);
         if (! $member) {
-            return self::apiResponse(true, 'Action Failed', 'Team member not found', self::API_NOT_FOUND, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Team member not found', status_code: self::API_NOT_FOUND, data: []);
         }
 
         $member->delete();
-        return self::apiResponse(false, 'Action Successful', 'Team member deleted successfully', self::API_SUCCESS, []);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team member deleted successfully', status_code: self::API_SUCCESS, data: []);
     }
 
     public function updateStatus(Request $request, string $memberSlug)
     {
         $owner = $request->user();
         if (! (bool) ($owner->is_main ?? true)) {
-            return self::apiResponse(true, 'Action Failed', 'Only main accounts can update team member status', self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Only main accounts can update team member status', status_code: self::API_FAIL, data: []);
         }
 
         $context = $this->resolveContext($owner);
         $member = $this->findOwnedMember($context, $memberSlug);
         if (! $member) {
-            return self::apiResponse(true, 'Action Failed', 'Team member not found', self::API_NOT_FOUND, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Team member not found', status_code: self::API_NOT_FOUND, data: []);
         }
 
         $validator = Validator::make($request->all(), [
@@ -197,7 +186,7 @@ class TeamMemberController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return self::apiResponse(true, 'Action Failed', $validator->errors()->first(), self::API_FAIL, []);
+            return self::apiResponse(in_error: true, message: 'Action Failed', reason: $validator->errors()->first(), status_code: self::API_FAIL, data: []);
         }
 
         $data = $validator->validated();
@@ -239,7 +228,7 @@ class TeamMemberController extends Controller
         $payload = $member->fresh()->toArray();
         $payload['rbac'] = $member->fresh()->rbacForFrontend();
 
-        return self::apiResponse(false, 'Action Successful', 'Team member status updated successfully', self::API_SUCCESS, $payload);
+        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team member status updated successfully', status_code: self::API_SUCCESS, data: $payload);
     }
 
     private function resolveContext($owner): array
@@ -296,5 +285,19 @@ class TeamMemberController extends Controller
             ->where('parent_slug', $context['owner_slug'])
             ->where('is_main', false)
             ->first();
+    }
+
+    private function addActorRequiredDefaults(array $context, object $owner, array $payload): array
+    {
+        if ($context['actor'] === 'facility') {
+            $payload['region'] = $owner->region ?: 'Unknown';
+        }
+
+        if ($context['actor'] === 'district_assembly') {
+            $payload['region'] = $owner->region ?: 'Unknown';
+            $payload['district'] = $owner->district ?: 'Unknown';
+        }
+
+        return $payload;
     }
 }

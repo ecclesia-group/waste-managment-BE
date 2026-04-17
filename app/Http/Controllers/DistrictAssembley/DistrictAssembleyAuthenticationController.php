@@ -3,6 +3,7 @@ namespace App\Http\Controllers\DistrictAssembley;
 
 use App\Http\Controllers\Controller;
 use App\Models\DistrictAssembly;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +35,24 @@ class DistrictAssembleyAuthenticationController extends Controller
                             ],
                         ]
                     );
+                }
+
+                if (! (bool) ($district_assembly->is_main ?? true)) {
+                    $role = Role::query()
+                        ->where('role_slug', $district_assembly->role_slug)
+                        ->where('actor', 'district_assembly')
+                        ->where('actor_slug', $district_assembly->ownerSlug())
+                        ->first();
+
+                    if (! $role) {
+                        return self::apiResponse(
+                            in_error: true,
+                            message: "Action Unsuccessful",
+                            reason: "Team member role is missing or invalid",
+                            status_code: self::API_FAIL,
+                            data: []
+                        );
+                    }
                 }
                 $district_assembly = self::apiToken($district_assembly, "district_assembly");
                 $data = array_merge($district_assembly->toArray(), $district_assembly->rbacForFrontend());

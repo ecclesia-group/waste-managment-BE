@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RoutePlanner\RegisterRoute;
 use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
 use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
+use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
@@ -37,7 +38,11 @@ class RoutePlannerManagement extends Controller
 
         // Provider sees only their own data by default.
         if (isset($user->provider_slug)) {
-            $query->where('provider_slug', $user->provider_slug);
+            $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
+        }
+
+        if (isset($user->driver_slug)) {
+            $query->where('driver_slug', $user->driver_slug);
         }
 
         // District Assembly (MMDA) should see only providers within their jurisdiction.
@@ -113,7 +118,7 @@ class RoutePlannerManagement extends Controller
         // Tenant isolation: provider can only create plans under their own provider_slug.
         // Ignore any `provider_slug` from the request payload.
         if (isset($user->provider_slug)) {
-            $data['provider_slug'] = $user->provider_slug;
+            $data['provider_slug'] = $this->resolveProviderScopeSlug($user);
         }
 
         DB::beginTransaction();
@@ -122,7 +127,7 @@ class RoutePlannerManagement extends Controller
             if (isset($user->provider_slug)) {
                 $driver = Driver::query()
                     ->where('driver_slug', $data['driver_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $data['provider_slug'])
                     ->first();
                 if (! $driver) {
                     DB::rollBack();
@@ -138,7 +143,7 @@ class RoutePlannerManagement extends Controller
 
                 $fleet = Fleet::query()
                     ->where('fleet_slug', $data['fleet_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $data['provider_slug'])
                     ->first();
                 if (! $fleet) {
                     DB::rollBack();
@@ -152,31 +157,49 @@ class RoutePlannerManagement extends Controller
                     );
                 }
 
-                $group = Group::query()
-                    ->where('group_slug', $data['group_slug'])
-                    ->where('provider_slug', $user->provider_slug)
-                    ->first();
-                if (! $group) {
-                    DB::rollBack();
-
-                    return self::apiResponse(
-                        in_error: true,
-                        message: "Action Failed",
-                        reason: "Unauthorized group for this provider",
-                        status_code: self::API_FAIL,
-                        data: []
-                    );
+                if (! empty($data['group_slug'])) {
+                    $group = Group::query()
+                        ->where('group_slug', $data['group_slug'])
+                        ->where('provider_slug', $data['provider_slug'])
+                        ->first();
+                    if (! $group) {
+                        DB::rollBack();
+                        return self::apiResponse(
+                            in_error: true,
+                            message: "Action Failed",
+                            reason: "Unauthorized group for this provider",
+                            status_code: self::API_FAIL,
+                            data: []
+                        );
+                    }
                 }
             }
 
             $routePlanner = RoutePlanner::create($data);
 
             // Create a pending pickup + assignment row for every active client in this group.
+            $clientSlugs = collect($data['client_slugs'] ?? [])->filter()->unique()->values();
+
             $clients = Client::query()
                 ->where('provider_slug', $routePlanner->provider_slug)
-                ->where('group_slug', $routePlanner->group_slug)
                 ->where('status', 'active')
+                ->when($clientSlugs->isNotEmpty(), function ($query) use ($clientSlugs) {
+                    $query->whereIn('client_slug', $clientSlugs->all());
+                }, function ($query) use ($routePlanner) {
+                    $query->where('group_slug', $routePlanner->group_slug);
+                })
                 ->get();
+
+            if ($clientSlugs->isEmpty() && empty($routePlanner->group_slug)) {
+                DB::rollBack();
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "Provide either client_slugs or group_slug to create a pickup plan",
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
 
             if ($clients->isEmpty()) {
                 DB::rollBack();
@@ -190,24 +213,40 @@ class RoutePlannerManagement extends Controller
             }
 
             foreach ($clients as $client) {
+                $approvedBulkRequest = BulkWasteRequest::query()
+                    ->where('client_slug', $client->client_slug)
+                    ->where('provider_slug', $routePlanner->provider_slug)
+                    ->where('status', 'approved')
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                if (! $approvedBulkRequest) {
+                    continue;
+                }
+
                 $pickupCode = self::generateUniquePickupCode();
 
                 $location = $client->pickup_location ?: ($client->gps_address ?: 'Unknown');
 
                 $pickup = Pickup::create([
                     'code' => $pickupCode,
+                    'bulk_waste_request_code' => $approvedBulkRequest->request_code,
                     'client_slug' => $client->client_slug,
-                    'title' => 'Scheduled Pickup',
-                    'category' => 'Household',
-                    'description' => null,
+                    'title' => $approvedBulkRequest->title,
+                    'category' => $approvedBulkRequest->category,
+                    'description' => $approvedBulkRequest->description,
                     'amount' => null,
                     'status' => 'pending',
                     'scan_status' => 'pending',
                     'location' => $location,
                     'provider_slug' => $routePlanner->provider_slug,
-                    'images' => null,
-                    'pickup_date' => null,
+                    'images' => $approvedBulkRequest->images,
+                    'pickup_date' => now(),
                 ]);
+
+                $approvedBulkRequest->pickup_date = $pickup->pickup_date;
+                $approvedBulkRequest->status = 'scheduled';
+                $approvedBulkRequest->save();
 
                 RoutePlannerBinAssignment::create([
                     'route_planner_id' => $routePlanner->id,
@@ -219,6 +258,17 @@ class RoutePlannerManagement extends Controller
                     'pickup_code' => $pickup->code,
                     'scan_status' => 'pending',
                 ]);
+            }
+
+            if (! RoutePlannerBinAssignment::query()->where('route_planner_id', $routePlanner->id)->exists()) {
+                DB::rollBack();
+                return self::apiResponse(
+                    in_error: true,
+                    message: "Action Failed",
+                    reason: "No approved bulk waste requests found for selected clients",
+                    status_code: self::API_NOT_FOUND,
+                    data: []
+                );
             }
 
             DB::commit();
@@ -252,7 +302,7 @@ class RoutePlannerManagement extends Controller
             'fleet',
             'group',
         ])
-            ->where('provider_slug', $user->provider_slug)
+            ->where('provider_slug', $this->resolveProviderScopeSlug($user))
             ->get();
 
         return self::apiResponse(
@@ -267,7 +317,7 @@ class RoutePlannerManagement extends Controller
     public function show(RoutePlanner $plan)
     {
         $user = request()->user();
-        if (isset($user->provider_slug) && $plan->provider_slug !== $user->provider_slug) {
+        if (isset($user->provider_slug) && $plan->provider_slug !== $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -375,7 +425,7 @@ class RoutePlannerManagement extends Controller
         $routePlanner = RoutePlanner::query()
             ->where('id', $data['id'])
             ->when(isset($user->provider_slug), function ($q) use ($user) {
-                $q->where('provider_slug', $user->provider_slug);
+                $q->where('provider_slug', $this->resolveProviderScopeSlug($user));
             })
             ->first();
 
@@ -405,7 +455,7 @@ class RoutePlannerManagement extends Controller
         $data = $request->validated();
 
         $user = $request->user();
-        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -420,7 +470,7 @@ class RoutePlannerManagement extends Controller
             if (isset($data['driver_slug'])) {
                 $allowed = Driver::query()
                     ->where('driver_slug', $data['driver_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                     ->exists();
 
                 if (! $allowed) {
@@ -437,7 +487,7 @@ class RoutePlannerManagement extends Controller
             if (isset($data['fleet_slug'])) {
                 $allowed = Fleet::query()
                     ->where('fleet_slug', $data['fleet_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                     ->exists();
 
                 if (! $allowed) {
@@ -454,7 +504,7 @@ class RoutePlannerManagement extends Controller
             if (isset($data['group_slug'])) {
                 $allowed = Group::query()
                     ->where('group_slug', $data['group_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                     ->exists();
 
                 if (! $allowed) {
@@ -471,7 +521,7 @@ class RoutePlannerManagement extends Controller
             if (isset($data['client_slug'])) {
                 $allowed = Client::query()
                     ->where('client_slug', $data['client_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                     ->exists();
 
                 if (! $allowed) {
@@ -499,7 +549,7 @@ class RoutePlannerManagement extends Controller
     public function deletePlan(RoutePlanner $plan)
     {
         $user = request()->user();
-        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -538,5 +588,16 @@ class RoutePlannerManagement extends Controller
         } while (Pickup::where('code', $code)->exists());
 
         return $code;
+    }
+
+    private function resolveProviderScopeSlug(object $user): ?string
+    {
+        if (! isset($user->provider_slug)) {
+            return null;
+        }
+
+        return (bool) ($user->is_main ?? true)
+            ? (string) $user->provider_slug
+            : (string) ($user->parent_slug ?: $user->provider_slug);
     }
 }

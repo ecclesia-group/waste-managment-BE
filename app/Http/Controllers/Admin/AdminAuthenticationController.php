@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +24,23 @@ class AdminAuthenticationController extends Controller
 
             // If password matches
             if ($bool) {
+                if (($admin->status ?? 'active') !== 'active') {
+                    return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "Admin account is suspended or deactivated", status_code: self::API_FAIL, data: []);
+                }
+
+                if (! (bool) ($admin->is_main ?? true)) {
+                    $ownerSlug = $admin->ownerSlug();
+                    $role = Role::query()
+                        ->where('role_slug', $admin->role_slug)
+                        ->where('actor', 'admin')
+                        ->where('actor_slug', $ownerSlug)
+                        ->first();
+
+                    if (! $role) {
+                        return self::apiResponse(in_error: true, message: "Action Unsuccessful", reason: "Team member role is missing or invalid", status_code: self::API_FAIL, data: []);
+                    }
+                }
+
                 // Generate API token for the admin
                 $admin = self::apiToken($admin, "admin");
                 $data = array_merge($admin->toArray(), $admin->rbacForFrontend());

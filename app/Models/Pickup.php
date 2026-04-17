@@ -10,6 +10,7 @@ class Pickup extends Model
 
     protected $fillable = [
         'code',
+        'bulk_waste_request_code',
         'client_slug',
         'title',
         'category',
@@ -44,5 +45,10 @@ class Pickup extends Model
     public function getRouteKeyName(): string
     {
         return "code";
+    }
+
+    public function bulkWasteRequest()
+    {
+        return $this->belongsTo(BulkWasteRequest::class, 'bulk_waste_request_code', 'request_code');
     }
 }

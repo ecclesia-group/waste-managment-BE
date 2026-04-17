@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Models\Provider;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +35,24 @@ class ProviderAuthenticationController extends Controller
                             ],
                         ]
                     );
+                }
+
+                if (! (bool) ($provider->is_main ?? true)) {
+                    $role = Role::query()
+                        ->where('role_slug', $provider->role_slug)
+                        ->where('actor', 'provider')
+                        ->where('actor_slug', $provider->ownerSlug())
+                        ->first();
+
+                    if (! $role) {
+                        return self::apiResponse(
+                            in_error: true,
+                            message: "Action Unsuccessful",
+                            reason: "Team member role is missing or invalid",
+                            status_code: self::API_FAIL,
+                            data: []
+                        );
+                    }
                 }
                 $provider = self::apiToken($provider, "provider");
                 $data = array_merge($provider->toArray(), $provider->rbacForFrontend());
