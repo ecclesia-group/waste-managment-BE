@@ -10,13 +10,33 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    private function resolveProviderScopeSlug(object $user): ?string
+    {
+        if (! isset($user->provider_slug)) {
+            return null;
+        }
+
+        return (bool) ($user->is_main ?? true)
+            ? (string) $user->provider_slug
+            : (string) ($user->parent_slug ?: $user->provider_slug);
+    }
+
     // Lists all products
     public function listProducts(Request $request)
     {
         $category = $request->query('category');
         $q = $request->query('q');
+        $user = $request->user();
 
         $query = Product::query();
+        if (isset($user->client_slug)) {
+            // Clients can only see products owned by their assigned provider.
+            $query->where('provider_slug', $user->provider_slug);
+        } elseif (isset($user->provider_slug)) {
+            // Providers and provider team members can only see their own products.
+            $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
+        }
+
         if (! empty($category)) {
             $query->where('category', (string) $category);
         }
@@ -45,8 +65,29 @@ class ProductController extends Controller
     }
 
     // Gets details of a single product
-    public function getProductDetails(Product $product)
+    public function getProductDetails(Request $request, Product $product)
     {
+        $user = $request->user();
+        if (isset($user->client_slug) && (string) $product->provider_slug !== (string) $user->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this product",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to view this product",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -60,7 +101,19 @@ class ProductController extends Controller
     public function createProduct(ProductCreationRequest $request)
     {
         $data = $request->validated();
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        if (! $providerSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Only providers can create products",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data['product_slug'] = Str::uuid();
+        $data['provider_slug'] = $providerSlug;
 
         $image_fields = ['images'];
         $data = static::processImage($image_fields, $data);
@@ -83,6 +136,17 @@ class ProductController extends Controller
 
     public function updateProduct(ProductUpdateRequest $request, Product $product)
     {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to update this product",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data = $request->validated();
         $data = static::processImage(['images'], $data);
 
@@ -104,6 +168,17 @@ class ProductController extends Controller
 
     public function deleteProduct(Product $product)
     {
+        $providerSlug = $this->resolveProviderScopeSlug(request()->user());
+        if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Unauthorized to delete this product",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         // Delete associated images
         if ($product->images) {
             foreach ($product->images as $image) {

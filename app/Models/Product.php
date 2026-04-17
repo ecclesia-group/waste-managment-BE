@@ -10,6 +10,7 @@ class Product extends Model
 
     protected $fillable = [
         'product_slug',
+        'provider_slug',
         'name',
         'category',
         'color',
@@ -30,4 +31,9 @@ class Product extends Model
         'discount_percentage' => 'decimal:2',
         'deleted_at' => 'datetime',
     ];
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
 }

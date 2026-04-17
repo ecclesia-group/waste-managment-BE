@@ -137,6 +137,13 @@ Route::prefix("provider")->group(function () {
         Route::get("payments", [ProviderPaymentController::class, "listPayments"]);
         Route::get("get_single_payment/{payment}", [ProviderPaymentController::class, "getPayment"]);
 
+        // Store/Product Management (provider-owned)
+        Route::post('create_product', [ProductController::class, 'createProduct']);
+        Route::get('all_products', [ProductController::class, 'listProducts']);
+        Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
+        Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
+        Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
+
         // Clients Management
         Route::post("register_client", [ClientController::class, "register"]);
         Route::get("all_clients", [ClientController::class, "allClients"]);
@@ -388,13 +395,6 @@ Route::prefix("admin")->group(function () {
         Route::get('all_violations', [ViolationManagementController::class, 'listViolations']);
         Route::get('get_single_violation/{violation}', [ViolationManagementController::class, 'getViolationDetails']);
         Route::put('update_violation_status/{violation}', [ViolationManagementController::class, 'updateViolationStatus']);
-
-        // Product Management
-        Route::post('create_product', [ProductController::class, 'createProduct']);
-        Route::get('all_products', [ProductController::class, 'listProducts']);
-        Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
-        Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
-        Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
 
         // Statictics Management
         Route::get('actors_statistics', [AdminController::class, 'getStatisticsOverview']);
