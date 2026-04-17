@@ -20,7 +20,7 @@ class AdminController extends Controller
         $data['admin_slug']        = Str::uuid();
         $data['password']          = $password;
         $data['email_verified_at'] = now();
-
+        $data['status']            = 'active';
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
             'profile_image',
@@ -28,6 +28,8 @@ class AdminController extends Controller
 
         $data  = static::processImage($image_fields, $data);
         $admin = Admin::create($data);
+        $admin = self::apiToken($admin, "admin");
+        $data = array_merge($admin->toArray(), $admin->rbacForFrontend());
 
         self::sendEmail(
             $admin->email,
@@ -45,7 +47,7 @@ class AdminController extends Controller
             message: "Action Successful",
             reason: "Admin registered successfully",
             status_code: self::API_SUCCESS,
-            data: $admin->toArray()
+            data: $data
         );
     }
 

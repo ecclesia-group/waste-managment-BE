@@ -15,6 +15,10 @@ class Admin extends Actor
         'password',
         'email_verified_at',
         'profile_image',
+        'status',
+        'suspension_reason',
+        'corrective_action',
+        'suspended_at',
     ];
 
     protected $hidden = [
@@ -30,5 +34,6 @@ class Admin extends Actor
         'is_main'           => 'boolean',
         "password"          => "hashed",
         "profile_image"     => "array",
+        "status"            => "boolean",
     ];
 }
