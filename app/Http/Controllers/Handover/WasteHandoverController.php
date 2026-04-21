@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\WasteHandoverRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class WasteHandoverController extends Controller
@@ -15,7 +16,11 @@ class WasteHandoverController extends Controller
     {
         $provider = $request->user();
         $effectiveProviderSlug = $provider->provider_slug;
-        $effectiveZoneSlug = $provider->zone_slug;
+        $effectiveZoneSlugs = DB::table('provider_zone_assignments')
+            ->where('provider_slug', $effectiveProviderSlug)
+            ->where('status', 'active')
+            ->pluck('zone_slug')
+            ->toArray();
 
         $data = $request->validate([
             'title' => ['required', 'string'],
@@ -31,7 +36,14 @@ class WasteHandoverController extends Controller
 
         if (isset($data['target_provider_slug'])) {
             $target = Provider::where('provider_slug', $data['target_provider_slug'])->first();
-            if ($target && $target->zone_slug !== $effectiveZoneSlug) {
+            $targetZoneSlugs = DB::table('provider_zone_assignments')
+                ->where('provider_slug', $target?->provider_slug)
+                ->where('status', 'active')
+                ->pluck('zone_slug')
+                ->toArray();
+            $sharesZone = count(array_intersect($effectiveZoneSlugs, $targetZoneSlugs)) > 0;
+
+            if ($target && ! $sharesZone) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -72,7 +84,7 @@ class WasteHandoverController extends Controller
         $effectiveProviderSlug = $provider->provider_slug;
 
         $query = WasteHandoverRequest::query()
-            ->where(function ($q) use ($provider) {
+            ->where(function ($q) use ($effectiveProviderSlug) {
                 $q->where('requester_provider_slug', $effectiveProviderSlug)
                     ->orWhere('target_provider_slug', $effectiveProviderSlug);
             })

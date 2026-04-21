@@ -53,7 +53,8 @@ Route::prefix("client")->group(function () {
     Route::post("login", [ClientAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [ClientPasswordController::class, "resetPassword"]);
-    Route::post("resend_verificationCode", [ClientPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resend_verificationCode", [ClientPasswordController::class, "sendVerificationNotification"]);
+    Route::post("verify_account", [ClientPasswordController::class, "verifyAccount"]);
 
     Route::middleware(["auth:client"])->group(function () {
         Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
@@ -97,7 +98,10 @@ Route::prefix("client")->group(function () {
 
         // Pickup Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
+        Route::get('bulk_waste_requests', [PickupController::class, 'clientBulkWasteRequests']);
+        Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
         Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
+        Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
         // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
         Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
         Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
@@ -121,7 +125,8 @@ Route::prefix("provider")->group(function () {
     Route::post("login", [ProviderAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ProviderPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [ProviderPasswordController::class, "resetPassword"]);
-    Route::post("resend_verificationCode", [ProviderPasswordController::class, "sendResetPasswordNotification"]);
+    Route::post("resend_verificationCode", [ProviderPasswordController::class, "sendVerificationNotification"]);
+    Route::post("verify_account", [ProviderPasswordController::class, "verifyAccount"]);
 
     Route::middleware(["auth:provider"])->group(function () {
         Route::post("change_password", [ProviderPasswordController::class, "changePassword"]);
@@ -132,10 +137,18 @@ Route::prefix("provider")->group(function () {
         Route::get("reports", [ReportsController::class, "providerReports"]);
 
         Route::get("dashboard", [DashboardController::class, "providerDashboard"]);
+        Route::get("map_pickup_overview", [DashboardController::class, "mapPickupOverview"]);
 
         // Provider payment management
         Route::get("payments", [ProviderPaymentController::class, "listPayments"]);
         Route::get("get_single_payment/{payment}", [ProviderPaymentController::class, "getPayment"]);
+        Route::post("payments/registration", [ProviderPaymentController::class, "createRegistrationPayment"]);
+        Route::get("payments/registration/status", [ProviderPaymentController::class, "registrationPaymentStatus"]);
+        Route::get("payments/bins", [ProviderPaymentController::class, "binsPayments"]);
+        Route::get("payments/waste_handover_request", [ProviderPaymentController::class, "wasteHandoverRequestPayments"]);
+        Route::get("payments/weighbridge_records", [ProviderPaymentController::class, "weighbridgeRecords"]);
+
+        Route::middleware(["provider.registration_paid"])->group(function () {
 
         // Store/Product Management (provider-owned)
         Route::post('create_product', [ProductController::class, 'createProduct']);
@@ -167,6 +180,7 @@ Route::prefix("provider")->group(function () {
         Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
         Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
         Route::delete("delete_driver/{driver}", [DriverController::class, "deleteDriver"]);
+        Route::post("update_driver_location", [DriverController::class, "updateLocation"]);
 
         // Route Planner
         Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
@@ -192,7 +206,10 @@ Route::prefix("provider")->group(function () {
         Route::post("set_pickup_price", [PickupController::class, "setPickupPrice"]);
         Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
         Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
+        Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
         Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
+        Route::put("pickups/{pickupCode}", [PickupController::class, "providerUpdatePickup"]);
+        Route::delete("pickups/{pickupCode}", [PickupController::class, "providerDeletePickup"]);
 
         // Complaint Management
         // Providers can file complaints to platform support from the provider dashboard.
@@ -205,6 +222,8 @@ Route::prefix("provider")->group(function () {
         Route::get("all_violations", [ViolationManagementController::class, "listClientViolations"]);
         Route::get("get_single_violation/{violation}", [ViolationManagementController::class, "getViolationDetails"]);
         Route::post("create_violation", [ViolationManagementController::class, "createViolation"]);
+        Route::put("update_violation/{violation}", [ViolationManagementController::class, "providerUpdateViolation"]);
+        Route::delete("delete_violation/{violation}", [ViolationManagementController::class, "providerDeleteViolation"]);
         Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
 
         // QR Code Scanner (Scan bin QR code to get client details)
@@ -238,6 +257,7 @@ Route::prefix("provider")->group(function () {
         Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
         Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
         Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
+        });
     });
 });
 
@@ -298,6 +318,7 @@ Route::prefix("district_assembly")->group(function () {
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
 
         Route::get("dashboard", [DashboardController::class, "districtAssemblyDashboard"]);
+        Route::get("map_pickup_overview", [DashboardController::class, "mapPickupOverview"]);
 
         // District Assembly management (providers, facilities, zones, complaints)
         Route::get("providers", [DistrictAssemblyManagementController::class, "listProviders"]);
@@ -348,6 +369,7 @@ Route::prefix("admin")->group(function () {
 
         // Admin reports/analytics (Super Admin)
         Route::get("reports", [ReportsController::class, "adminReports"]);
+        Route::get("map_pickup_overview", [DashboardController::class, "mapPickupOverview"]);
 
         // Provider Management
         Route::post("register_provider", [ProviderController::class, "register"]);

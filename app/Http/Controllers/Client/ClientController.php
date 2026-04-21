@@ -160,12 +160,18 @@ class ClientController extends Controller
 
     public function updateClientProfile(UpdateClientProfileRequest $request, Client $client)
     {
-        $user = Auth::guard('provider')->user();
+        $providerUser = Auth::guard('provider')->user();
+        $clientUser = Auth::guard('client')->user();
 
-        $client = Client::query()
-            ->where('client_slug', $client->client_slug)
-            ->where('provider_slug', $user->provider_slug)
-            ->first();
+        $query = Client::query()->where('client_slug', $client->client_slug);
+
+        if ($providerUser) {
+            $query->where('provider_slug', $providerUser->provider_slug);
+        } elseif ($clientUser) {
+            $query->where('client_slug', $clientUser->client_slug);
+        }
+
+        $client = $query->first();
 
         if (! $client) {
             return self::apiResponse(

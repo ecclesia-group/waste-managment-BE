@@ -12,6 +12,7 @@ use App\Models\WeighbridgeRecord;
 use App\Models\Zone;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -20,7 +21,16 @@ class DashboardController extends Controller
         $client = $request->user();
         $provider = Provider::query()->where('provider_slug', $client->provider_slug)->first();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $provider?->district_assembly)->first();
-        $zone = Zone::query()->where('zone_slug', $provider?->zone_slug)->first();
+        $primaryZoneSlug = $provider
+            ? DB::table('provider_zone_assignments')
+                ->where('provider_slug', $provider->provider_slug)
+                ->where('status', 'active')
+                ->orderByDesc('assigned_at')
+                ->value('zone_slug')
+            : null;
+        $zone = $primaryZoneSlug
+            ? Zone::query()->where('zone_slug', $primaryZoneSlug)->first()
+            : null;
 
         return self::apiResponse(
             in_error: false,
@@ -161,6 +171,80 @@ class DashboardController extends Controller
                     'pending_or_unscanned' => $pendingAssignments,
                     'scanned' => $scannedAssignments,
                 ],
+            ]
+        );
+    }
+
+    /**
+     * Map-oriented pickup assignments: lat/lng, scan state, zone & MMDA hints.
+     *
+     * @queryParam group_by provider|zone|mmda
+     */
+    public function mapPickupOverview(Request $request)
+    {
+        $user = $request->user();
+        $groupBy = $request->string('group_by', 'provider')->toString();
+
+        $query = RoutePlannerBinAssignment::query()
+            ->with(['client', 'pickup'])
+            ->orderByDesc('updated_at');
+
+        if (isset($user->provider_slug)) {
+            $query->where('provider_slug', $user->provider_slug);
+        } elseif (isset($user->district_assembly_slug)) {
+            $query->whereIn('provider_slug', Provider::query()
+                ->where('district_assembly', $user->district_assembly_slug)
+                ->pluck('provider_slug'));
+        }
+
+        $assignments = $query->limit(500)->get();
+
+        $providerDistricts = Provider::query()
+            ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
+            ->pluck('district_assembly', 'provider_slug');
+        $providerZones = DB::table('provider_zone_assignments')
+            ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
+            ->where('status', 'active')
+            ->orderByDesc('assigned_at')
+            ->get(['provider_slug', 'zone_slug'])
+            ->groupBy('provider_slug')
+            ->map(fn ($rows) => optional($rows->first())->zone_slug);
+
+        $items = $assignments->map(function (RoutePlannerBinAssignment $a) use ($providerDistricts, $providerZones) {
+            $c = $a->client;
+            $zoneSlug = $providerZones[$a->provider_slug] ?? null;
+
+            return [
+                'pickup_code' => $a->pickup_code,
+                'provider_slug' => $a->provider_slug,
+                'provider_id' => $a->provider_slug,
+                'zone_slug' => $zoneSlug,
+                'zone_id' => $zoneSlug,
+                'mmda_slug' => $providerDistricts[$a->provider_slug] ?? null,
+                'latitude' => $c?->latitude !== null ? (float) $c->latitude : null,
+                'longitude' => $c?->longitude !== null ? (float) $c->longitude : null,
+                'scanned' => $a->scan_status === 'scanned',
+                'scan_status' => $a->scan_status,
+                'stop_order' => $a->stop_order,
+                'eta_minutes' => $a->eta_minutes,
+            ];
+        });
+
+        $groups = match ($groupBy) {
+            'zone' => $items->groupBy('zone_slug')->map->values(),
+            'mmda' => $items->groupBy('mmda_slug')->map->values(),
+            default => $items->groupBy('provider_slug')->map->values(),
+        };
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Map pickup overview retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: [
+                'group_by' => $groupBy,
+                'groups' => $groups,
+                'items' => $items->values()->all(),
             ]
         );
     }

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(App\Http\Middleware\CrossOrigin::class);
         $middleware->alias([
             'permission' => App\Http\Middleware\CheckPermission::class,
+            'provider.registration_paid' => App\Http\Middleware\EnsureProviderRegistrationPayment::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

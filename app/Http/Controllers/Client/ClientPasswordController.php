@@ -36,6 +36,31 @@ class ClientPasswordController extends Controller
         return self::sendActorResetPasswordNotification(actor: $client, guard: "client");
     }
 
+    public function sendVerificationNotification()
+    {
+        $client = Client::where("email", request("emailOrPhone"))
+            ->orWhere("phone_number", request("emailOrPhone"))
+            ->first();
+
+        return self::sendActorResetPasswordNotification(actor: $client, guard: "client");
+    }
+
+    public function verifyAccount(Request $request)
+    {
+        $data = $request->validate([
+            'client_slug' => ['required', 'string', 'exists:clients,client_slug'],
+            'otp' => ['required', 'string'],
+        ]);
+
+        $client = Client::where("client_slug", $data["client_slug"])->first();
+
+        return self::verifyActorAccount(
+            otp: $data["otp"],
+            actor: $client,
+            guard: "client",
+        );
+    }
+
     public function resetPassword(PasswordResetRequest $http_request)
     {
         $data = $http_request->validated();

@@ -38,6 +38,31 @@ class ProviderPasswordController extends Controller
         return self::sendActorResetPasswordNotification(actor: $provider, guard: "provider");
     }
 
+    public function sendVerificationNotification()
+    {
+        $provider = Provider::where("email", request("emailOrPhone"))
+            ->orWhere("phone_number", request("emailOrPhone"))
+            ->first();
+
+        return self::sendActorResetPasswordNotification(actor: $provider, guard: "provider");
+    }
+
+    public function verifyAccount(Request $request)
+    {
+        $data = $request->validate([
+            'provider_slug' => ['required', 'string', 'exists:providers,provider_slug'],
+            'otp' => ['required', 'string'],
+        ]);
+
+        $provider = Provider::where("provider_slug", $data["provider_slug"])->first();
+
+        return self::verifyActorAccount(
+            otp: $data["otp"],
+            actor: $provider,
+            guard: "provider",
+        );
+    }
+
     public function resetPassword(ProviderPasswordResetRequest $http_request)
     {
         $data = $http_request->validated();

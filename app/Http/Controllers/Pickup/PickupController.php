@@ -9,7 +9,9 @@ use App\Http\Requests\Pickup\UpdatePickupRequest;
 use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Pickup;
+use App\Models\PickupScanEvent;
 use App\Models\RoutePlannerBinAssignment;
+use App\Support\Geo\Haversine;
 use App\Traits\HasClientMapPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -192,6 +194,47 @@ class PickupController extends Controller
         );
     }
 
+    public function clientBulkWasteRequests(Request $request)
+    {
+        $clientSlug = (string) $request->user()->client_slug;
+        $items = BulkWasteRequest::query()
+            ->where('client_slug', $clientSlug)
+            ->latest()
+            ->get();
+
+        return self::apiResponse(false, "Action Successful", "Bulk waste requests retrieved successfully", self::API_SUCCESS, $items->toArray());
+    }
+
+    public function clientBulkWasteRequestShow(Request $request, string $requestCode)
+    {
+        $clientSlug = (string) $request->user()->client_slug;
+        $item = BulkWasteRequest::query()
+            ->where('client_slug', $clientSlug)
+            ->where('request_code', $requestCode)
+            ->first();
+
+        if (! $item) {
+            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+        }
+
+        return self::apiResponse(false, "Action Successful", "Bulk waste request retrieved successfully", self::API_SUCCESS, $item->toArray());
+    }
+
+    public function deleteBulkWasteRequest(Request $request, string $requestCode)
+    {
+        $clientSlug = (string) $request->user()->client_slug;
+        $deleted = BulkWasteRequest::query()
+            ->where('client_slug', $clientSlug)
+            ->where('request_code', $requestCode)
+            ->delete();
+
+        if ($deleted === 0) {
+            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+        }
+
+        return self::apiResponse(false, "Action Successful", "Bulk waste request deleted successfully", self::API_SUCCESS, []);
+    }
+
     public function providerBulkWasteRequests(Request $request)
     {
         $providerSlug = $this->resolveProviderScopeSlug($request->user());
@@ -250,6 +293,22 @@ class PickupController extends Controller
         return self::apiResponse(false, "Action Successful", "Bulk request status updated successfully", self::API_SUCCESS, $bulkRequest->toArray());
     }
 
+    public function providerBulkWasteRequestShow(Request $request, string $requestCode)
+    {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $bulkRequest = BulkWasteRequest::query()
+            ->with(['client.group'])
+            ->where('provider_slug', $providerSlug)
+            ->where('request_code', $requestCode)
+            ->first();
+
+        if (! $bulkRequest) {
+            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+        }
+
+        return self::apiResponse(false, "Action Successful", "Bulk waste request retrieved successfully", self::API_SUCCESS, $bulkRequest->toArray());
+    }
+
     // public function updatePickupStatus(PickupStatusChangeRequest $request)
     // {
     //     $data   = $request->validated();
@@ -302,6 +361,41 @@ class PickupController extends Controller
             status_code: self::API_SUCCESS,
             data: []
         );
+    }
+
+    public function providerUpdatePickup(UpdatePickupRequest $request, string $pickupCode)
+    {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $pickup = Pickup::query()
+            ->where('code', $pickupCode)
+            ->where('provider_slug', $providerSlug)
+            ->first();
+
+        if (! $pickup) {
+            return self::apiResponse(true, "Action Failed", "Pickup not found", self::API_NOT_FOUND, []);
+        }
+
+        $data = $request->validated();
+        $image_fields = ['images'];
+        $data = static::processImage($image_fields, $data);
+        $pickup->update($data);
+
+        return self::apiResponse(false, "Action Successful", "Pickup updated successfully", self::API_SUCCESS, $pickup->fresh()->toArray());
+    }
+
+    public function providerDeletePickup(Request $request, string $pickupCode)
+    {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $deleted = Pickup::query()
+            ->where('code', $pickupCode)
+            ->where('provider_slug', $providerSlug)
+            ->delete();
+
+        if ($deleted === 0) {
+            return self::apiResponse(true, "Action Failed", "Pickup not found", self::API_NOT_FOUND, []);
+        }
+
+        return self::apiResponse(false, "Action Successful", "Pickup deleted successfully", self::API_SUCCESS, []);
     }
 
     public function reschedulePickup(SetPickupDateRequest $request)
@@ -507,9 +601,55 @@ class PickupController extends Controller
         $data = request()->validate([
             'code'   => 'required|string|exists:pickups,code',
             'status' => 'required|string|in:scanned,not_scanned,unscanned',
+            'driver_latitude' => 'nullable|numeric|between:-90,90',
+            'driver_longitude' => 'nullable|numeric|between:-180,180',
+            'idempotency_key' => 'nullable|string|max:128',
+            'device_scanned_at' => 'nullable|date',
         ]);
 
         $user = request()->user();
+
+        if (! empty($data['idempotency_key'])) {
+            $existing = PickupScanEvent::query()
+                ->where('idempotency_key', $data['idempotency_key'])
+                ->first();
+            if ($existing) {
+                $pickup = Pickup::where('code', $existing->pickup_code)->first();
+                if ($pickup) {
+                    $pickup->loadMissing(['client.group']);
+
+                    return self::apiResponse(
+                        in_error: false,
+                        message: 'Action Successful',
+                        reason: 'Duplicate idempotency key — previously recorded scan',
+                        status_code: self::API_SUCCESS,
+                        data: self::enrichPickupForPickupUi($pickup)
+                    );
+                }
+            }
+        }
+
+        if (! empty($data['device_scanned_at'])) {
+            $deviceAt = \Carbon\Carbon::parse($data['device_scanned_at']);
+            if ($deviceAt->isFuture()) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: 'Action Failed',
+                    reason: 'device_scanned_at cannot be in the future',
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
+            if ($deviceAt->lt(now()->subDays(7))) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: 'Action Failed',
+                    reason: 'device_scanned_at is outside the allowed sync window (7 days)',
+                    status_code: self::API_FAIL,
+                    data: []
+                );
+            }
+        }
 
         $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
@@ -540,6 +680,30 @@ class PickupController extends Controller
             default => $data['status'],
         };
 
+        if ($canonicalStatus === 'scanned'
+            && isset($data['driver_latitude'], $data['driver_longitude'])
+        ) {
+            $pickup->loadMissing('client');
+            $client = $pickup->client;
+            if ($client && $client->latitude !== null && $client->longitude !== null) {
+                $meters = Haversine::meters(
+                    (float) $data['driver_latitude'],
+                    (float) $data['driver_longitude'],
+                    (float) $client->latitude,
+                    (float) $client->longitude
+                );
+                if ($meters > 100) {
+                    return self::apiResponse(
+                        in_error: true,
+                        message: 'Action Failed',
+                        reason: 'Scan rejected: driver is farther than 100m from the client location',
+                        status_code: self::API_FAIL,
+                        data: ['distance_meters' => round($meters, 2)]
+                    );
+                }
+            }
+        }
+
         $pickup->scan_status = $canonicalStatus;
 
         // End-to-end flow: once a bin is scanned successfully, treat the pickup as completed.
@@ -569,6 +733,19 @@ class PickupController extends Controller
                 key: 'wms:last_scanned_client_slug:' . $pickup->provider_slug,
                 value: $pickup->client_slug,
                 seconds: 15 * 60 // 15 minutes TTL
+            );
+        }
+
+        if (! empty($data['idempotency_key']) && $pickup->provider_slug) {
+            PickupScanEvent::query()->updateOrCreate(
+                ['idempotency_key' => $data['idempotency_key']],
+                [
+                    'provider_slug' => $pickup->provider_slug,
+                    'pickup_code' => $pickup->code,
+                    'device_scanned_at' => isset($data['device_scanned_at'])
+                        ? \Carbon\Carbon::parse($data['device_scanned_at'])
+                        : null,
+                ]
             );
         }
 

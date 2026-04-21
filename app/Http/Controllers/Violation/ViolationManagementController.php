@@ -366,4 +366,35 @@ class ViolationManagementController extends Controller
             data: $violation->load('client', 'provider')->toArray()
         );
     }
+
+    public function providerUpdateViolation(ViolationUpdateRequest $request, Violation $violation)
+    {
+        $user = request()->user();
+        if ((string) $violation->provider_slug !== (string) ($user->provider_slug ?? '')) {
+            return self::apiResponse(true, "Action Failed", "Unauthorized to update this violation", self::API_FAIL, []);
+        }
+
+        $data = $request->validated();
+        $data = static::processImage(['images'], $data, ['images' => $violation->images ?? []]);
+        $violation->update($data);
+
+        return self::apiResponse(false, "Action Successful", "Violation updated successfully", self::API_SUCCESS, $violation->fresh()->load('client', 'provider')->toArray());
+    }
+
+    public function providerDeleteViolation(Violation $violation)
+    {
+        $user = request()->user();
+        if ((string) $violation->provider_slug !== (string) ($user->provider_slug ?? '')) {
+            return self::apiResponse(true, "Action Failed", "Unauthorized to delete this violation", self::API_FAIL, []);
+        }
+
+        if ($violation->images) {
+            foreach ($violation->images as $image) {
+                static::deleteImage($image);
+            }
+        }
+
+        $violation->delete();
+        return self::apiResponse(false, "Action Successful", "Violation deleted successfully", self::API_SUCCESS, []);
+    }
 }
