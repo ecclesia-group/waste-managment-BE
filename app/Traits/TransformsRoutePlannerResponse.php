@@ -92,6 +92,8 @@ trait TransformsRoutePlannerResponse
             $binsPayload[] = [
                 'pickup_code' => $assignment->pickup_code,
                 'client_slug' => $assignment->client_slug,
+                'stop_order' => $assignment->stop_order,
+                'eta_minutes' => $assignment->eta_minutes,
                 'scan_status' => $uiBinStatus,
                 'map_marker_color' => $uiBinStatus === 'scanned' ? 'green' : 'red',
                 'scanned_at' => $assignment->scanned_at?->toISOString(),
@@ -134,6 +136,7 @@ trait TransformsRoutePlannerResponse
                     'scanned' => $scanned,
                     'unscanned' => $unscanned,
                 ],
+                'route_meta' => $plan->route_meta,
             ],
             'provider' => ($p = $plan->provider) ? static::transformRoutePlannerProviderBrief($p) : null,
             'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,

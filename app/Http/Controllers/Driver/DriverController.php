@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\RegisterRequest;
 use App\Http\Requests\Driver\StatusRequest;
 use App\Http\Requests\Driver\UpdateProfileRequest;
+use App\Events\DriverLocationUpdated;
 use App\Models\Driver;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -169,6 +170,49 @@ class DriverController extends Controller
             reason: "Driver deleted successfully",
             status_code: self::API_SUCCESS,
             data: []
+        );
+    }
+
+    /**
+     * Persist driver's current GPS fix for live tracking and route ETA refreshes.
+     */
+    public function updateLocation(\Illuminate\Http\Request $request)
+    {
+        $data = $request->validate([
+            'driver_slug' => 'required|string|exists:drivers,driver_slug',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        $user = Auth::guard('provider')->user();
+        $driver = Driver::query()
+            ->where('driver_slug', $data['driver_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $driver) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Driver not found',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $driver->latitude = $data['latitude'];
+        $driver->longitude = $data['longitude'];
+        $driver->last_location_at = now();
+        $driver->save();
+
+        DriverLocationUpdated::dispatch($driver, (float) $data['latitude'], (float) $data['longitude']);
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Driver location updated',
+            status_code: self::API_SUCCESS,
+            data: $driver->only(['driver_slug', 'latitude', 'longitude', 'last_location_at'])
         );
     }
 }

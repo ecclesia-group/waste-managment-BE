@@ -33,6 +33,9 @@ class Driver extends Model
         'license_back_image',
         'profile_image',
         'status',
+        'latitude',
+        'longitude',
+        'last_location_at',
     ];
 
     protected $hidden = [
@@ -50,6 +53,9 @@ class Driver extends Model
         'license_back_image'    => 'array',
         'license_front_image'   => 'array',
         "password"              => "hashed",
+        'latitude'              => 'float',
+        'longitude'             => 'float',
+        'last_location_at'      => 'datetime',
     ];
 
     public function getRouteKeyName(): string

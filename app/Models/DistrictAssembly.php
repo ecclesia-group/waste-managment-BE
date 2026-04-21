@@ -41,4 +41,14 @@ class DistrictAssembly extends Actor
     {
         return "district_assembly_slug";
     }
+
+    public function suburbs()
+    {
+        return $this->hasMany(Suburb::class, 'district_assembly_slug', 'district_assembly_slug');
+    }
+
+    public function zones()
+    {
+        return $this->hasMany(Zone::class, 'district_assembly_slug', 'district_assembly_slug');
+    }
 }

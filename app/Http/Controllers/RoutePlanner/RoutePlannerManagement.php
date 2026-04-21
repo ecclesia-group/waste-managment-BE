@@ -14,6 +14,8 @@ use App\Models\Pickup;
 use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
 use App\Models\Group;
+use App\Services\ProviderZoneValidationService;
+use App\Services\RouteOptimizationService;
 use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -177,8 +179,13 @@ class RoutePlannerManagement extends Controller
 
             $routePlanner = RoutePlanner::create($data);
 
-            // Create a pending pickup + assignment row for every active client in this group.
-            $clientSlugs = collect($data['client_slugs'] ?? [])->filter()->unique()->values();
+            $providerModel = Provider::query()
+                ->where('provider_slug', $routePlanner->provider_slug)
+                ->with(['zones' => fn ($q) => $q->wherePivot('status', 'active')])
+                ->first();
+
+            $assignedZones = $providerModel?->zones ?? collect();
+            $zoneValidation = app(ProviderZoneValidationService::class);
 
             $clients = Client::query()
                 ->where('provider_slug', $routePlanner->provider_slug)
@@ -190,45 +197,42 @@ class RoutePlannerManagement extends Controller
                 })
                 ->get();
 
-            if ($clientSlugs->isEmpty() && empty($routePlanner->group_slug)) {
-                DB::rollBack();
-                return self::apiResponse(
-                    in_error: true,
-                    message: "Action Failed",
-                    reason: "Provide either client_slugs or group_slug to create a pickup plan",
-                    status_code: self::API_FAIL,
-                    data: []
-                );
-            }
+            $eligibleClients = $clients->filter(
+                fn (Client $c) => $zoneValidation->clientIsWithinAssignedZones($c, $assignedZones)
+            )->values();
 
-            if ($clients->isEmpty()) {
+            if ($eligibleClients->isEmpty()) {
                 DB::rollBack();
+
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
-                    reason: "No active clients found for this group",
+                    reason: 'No active clients with valid coordinates inside assigned zones for this group',
                     status_code: self::API_NOT_FOUND,
                     data: []
                 );
             }
 
-            foreach ($clients as $client) {
-                $approvedBulkRequest = BulkWasteRequest::query()
-                    ->where('client_slug', $client->client_slug)
-                    ->where('provider_slug', $routePlanner->provider_slug)
-                    ->where('status', 'approved')
-                    ->orderByDesc('created_at')
-                    ->first();
+            $driverModel = Driver::query()
+                ->where('driver_slug', $routePlanner->driver_slug)
+                ->where('provider_slug', $routePlanner->provider_slug)
+                ->first();
 
-                if (! $approvedBulkRequest) {
-                    continue;
-                }
+            $driverLocation = ($driverModel
+                && $driverModel->latitude !== null
+                && $driverModel->longitude !== null) ? [
+                    'latitude' => (float) $driverModel->latitude,
+                    'longitude' => (float) $driverModel->longitude,
+                ] : null;
 
+            $stops = [];
+
+            foreach ($eligibleClients as $client) {
                 $pickupCode = self::generateUniquePickupCode();
 
                 $location = $client->pickup_location ?: ($client->gps_address ?: 'Unknown');
 
-                $pickup = Pickup::create([
+                Pickup::create([
                     'code' => $pickupCode,
                     'bulk_waste_request_code' => $approvedBulkRequest->request_code,
                     'client_slug' => $client->client_slug,
@@ -255,23 +259,46 @@ class RoutePlannerManagement extends Controller
                     'fleet_slug' => $routePlanner->fleet_slug,
                     'group_slug' => $routePlanner->group_slug,
                     'client_slug' => $client->client_slug,
-                    'pickup_code' => $pickup->code,
+                    'pickup_code' => $pickupCode,
                     'scan_status' => 'pending',
                 ]);
+
+                $stops[] = [
+                    'key' => $pickupCode,
+                    'latitude' => (float) $client->latitude,
+                    'longitude' => (float) $client->longitude,
+                ];
             }
 
-            if (! RoutePlannerBinAssignment::query()->where('route_planner_id', $routePlanner->id)->exists()) {
-                DB::rollBack();
-                return self::apiResponse(
-                    in_error: true,
-                    message: "Action Failed",
-                    reason: "No approved bulk waste requests found for selected clients",
-                    status_code: self::API_NOT_FOUND,
-                    data: []
-                );
+            $optimizer = app(RouteOptimizationService::class);
+            $optimized = $optimizer->optimizeRoute($driverLocation, $stops);
+
+            $routePlanner->route_meta = [
+                'optimization' => [
+                    'source' => $optimized['source'],
+                    'total_distance_meters' => $optimized['total_distance_meters'],
+                    'total_duration_seconds' => $optimized['total_duration_seconds'],
+                    'encoded_polyline' => $optimized['encoded_polyline'],
+                    'ordered_pickup_codes' => $optimized['ordered_keys'],
+                ],
+                'excluded_clients_count' => $clients->count() - $eligibleClients->count(),
+            ];
+            $routePlanner->save();
+
+            foreach ($optimized['ordered_keys'] as $index => $pickupCode) {
+                RoutePlannerBinAssignment::query()
+                    ->where('route_planner_id', $routePlanner->id)
+                    ->where('pickup_code', $pickupCode)
+                    ->update([
+                        'stop_order' => $index + 1,
+                        'eta_minutes' => $optimized['leg_eta_minutes'][$index] ?? null,
+                    ]);
             }
 
             DB::commit();
+
+            $routePlanner->refresh();
+            $routePlanner->load(['assignments.client.group', 'assignments.pickup', 'provider', 'driver', 'fleet', 'group']);
 
             return self::apiResponse(
                 in_error: false,

@@ -14,12 +14,14 @@ class RoutePlanner extends Model
         'fleet_slug',
         'group_slug',
         'status',
+        'route_meta',
     ];
 
     protected $casts = [
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'route_meta' => 'array',
     ];
 
     public function provider()

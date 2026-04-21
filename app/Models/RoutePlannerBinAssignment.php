@@ -17,6 +17,8 @@ class RoutePlannerBinAssignment extends Model
         'group_slug',
         'client_slug',
         'pickup_code',
+        'stop_order',
+        'eta_minutes',
         'scan_status',
         'scanned_at',
         'unscanned_at',
@@ -26,6 +28,8 @@ class RoutePlannerBinAssignment extends Model
         'scanned_at' => 'datetime',
         'unscanned_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'stop_order' => 'integer',
+        'eta_minutes' => 'integer',
     ];
 
     public function routePlanner()

@@ -13,6 +13,7 @@ class Zone extends Model
         'name',
         'zone_slug',
         'region',
+        'district_assembly_slug',
         'description',
         'locations',
         'status',
@@ -33,6 +34,23 @@ class Zone extends Model
     /**
      * Zones can be assigned to multiple providers (admin-configurable).
      */
+    public function districtAssembly()
+    {
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly_slug', 'district_assembly_slug');
+    }
+
+    public function suburbs()
+    {
+        return $this->belongsToMany(
+            Suburb::class,
+            'suburb_zone',
+            'zone_slug',
+            'suburb_id',
+            'zone_slug',
+            'id'
+        )->withTimestamps();
+    }
+
     public function providers()
     {
         return $this->belongsToMany(
