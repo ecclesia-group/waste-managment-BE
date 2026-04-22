@@ -241,6 +241,7 @@ class WasteHandoverController extends Controller
             Payment::create([
                 'client_slug' => 'handover',
                 'provider_slug' => $effectiveProviderSlug,
+                'payment_type' => null,
                 'transaction_id' => $paymentData['transaction_id'],
                 'payment_method' => $paymentData['payment_method'] ?? 'cash',
                 'network' => $paymentData['network'] ?? 'unknown',

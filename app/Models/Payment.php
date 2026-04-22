@@ -8,9 +8,14 @@ class Payment extends Model
 {
     use SoftDeletes;
 
+    public const PAYMENT_TYPE_REGISTRATION_FEE = 'registration_fee';
+
+    public const STATUS_PAID = 'paid';
+
     protected $fillable = [
         'client_slug',
         'provider_slug',
+        'payment_type',
         'transaction_id',
         'payment_method',
         'network',

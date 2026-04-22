@@ -21,6 +21,8 @@ class Client extends Actor
         'bin_code',
         'status',
         'group_slug',
+        'registration_fee',
+        'registration_status',
         'qrcode',
         'profile_image',
     ];
@@ -42,7 +44,33 @@ class Client extends Actor
         "qrcode"            => "array",
         'latitude'          => 'float',
         'longitude'         => 'float',
+        'registration_fee'  => 'float',
+        'registration_status' => 'boolean',
     ];
+
+    /**
+     * If a paid registration_fee payment exists, set registration_status true (keeps client row in sync).
+     */
+    public function syncRegistrationStatusFromPayments(): void
+    {
+        $paid = Payment::query()
+            ->where('client_slug', $this->client_slug)
+            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
+            ->where('status', Payment::STATUS_PAID)
+            ->exists();
+
+        if ($paid && ! $this->registration_status) {
+            $this->registration_status = true;
+            $this->save();
+        }
+    }
+
+    public function requiresRegistrationPayment(): bool
+    {
+        $fee = (float) ($this->registration_fee ?? 0);
+
+        return $fee > 0 && ! (bool) $this->registration_status;
+    }
 
     public function complaints()
     {

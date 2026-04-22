@@ -36,6 +36,7 @@ use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationContro
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyManagementController;
 use App\Http\Controllers\Reports\ReportsController;
 use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Payment\ClientPaymentController;
 use App\Http\Controllers\Payment\ProviderPaymentController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Teams\RoleController;
@@ -61,6 +62,10 @@ Route::prefix("client")->group(function () {
         Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
 
+        Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
+        Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
+
+        Route::middleware(["client.registration_paid"])->group(function () {
         // Complaint Management
         Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
@@ -118,6 +123,7 @@ Route::prefix("client")->group(function () {
         Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
+        });
     });
 });
 
@@ -142,13 +148,9 @@ Route::prefix("provider")->group(function () {
         // Provider payment management
         Route::get("payments", [ProviderPaymentController::class, "listPayments"]);
         Route::get("get_single_payment/{payment}", [ProviderPaymentController::class, "getPayment"]);
-        Route::post("payments/registration", [ProviderPaymentController::class, "createRegistrationPayment"]);
-        Route::get("payments/registration/status", [ProviderPaymentController::class, "registrationPaymentStatus"]);
         Route::get("payments/bins", [ProviderPaymentController::class, "binsPayments"]);
         Route::get("payments/waste_handover_request", [ProviderPaymentController::class, "wasteHandoverRequestPayments"]);
         Route::get("payments/weighbridge_records", [ProviderPaymentController::class, "weighbridgeRecords"]);
-
-        Route::middleware(["provider.registration_paid"])->group(function () {
 
         // Store/Product Management (provider-owned)
         Route::post('create_product', [ProductController::class, 'createProduct']);
@@ -257,7 +259,6 @@ Route::prefix("provider")->group(function () {
         Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
         Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
         Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
-        });
     });
 });
 

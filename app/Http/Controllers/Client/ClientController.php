@@ -31,6 +31,8 @@ class ClientController extends Controller
         ];
 
         $data     = static::processImage($image_fields, $data);
+        $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
+
         $client = Client::create($data);
 
         self::sendEmail(
@@ -190,7 +192,22 @@ class ClientController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
+
+        if ($clientUser) {
+            unset($data['registration_fee'], $data['registration_status']);
+        } elseif ($providerUser && array_key_exists('registration_fee', $data)) {
+            $oldFee = (float) ($client->registration_fee ?? 0);
+            $newFee = (float) ($data['registration_fee'] ?? 0);
+            if ($newFee <= 0) {
+                $data['registration_status'] = true;
+            } elseif (abs($oldFee - $newFee) > 0.009) {
+                $data['registration_status'] = false;
+            }
+        }
+
         $client->update($data);
+        $client->refresh();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

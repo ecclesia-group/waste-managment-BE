@@ -23,10 +23,24 @@ class ClientAuthenticationController extends Controller
 
             // If password matches
             if ($bool) {
-                // Generate API token for the admin
+                $client->syncRegistrationStatusFromPayments();
+                $client->refresh();
+                $requiresRegistrationPayment = $client->requiresRegistrationPayment();
+
                 $client = self::apiToken($client, "client");
-                // Return success response
-                return self::apiResponse(in_error: false, message: "Action Successful", reason: "Client logged in successful", status_code: self::API_SUCCESS, data: $client->toArray());
+                $data = array_merge($client->toArray(), [
+                    'requires_registration_payment' => $requiresRegistrationPayment,
+                    'registration_fee' => (float) ($client->registration_fee ?? 0),
+                    'registration_status' => (bool) ($client->registration_status ?? false),
+                ]);
+
+                return self::apiResponse(
+                    in_error: false,
+                    message: "Action Successful",
+                    reason: "Client logged in successful",
+                    status_code: self::API_SUCCESS,
+                    data: $data
+                );
             }
 
             // If password does not match

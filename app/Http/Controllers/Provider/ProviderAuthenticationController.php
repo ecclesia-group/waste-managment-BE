@@ -2,7 +2,6 @@
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
-use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
@@ -56,15 +55,7 @@ class ProviderAuthenticationController extends Controller
                     }
                 }
                 $provider = self::apiToken($provider, "provider");
-                $requiresRegistrationPayment = ! Payment::query()
-                    ->where('provider_slug', (string) $provider->provider_slug)
-                    ->where('pickup_id', 'provider_registration')
-                    ->whereIn('status', ['successful', 'success'])
-                    ->exists();
-
-                $data = array_merge($provider->toArray(), $provider->rbacForFrontend(), [
-                    'requires_registration_payment' => $requiresRegistrationPayment,
-                ]);
+                $data = array_merge($provider->toArray(), $provider->rbacForFrontend());
                 return self::apiResponse(
                     in_error: false,
                     message: "Action Successful",

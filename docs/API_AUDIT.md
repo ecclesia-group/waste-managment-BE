@@ -11,7 +11,7 @@
 | Consistent REST naming | **Partial** — many routes use action-style names (`get_single_*`, `create_*`) |
 | Unified response envelope `{ success, message, data, meta }` | **Not implemented** — app uses `data.status_code`, `data.in_error`, `data.reason`, `data.data` (see `API_PAYLOADS.md`) |
 | Client/provider verify + resend verification flow | **Implemented** — explicit `/verify_account` and `resend_verificationCode` wiring for client/provider |
-| Provider onboarding payment gate | **Implemented** — provider is authenticated but gated by registration payment middleware before full module access |
+| Client registration payment gate | **Implemented** — client is authenticated but gated by registration payment middleware before dashboard and app modules; pay via `POST /api/client/payments/registration` |
 | Pagination / filtering on all list endpoints | **Partial** — varies by controller |
 | Postman collection aligned to live routes | **Automated** — `postman/Waste_Removal_API.generated.postman_collection.json` |
 | Automated test suite | **Minimal** — see `tests/Feature/ApiSmokeTest.php`; local `php artisan test` may require **PHP 8.3+** with current vendor deps |
@@ -57,7 +57,8 @@
 
 | Module | Implemented | Notes |
 |--------|-------------|--------|
-| Dashboard (profile, MMDA, provider, zone) | **Yes** | `GET /api/client/dashboard` |
+| Dashboard (profile, MMDA, provider, zone) | **Yes** | `GET /api/client/dashboard` (after registration payment; see `payments/registration`) |
+| Registration payment | **Yes** | `POST /api/client/payments/registration`, `GET /api/client/payments/registration/status` |
 | Guides / banners | **Yes** | `GET /api/client/guides`, `GET /api/client/banners` |
 | Complaints | **Yes** | CRUD-style routes under `/api/client/*complaint*` |
 | Pickup schedule / dates | **Yes** | `GET /api/client/get_pickup_dates` |
@@ -79,7 +80,7 @@
 | Route planner + assignment logs | **Yes** | plans, logs, bin scan status |
 | Pickup (provider) | **Yes** | creation, list/show, update/delete, price/date, scans |
 | Bulk waste requests (provider) | **Yes** | list, show, status update |
-| Payments | **Yes** | list/show + `registration`, `bins`, `waste_handover_request`, `weighbridge_records` |
+| Payments | **Yes** | list/show + `bins`, `waste_handover_request`, `weighbridge_records` (client pays registration, not provider) |
 | Products | **Yes** | provider CRUD |
 | Violations | **Yes** | |
 | Complaints (client complaints for provider) | **Yes** | |
@@ -126,7 +127,7 @@
 3. **Pagination:** Standardize `page`, `per_page`, and `meta` on list endpoints.
 4. **Client-zone deprecation:** keep DB column for backward compatibility but avoid new app logic depending on `clients.zone_slug`; derive zone from provider zone assignments.
 5. **Postman:** Regenerate and re-import the generated collection after route additions.
-6. **Tests:** Expand feature tests per actor; add regression tests for provider registration-payment gate and verify-account endpoints.
+6. **Tests:** Expand feature tests per actor; add regression tests for client registration-payment gate and verify-account endpoints.
 
 ## 6. Artifacts in this repo
 
