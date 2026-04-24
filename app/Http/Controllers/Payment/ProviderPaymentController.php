@@ -23,6 +23,7 @@ class ProviderPaymentController extends Controller
 
         $status = $request->query('status');
         $query = Payment::query()
+            ->with('purchase', 'pickup')
             ->where('provider_slug', $providerSlug)
             ->orderByDesc('created_at');
 
@@ -69,7 +70,11 @@ class ProviderPaymentController extends Controller
             message: "Action Successful",
             reason: "Payment details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $payment->toArray()
+            data: [
+                'payment' => $payment->toArray(),
+                'purchase' => $payment->purchase?->toArray(),
+                'pickup' => $payment->pickup?->toArray(),
+            ]
         );
     }
 
@@ -78,7 +83,8 @@ class ProviderPaymentController extends Controller
         $providerSlug = $this->providerSlugFromUser($request->user());
         $items = Payment::query()
             ->where('provider_slug', $providerSlug)
-            ->where('purchase_id', '!=', '0')
+            // ->where('purchase_id', '!=', '0')
+            ->where('payment_type', 'pickup')
             ->latest()
             ->get();
 

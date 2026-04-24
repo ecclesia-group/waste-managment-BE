@@ -101,7 +101,9 @@ class CartController extends Controller
             message: "Action Successful",
             reason: "Cart item updated successfully",
             status_code: self::API_SUCCESS,
-            data: $item->toArray()
+            data: [
+                'product' => $item->product->toArray(),
+            ]
         );
     }
 
@@ -311,4 +313,3 @@ class CartController extends Controller
         }
     }
 }
-

@@ -65,8 +65,9 @@ class ClientPaymentController extends Controller
                 'amount' => $expected,
                 'currency' => $data['currency'] ?? 'GHS',
                 'status' => Payment::STATUS_PENDING,
-                'purchase_id' => '0',
-                'pickup_id' => '0',
+                'purchase_id' => null,
+                'pickup_id' => null,
+                'payment_type' => 'registration',
             ]);
 
             $client->registration_status = false;

@@ -30,4 +30,29 @@ class WeighbridgeRecord extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class, 'facility_slug', 'facility_slug');
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function fleet()
+    {
+        return $this->belongsTo(Fleet::class, 'fleet_slug', 'fleet_slug');
+    }
+
+    public function zone()
+    {
+        return $this->belongsTo(Zone::class, 'zone_slug', 'zone_slug');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return "code";
+    }
 }

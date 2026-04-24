@@ -3,13 +3,14 @@ namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseCreationRequest;
-use App\Models\Purchase;
-use App\Models\PurchaseItem;
-use App\Models\Product;
-use App\Models\Payment;
 use App\Models\Client;
 use App\Models\Notification;
+use App\Models\Payment;
+use App\Models\Product;
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PurchaseController extends Controller
 {
@@ -179,7 +180,7 @@ class PurchaseController extends Controller
         }
 
         $data = request()->validate([
-            'transaction_id' => 'required|string|unique:payments,transaction_id',
+            // 'transaction_id' => 'required|string|unique:payments,transaction_id',
             'payment_method' => 'required|string|in:momo,card',
             'network' => 'nullable|string',
             'phone_number' => 'nullable|string',
@@ -195,13 +196,13 @@ class PurchaseController extends Controller
         try {
             // Confirm the order as soon as payment is successful.
             $purchase->status = 'confirmed';
-
+            $transactionId = 'PURCH-' . now()->format('YmdHis');
             // Create payment record
             $payment = Payment::create([
                 'client_slug' => $user->client_slug,
                 'provider_slug' => $user->provider_slug,
                 'payment_type' => null,
-                'transaction_id' => $data['transaction_id'],
+                'transaction_id' => $transactionId,
                 'payment_method' => $data['payment_method'],
                 'network' => $data['network'] ?? 'unknown',
                 'phone_number' => $data['phone_number'] ?? null,
@@ -213,28 +214,29 @@ class PurchaseController extends Controller
                 'card_cvv' => $data['card_cvv'] ?? null,
                 'amount' => $purchase->total_price,
                 'currency' => 'GHS',
-                'status' => 'success',
+                'status' => 'paid',
                 'purchase_id' => (string) $purchase->id,
                 // Existing schema requires both ids; keep pickup_id as "0" for store orders.
-                'pickup_id' => '0',
+                'pickup_id' => null,
+                'payment_type' => 'purchase',
             ]);
 
             $purchase->save();
 
             // Generate QR code for the bin if this is a bin purchase
-            $client = Client::where('client_slug', $user->client_slug)->first();
-            $qrcodeUrl = null;
-            if ($client) {
-                $qrcodeUrl = static::generateQRCode($user->client_slug, $client);
-                if ($qrcodeUrl) {
-                    $qrcodeArray = $client->qrcode ?? [];
-                    if (!in_array($qrcodeUrl, $qrcodeArray)) {
-                        $qrcodeArray[] = $qrcodeUrl;
-                        $client->qrcode = $qrcodeArray;
-                        $client->save();
-                    }
-                }
-            }
+            // $client = Client::where('client_slug', $user->client_slug)->first();
+            // $qrcodeUrl = null;
+            // if ($client) {
+            //     $qrcodeUrl = static::generateQRCode($user->client_slug, $client);
+            //     if ($qrcodeUrl) {
+            //         $qrcodeArray = $client->qrcode ?? [];
+            //         if (!in_array($qrcodeUrl, $qrcodeArray)) {
+            //             $qrcodeArray[] = $qrcodeUrl;
+            //             $client->qrcode = $qrcodeArray;
+            //             $client->save();
+            //         }
+            //     }
+            // }
 
             DB::commit();
 
@@ -246,7 +248,7 @@ class PurchaseController extends Controller
                 data: [
                     'payment' => $payment->toArray(),
                     'purchase' => $purchase->load('items')->toArray(),
-                    'qrcode' => $qrcodeUrl ?? null,
+                    // 'qrcode' => $qrcodeUrl ?? null,
                 ]
             );
         } catch (\Exception $e) {

@@ -36,4 +36,9 @@ class Product extends Model
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
+
+    public function getRouteKeyName(): string
+    {
+        return "product_slug";
+    }
 }

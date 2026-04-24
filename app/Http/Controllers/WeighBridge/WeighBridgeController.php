@@ -113,7 +113,7 @@ class WeighBridgeController extends Controller
         $providerSlug = self::resolveProviderScopeSlug($request->user());
         $data = $request->validate([
             'code' => ['required', 'string', 'exists:weighbridge_records,code'],
-            'scan_status' => ['required', 'string', 'in:handover,unscanned'],
+            'scan_status' => ['required', 'string', 'in:handover,unscanned,scanned'],
         ]);
 
         $entry = WeighbridgeRecord::query()
@@ -284,14 +284,15 @@ class WeighBridgeController extends Controller
     public function updateStatus(Request $request)
     {
         $data = $request->validate([
-            'id' => ['required', 'integer', 'exists:weighbridge_records,id'],
+            // 'id' => ['required', 'integer', 'exists:weighbridge_records,id'],
+            'code' => ['required', 'string', 'exists:weighbridge_records,code'],
             'payment_status' => ['nullable', 'string', 'in:pending_payment,paid,credit'],
-            'scan_status' => ['nullable', 'string', 'in:scanned,unscanned,handover'],
+            'scan_status' => ['nullable', 'string', 'in:handover,unscanned,scanned'],
         ]);
 
         $facility = $request->user();
         $effectiveFacilitySlug = $facility->facility_slug;
-        $entry = WeighbridgeRecord::where('id', $data['id'])
+        $entry = WeighbridgeRecord::where('code', $data['code'])
             ->where('facility_slug', $effectiveFacilitySlug ?? null)
             ->first();
 
@@ -339,7 +340,7 @@ class WeighBridgeController extends Controller
             'gross_weight' => ['nullable', 'numeric', 'min:0'],
             'amount' => ['nullable', 'numeric', 'min:0'],
             'payment_status' => ['nullable', 'string', 'in:pending_payment,paid,credit'],
-            'scan_status' => ['nullable', 'string', 'in:scanned,unscanned,handover'],
+            'scan_status' => ['nullable', 'string', 'in:handover,unscanned,scanned'],
             'notes' => ['nullable', 'string'],
         ]);
 

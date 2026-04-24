@@ -56,12 +56,12 @@ class Payment extends Model
 
     public function purchase()
     {
-        return $this->belongsTo(Purchase::class, 'purchase_id', 'purchase_id');
+        return $this->belongsTo(Purchase::class, 'purchase_id', 'id');
     }
 
     public function pickup()
     {
-        return $this->belongsTo(Pickup::class, 'pickup_id', 'pickup_id');
+        return $this->belongsTo(Pickup::class, 'pickup_id', 'id');
     }
 
     // public function getRouteKeyName(): string
