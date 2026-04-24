@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    private function resolveProviderScopeSlug(object $user): ?string
+    protected static function resolveProviderScopeSlug(object $user): ?string
     {
         if (! isset($user->provider_slug)) {
             return null;
@@ -34,7 +34,7 @@ class ProductController extends Controller
             $query->where('provider_slug', $user->provider_slug);
         } elseif (isset($user->provider_slug)) {
             // Providers and provider team members can only see their own products.
-            $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
+            $query->where('provider_slug', static::resolveProviderScopeSlug($user));
         }
 
         if (! empty($category)) {
@@ -78,7 +78,7 @@ class ProductController extends Controller
             );
         }
 
-        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
+        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) static::resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -101,7 +101,7 @@ class ProductController extends Controller
     public function createProduct(ProductCreationRequest $request)
     {
         $data = $request->validated();
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = static::resolveProviderScopeSlug($request->user());
         if (! $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -136,7 +136,7 @@ class ProductController extends Controller
 
     public function updateProduct(ProductUpdateRequest $request, Product $product)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = static::resolveProviderScopeSlug($request->user());
         if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -168,7 +168,7 @@ class ProductController extends Controller
 
     public function deleteProduct(Product $product)
     {
-        $providerSlug = $this->resolveProviderScopeSlug(request()->user());
+        $providerSlug = static::resolveProviderScopeSlug(request()->user());
         if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,

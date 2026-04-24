@@ -13,6 +13,7 @@ use App\Models\PickupScanEvent;
 use App\Models\RoutePlannerBinAssignment;
 use App\Support\Geo\Haversine;
 use App\Traits\HasClientMapPayload;
+use App\Traits\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -27,7 +28,7 @@ class PickupController extends Controller
         $code                  = Str::random(5);
         $data                  = $request->validated();
         $data['driver_slug']   = Str::uuid();
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         $data['provider_slug'] = $providerSlug;
         $data['code']          = $code;
 
@@ -108,7 +109,7 @@ class PickupController extends Controller
         $code                  = Str::random(5);
         $data                  = $request->validated();
         $user                  = request()->user();
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         // Scopes to authenticated client/provider.
         $data['client_slug'] = $user->client_slug;
         $data['provider_slug'] = $providerSlug;
@@ -128,7 +129,7 @@ class PickupController extends Controller
             'description' => $data['description'] ?? null,
             'location' => $data['location'] ?? null,
             'images' => $data['images'] ?? null,
-            'requested_pickup_date' => $data['pickup_date'] ?? null,
+            'pickup_date' => $data['pickup_date'] ?? null,
             'status' => 'pending_approval',
             'approval_status' => 'pending',
         ]);
@@ -149,12 +150,13 @@ class PickupController extends Controller
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->where('client_slug', $user->client_slug)
+            ->with('client', 'provider')
             ->first();
         if (! $bulkRequest) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Pickup not found",
+                reason: "Bulk waste request not found",
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
@@ -182,7 +184,7 @@ class PickupController extends Controller
             'description' => $data['description'] ?? $bulkRequest->description,
             'location' => $data['location'] ?? $bulkRequest->location,
             'images' => $data['images'] ?? $bulkRequest->images,
-            'requested_pickup_date' => $data['pickup_date'] ?? $bulkRequest->requested_pickup_date,
+            'pickup_date' => $data['pickup_date'] ?? $bulkRequest->pickup_date,
         ]);
 
         return self::apiResponse(
@@ -198,8 +200,9 @@ class PickupController extends Controller
     {
         $clientSlug = (string) $request->user()->client_slug;
         $items = BulkWasteRequest::query()
+            ->with('client', 'provider')
             ->where('client_slug', $clientSlug)
-            ->latest()
+            ->orderByDesc('created_at')
             ->get();
 
         return self::apiResponse(false, "Action Successful", "Bulk waste requests retrieved successfully", self::API_SUCCESS, $items->toArray());
@@ -213,33 +216,49 @@ class PickupController extends Controller
             ->where('request_code', $requestCode)
             ->first();
 
-        if (! $item) {
-            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
-        }
-
-        return self::apiResponse(false, "Action Successful", "Bulk waste request retrieved successfully", self::API_SUCCESS, $item->toArray());
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bulk waste request retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $item->load('client', 'provider')->toArray()
+        );
     }
 
     public function deleteBulkWasteRequest(Request $request, string $requestCode)
     {
         $clientSlug = (string) $request->user()->client_slug;
-        $deleted = BulkWasteRequest::query()
+        $bulkRequest = BulkWasteRequest::query()
             ->where('client_slug', $clientSlug)
             ->where('request_code', $requestCode)
-            ->delete();
+            ->first();
 
-        if ($deleted === 0) {
-            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+        if (! $bulkRequest) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Bulk waste request not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
         }
 
-        return self::apiResponse(false, "Action Successful", "Bulk waste request deleted successfully", self::API_SUCCESS, []);
+        $bulkRequest->delete();
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bulk waste request deleted successfully",
+            status_code: self::API_SUCCESS,
+            data: []
+        );
     }
 
     public function providerBulkWasteRequests(Request $request)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = Helpers::resolveProviderScopeSlug($request->user());
         $query = BulkWasteRequest::query()
-            ->with(['client.group'])
+            ->with('client', 'provider')
             ->where('provider_slug', $providerSlug);
 
         if ($request->filled('status')) {
@@ -251,7 +270,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste requests retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $query->latest()->get()->toArray()
+            data: $query->orderByDesc('created_at')->get()->load('client', 'provider')->toArray()
         );
     }
 
@@ -262,14 +281,20 @@ class PickupController extends Controller
             'rejection_reason' => 'nullable|string|max:500',
         ]);
 
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = Helpers::resolveProviderScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->where('provider_slug', $providerSlug)
             ->first();
 
         if (! $bulkRequest) {
-            return self::apiResponse(true, "Action Failed", "Bulk request not found", self::API_NOT_FOUND, []);
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Bulk request not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
         }
 
         if ($bulkRequest->status !== 'pending_approval') {
@@ -290,12 +315,18 @@ class PickupController extends Controller
         $bulkRequest->rejection_reason = $data['rejection_reason'] ?? null;
         $bulkRequest->save();
 
-        return self::apiResponse(false, "Action Successful", "Bulk request status updated successfully", self::API_SUCCESS, $bulkRequest->toArray());
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Bulk request status updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $bulkRequest->load('client', 'provider')->toArray()
+        );
     }
 
     public function providerBulkWasteRequestShow(Request $request, string $requestCode)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = Helpers::resolveProviderScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->with(['client.group'])
             ->where('provider_slug', $providerSlug)
@@ -365,7 +396,7 @@ class PickupController extends Controller
 
     public function providerUpdatePickup(UpdatePickupRequest $request, string $pickupCode)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = Helpers::resolveProviderScopeSlug($request->user());
         $pickup = Pickup::query()
             ->where('code', $pickupCode)
             ->where('provider_slug', $providerSlug)
@@ -385,7 +416,7 @@ class PickupController extends Controller
 
     public function providerDeletePickup(Request $request, string $pickupCode)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = Helpers::resolveProviderScopeSlug($request->user());
         $deleted = Pickup::query()
             ->where('code', $pickupCode)
             ->where('provider_slug', $providerSlug)
@@ -439,7 +470,7 @@ class PickupController extends Controller
     public function getAllPickups()
     {
         $user    = request()->user();
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         $pickups = Pickup::with(['client.group'])
             ->where(['provider_slug' => $providerSlug])
             ->get();
@@ -531,7 +562,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -571,7 +602,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -662,7 +693,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped scan updates.
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -782,7 +813,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped manual scan: ensure this bin belongs to the current provider.
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
         if ($providerSlug && (string) $bin->provider_slug !== (string) $providerSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -831,9 +862,10 @@ class PickupController extends Controller
     public function getPickupDates()
     {
         $user         = request()->user();
-        $pickup_dates = Pickup::where(function ($query) use ($user) {
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
+        $pickup_dates = Pickup::where(function ($query) use ($user, $providerSlug) {
             $query->where('client_slug', $user->client_slug)
-                ->where('provider_slug', $user->provider_slug);
+                ->where('provider_slug', $providerSlug);
         })
             ->whereNotNull('pickup_date')
             ->get();
@@ -845,16 +877,5 @@ class PickupController extends Controller
             status_code: self::API_SUCCESS,
             data: $pickup_dates->toArray()
         );
-    }
-
-    private function resolveProviderScopeSlug(object $user): ?string
-    {
-        if (! isset($user->provider_slug)) {
-            return null;
-        }
-
-        return (bool) ($user->is_main ?? true)
-            ? (string) $user->provider_slug
-            : (string) ($user->parent_slug ?: $user->provider_slug);
     }
 }

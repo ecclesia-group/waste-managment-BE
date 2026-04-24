@@ -128,8 +128,27 @@ class DistrictAssemblyManagementController extends Controller
     {
         $districtSlug = $this->districtSlug($request);
 
-        $zoneSlugs = Provider::query()
+        $providerSlugs = Provider::query()
             ->where('district_assembly', $districtSlug)
+            ->pluck('provider_slug')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($providerSlugs)) {
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "No zones found for this district assembly",
+                status_code: self::API_SUCCESS,
+                data: []
+            );
+        }
+
+        $zoneSlugs = DB::table('provider_zone_assignments')
+            ->whereIn('provider_slug', $providerSlugs)
+            ->where('status', 'active')
             ->pluck('zone_slug')
             ->filter()
             ->unique()

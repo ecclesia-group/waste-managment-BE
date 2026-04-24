@@ -15,7 +15,7 @@ class WasteHandoverController extends Controller
     public function create(Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
         $effectiveZoneSlugs = DB::table('provider_zone_assignments')
             ->where('provider_slug', $effectiveProviderSlug)
             ->where('status', 'active')
@@ -81,7 +81,7 @@ class WasteHandoverController extends Controller
     public function list(Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
 
         $query = WasteHandoverRequest::query()
             ->where(function ($q) use ($effectiveProviderSlug) {
@@ -106,7 +106,7 @@ class WasteHandoverController extends Controller
     public function show(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
         if ($handover->requester_provider_slug !== $effectiveProviderSlug && $handover->target_provider_slug !== $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -129,7 +129,7 @@ class WasteHandoverController extends Controller
     public function accept(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
 
         if ($handover->status !== 'pending') {
             return self::apiResponse(
@@ -168,7 +168,7 @@ class WasteHandoverController extends Controller
     public function decline(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
 
         if ($handover->status !== 'pending') {
             return self::apiResponse(
@@ -206,7 +206,7 @@ class WasteHandoverController extends Controller
     public function complete(WasteHandoverRequest $handover, Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
 
         if ($handover->status !== 'accepted') {
             return self::apiResponse(

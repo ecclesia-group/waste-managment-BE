@@ -18,28 +18,17 @@ class ClientPaymentController extends Controller
             'payment_method' => ['required', 'string'],
             'network' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string'],
+            'email' => ['nullable', 'string', 'email', 'max:255'],
             'name' => ['nullable', 'string'],
             'currency' => ['nullable', 'string'],
             'transaction_id' => ['nullable', 'string', 'max:255'],
+            'client_slug' => ['required', 'string', 'exists:clients,client_slug'],
         ]);
 
-        $user = $request->user();
-        $client = Client::query()->where('client_slug', $user->client_slug)->first();
+        $client = Client::query()->where('client_slug', $data['client_slug'])->first();
 
         if (! $client) {
             return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
-        }
-
-        if (! $client->requiresRegistrationPayment()) {
-            return self::apiResponse(
-                in_error: false,
-                message: 'Action Successful',
-                reason: 'Registration fee already satisfied',
-                status_code: self::API_SUCCESS,
-                data: [
-                    'client' => $client->fresh()->load('group')->toArray(),
-                ]
-            );
         }
 
         $expected = round((float) ($client->registration_fee ?? 0), 2);
@@ -75,12 +64,12 @@ class ClientPaymentController extends Controller
                 'card_cvv' => null,
                 'amount' => $expected,
                 'currency' => $data['currency'] ?? 'GHS',
-                'status' => Payment::STATUS_PAID,
+                'status' => Payment::STATUS_PENDING,
                 'purchase_id' => '0',
                 'pickup_id' => '0',
             ]);
 
-            $client->registration_status = true;
+            $client->registration_status = false;
             $client->save();
         });
 
@@ -108,27 +97,12 @@ class ClientPaymentController extends Controller
             return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
         }
 
-        $client->syncRegistrationStatusFromPayments();
-        $client->refresh();
-
-        $paid = Payment::query()
-            ->where('client_slug', $client->client_slug)
-            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
-            ->where('status', Payment::STATUS_PAID)
-            ->latest()
-            ->first();
-
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
             reason: 'Registration payment status retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'registration_fee' => (float) ($client->registration_fee ?? 0),
-                'registration_status' => (bool) $client->registration_status,
-                'is_paid' => ! $client->requiresRegistrationPayment(),
-                'payment' => $paid?->toArray(),
-            ]
+            data: $client->load('group')->toArray(),
         );
     }
 }

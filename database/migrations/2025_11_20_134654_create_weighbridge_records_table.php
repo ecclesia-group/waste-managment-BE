@@ -18,11 +18,11 @@ return new class extends Migration
             $table->string('provider_slug')->nullable();
             $table->string('fleet_slug')->nullable();
             $table->string('fleet_code')->nullable();
-            $table->string('group_slug')->nullable();
+            $table->string('zone_slug')->nullable();
             $table->decimal('gross_weight', 10, 2)->nullable();
             $table->decimal('amount', 10, 2)->nullable();
-            $table->string('payment_status')->default('paid'); // paid|credit
-            $table->string('scan_status')->default('scanned'); // scanned|unscanned|handover
+            $table->string('payment_status')->default('pending_payment'); // pending_payment|paid|credit
+            $table->string('scan_status')->default('unscanned'); // scanned|unscanned|handover
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

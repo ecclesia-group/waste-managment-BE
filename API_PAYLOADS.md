@@ -200,13 +200,28 @@ Clients **only view** violations.
 ### Route Planner (Map + Scan Status)
 
 #### POST `/provider/create_plan` (Auth: Bearer)
-Creates a route planner plan and schedules pending pickup rows for all active clients in the plan group.
+Creates a route planner plan and schedules pending pickup rows using one of two planning modes:
+- `pickup_type = "bulk_waste_request"`: plan from clients that have submitted bulk waste requests.
+- `pickup_type = "normal"`: plan from selected group(s) and/or specific clients.
 ```json
 {
   "provider_slug": "provider-uuid",
   "driver_slug": "driver-uuid",
   "fleet_slug": "fleet-uuid",
-  "group_slug": "group-uuid"
+  "pickup_type": "normal",
+  "group_slugs": ["group-uuid-1", "group-uuid-2"],
+  "client_slugs": ["optional-client-uuid"]
+}
+```
+
+Bulk request plan example:
+```json
+{
+  "provider_slug": "provider-uuid",
+  "driver_slug": "driver-uuid",
+  "fleet_slug": "fleet-uuid",
+  "pickup_type": "bulk_waste_request",
+  "bulk_request_codes": ["BWR123", "BWR456"]
 }
 ```
 
@@ -235,6 +250,13 @@ If `status` is `scanned`, the backend also sets the pickup `status` to `complete
 #### GET `/provider/assignment_logs` (Auth: Bearer)
 Assignment/bin activity logs used for map filtering.
 Query params: `status=scanned|unscanned|pending`, `from=YYYY-MM-DD`, `to=YYYY-MM-DD`, `driver_slug`, `group_slug`, `provider_slug`, `limit`.
+
+#### GET `/provider/map_pickup_overview` (Auth: Bearer)
+Map payload for pickups with optional plan-specific drawing filters.
+Query params:
+- `plan_id` to draw bins for one pickup plan
+- `group_slug` to draw only one group within the plan/provider
+- `group_by=provider|plan|group|zone|mmda`
 
 ### Provider Reports (Analytics)
 #### GET `/provider/reports` (Auth: Bearer)
@@ -291,6 +313,25 @@ Optionally include fee payment details:
 
 ### Facility — Weighbridge
 
+#### POST `/provider/weighbridge_records` (Auth: Bearer)
+Provider submits a weighbridge handover to facility. Payment is captured later by facility scan/verification.
+
+```json
+{
+  "facility_slug": "facility-uuid",
+  "fleet_slug": "fleet-uuid",
+  "fleet_code": "FLT-001",
+  "zone_slug": "zone-uuid",
+  "gross_weight": 2450.5,
+  "amount": 320.0,
+  "notes": "Sent to facility awaiting payment verification"
+}
+```
+
+Response includes generated ticket `code` and defaults:
+- `payment_status = "pending_payment"`
+- `scan_status = "handover"`
+
 #### POST `/facility/register_weigh_bridge_entry` (Auth: Bearer)
 
 ```json
@@ -312,6 +353,17 @@ Optionally include fee payment details:
 
 ```json
 { "id": 12, "payment_status": "paid" }
+```
+
+#### POST `/facility/verify_weigh_bridge_ticket` (Auth: Bearer)
+Facility verifies ticket code when truck arrives and records payment mode (`paid` or `credit`).
+
+```json
+{
+  "code": "WB-ABC12345",
+  "payment_status": "credit",
+  "notes": "Accepted on credit at gate"
+}
 ```
 
 ### Facility Reports (Analytics)
@@ -356,5 +408,76 @@ Returns platform-wide summary metrics (customers/providers/facility scanned assi
   "attachments": ["data:application/pdf;base64,JVBERi0x..."]
 }
 ```
+
+---
+
+## Frontend Integration Contract (Final)
+
+Use this section as the implementation checklist for mobile/web frontend teams.
+
+### 1) Weighbridge Payment Lifecycle
+
+- **Provider submits handover:** `POST /provider/weighbridge_records`
+  - Backend creates ticket `code`
+  - Initial statuses are always:
+    - `payment_status = pending_payment`
+    - `scan_status = handover`
+- **Facility verifies at gate:** `POST /facility/verify_weigh_bridge_ticket`
+  - Required: `code`, `payment_status` (`paid` or `credit`)
+  - Backend sets `scan_status = scanned`
+- **Provider views own records:** `GET /provider/weighbridge_records`
+  - Optional filters: `facility_slug`, `payment_status`, `scan_status`
+
+### 2) Pickup Planning Modes
+
+- **Create plan:** `POST /provider/create_plan`
+- **Required core fields:** `provider_slug`, `driver_slug`, `fleet_slug`, `pickup_type`
+- **Mode A (`bulk_waste_request`):**
+  - Provide `bulk_request_codes` and/or `client_slugs`
+  - Backend schedules pickups tied to request codes
+- **Mode B (`normal`):**
+  - Provide `group_slugs` and/or `client_slugs`
+  - Backend schedules pickups for selected groups/clients
+
+### 3) Live Scan + Driver Location
+
+- **Driver live location update:** `POST /provider/update_driver_location`
+  - Required: `driver_slug`, `latitude`, `longitude`
+- **Pickup scan update:** `POST /provider/change_scan_status`
+  - Required: `code`, `status` (`scanned`, `not_scanned`, `unscanned`)
+  - If scanned, backend marks pickup as completed and updates route assignment scan state.
+
+### 4) Map Drawing for Pickup Plans
+
+- **Overview endpoint:** `GET /provider/map_pickup_overview`
+- **Filters for drawing one selected plan:**
+  - `plan_id=<route_planner_id>`
+  - Optional `group_slug=<group_slug>`
+- **Grouping options:** `group_by=provider|plan|group|zone|mmda`
+- **Map item fields (important):**
+  - `route_planner_id`
+  - `pickup_code`
+  - `provider_slug`
+  - `group_slug`
+  - `zone_slug`
+  - `latitude`, `longitude`
+  - `scan_status`
+
+### 5) Waste Handover Requests
+
+- **Create:** `POST /provider/handover_requests`
+- **List:** `GET /provider/handover_requests?status=pending|accepted|declined|completed`
+- **Accept/Decline/Complete:**
+  - `POST /provider/handover_requests/{handover}/accept`
+  - `POST /provider/handover_requests/{handover}/decline`
+  - `POST /provider/handover_requests/{handover}/complete`
+- Complete supports optional fee payment capture payload (`transaction_id`, `payment_method`, etc).
+
+### 6) Cross-Role Visibility Rules (Frontend Expectations)
+
+- Provider sees provider-scoped records/plans/assignments only.
+- Facility sees facility-scoped weighbridge entries only.
+- MMDA sees providers/facilities/zones within its district scope.
+- Admin sees platform-wide analytics endpoints.
 
 

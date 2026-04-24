@@ -43,7 +43,7 @@ class EnsureClientRegistrationPayment
         $client->syncRegistrationStatusFromPayments();
         $client->refresh();
 
-        if (! $client->requiresRegistrationPayment()) {
+        if ($client->registration_status) {
             return $next($request);
         }
 
@@ -53,11 +53,7 @@ class EnsureClientRegistrationPayment
                 'message' => 'Action Failed',
                 'in_error' => true,
                 'reason' => 'Registration fee payment is required before using the app',
-                'data' => [
-                    'requires_registration_payment' => true,
-                    'registration_fee' => (float) ($client->registration_fee ?? 0),
-                    'registration_status' => (bool) $client->registration_status,
-                ],
+                'data' => $client->load('group')->toArray(),
             ],
         ], 403);
     }

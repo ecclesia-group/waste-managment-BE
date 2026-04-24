@@ -25,11 +25,11 @@ class ClientAuthenticationController extends Controller
             if ($bool) {
                 $client->syncRegistrationStatusFromPayments();
                 $client->refresh();
-                $requiresRegistrationPayment = $client->requiresRegistrationPayment();
+                // $requiresRegistrationPayment = $client->requiresRegistrationPayment();
 
                 $client = self::apiToken($client, "client");
                 $data = array_merge($client->toArray(), [
-                    'requires_registration_payment' => $requiresRegistrationPayment,
+                    // 'requires_registration_payment' => $requiresRegistrationPayment,
                     'registration_fee' => (float) ($client->registration_fee ?? 0),
                     'registration_status' => (bool) ($client->registration_status ?? false),
                 ]);

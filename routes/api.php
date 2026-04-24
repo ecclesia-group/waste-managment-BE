@@ -54,8 +54,7 @@ Route::prefix("client")->group(function () {
     Route::post("login", [ClientAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [ClientPasswordController::class, "resetPassword"]);
-    Route::post("resend_verificationCode", [ClientPasswordController::class, "sendVerificationNotification"]);
-    Route::post("verify_account", [ClientPasswordController::class, "verifyAccount"]);
+    Route::post("resend_verificationCode", [ClientPasswordController::class, "sendResetPasswordNotification"]);
 
     Route::middleware(["auth:client"])->group(function () {
         Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
@@ -101,12 +100,13 @@ Route::prefix("client")->group(function () {
         Route::delete('delete_feedback/{feedback}', [FeedbackController::class, 'deleteFeedback']);
         Route::put('update_feedback/{feedback}', [FeedbackController::class, 'updateFeedback']);
 
-        // Pickup Management
+        // Bulk Waste Request Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
         Route::get('bulk_waste_requests', [PickupController::class, 'clientBulkWasteRequests']);
         Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
         Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
         Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
+
         // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
         Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
         Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
@@ -259,6 +259,14 @@ Route::prefix("provider")->group(function () {
         Route::put("team_members/{memberSlug}", [TeamMemberController::class, "update"]);
         Route::delete("team_members/{memberSlug}", [TeamMemberController::class, "destroy"]);
         Route::put("team_members/{memberSlug}/status", [TeamMemberController::class, "updateStatus"]);
+
+        // Weighbridge Records Management
+        Route::post("weighbridge_records", [WeighBridgeController::class, "createRecord"]);
+        Route::get("weighbridge_records", [WeighBridgeController::class, "allRecords"]);
+        Route::get("get_single_weighbridge_record/{record}", [WeighBridgeController::class, "showRecord"]);
+        Route::post("update_weighbridge_record_status", [WeighBridgeController::class, "updateRecordStatus"]);
+        Route::put("update_weighbridge_record_details/{record}", [WeighBridgeController::class, "updateRecord"]);
+        Route::delete("delete_weighbridge_record/{record}", [WeighBridgeController::class, "deleteRecord"]);
     });
 });
 
@@ -277,6 +285,7 @@ Route::prefix("facility")->group(function () {
 
         // Weigh Bridge Management
         Route::post("register_weigh_bridge_entry", [WeighBridgeController::class, "registerEntry"]);
+        Route::post("verify_weigh_bridge_ticket", [WeighBridgeController::class, "verifyByTicketCode"]);
         Route::get("all_weigh_bridge_entries", [WeighBridgeController::class, "allEntries"]);
         Route::get("get_single_weigh_bridge_entry/{entry}", [WeighBridgeController::class, "show"]);
         Route::post("update_weigh_bridge_entry_status", [WeighBridgeController::class, "updateStatus"]);

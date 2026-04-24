@@ -15,12 +15,13 @@ class DriverController extends Controller
     public function register(RegisterRequest $request)
     {
         $user                      = Auth::guard('provider')->user();
+        $effectiveProviderSlug     = self::resolveProviderScopeSlug($user);
         $password                  = Str::random(8);
         $data                      = $request->validated();
         $data['driver_slug']       = Str::uuid();
         $data['password']          = $password;
         $data['email_verified_at'] = now();
-        $data['provider_slug']     = $user->provider_slug;
+        $data['provider_slug']     = $effectiveProviderSlug;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -53,8 +54,9 @@ class DriverController extends Controller
 
     public function allDrivers()
     {
-        $user    = Auth::guard('provider')->user();
-        $drivers = Driver::where('provider_slug', $user->provider_slug)->get();
+        $user = Auth::guard('provider')->user();
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        $drivers = Driver::where('provider_slug', $effectiveProviderSlug)->get();
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -67,7 +69,8 @@ class DriverController extends Controller
     public function show(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -91,9 +94,10 @@ class DriverController extends Controller
         $data           = $request->validated();
 
         $user = Auth::guard('provider')->user();
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->where('provider_slug', $effectiveProviderSlug)
             ->first();
 
         if (! $driver) {
@@ -121,7 +125,8 @@ class DriverController extends Controller
     public function updateDriverProfile(UpdateProfileRequest $request, Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -152,7 +157,8 @@ class DriverController extends Controller
     public function deleteDriver(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $driver->provider_slug !== (string) $user->provider_slug) {
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -185,9 +191,10 @@ class DriverController extends Controller
         ]);
 
         $user = Auth::guard('provider')->user();
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->where('provider_slug', $effectiveProviderSlug)
             ->first();
 
         if (! $driver) {

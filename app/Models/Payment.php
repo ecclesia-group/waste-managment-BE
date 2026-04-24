@@ -11,6 +11,10 @@ class Payment extends Model
     public const PAYMENT_TYPE_REGISTRATION_FEE = 'registration_fee';
 
     public const STATUS_PAID = 'paid';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_REFUNDED = 'refunded';
 
     protected $fillable = [
         'client_slug',
@@ -39,4 +43,29 @@ class Payment extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function purchase()
+    {
+        return $this->belongsTo(Purchase::class, 'purchase_id', 'purchase_id');
+    }
+
+    public function pickup()
+    {
+        return $this->belongsTo(Pickup::class, 'pickup_id', 'pickup_id');
+    }
+
+    // public function getRouteKeyName(): string
+    // {
+    //     return 'payment_id';
+    // }
 }

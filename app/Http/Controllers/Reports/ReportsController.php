@@ -15,13 +15,14 @@ use App\Models\WeighbridgeRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Traits\Helpers;
 
 class ReportsController extends Controller
 {
     public function providerReports(Request $request)
     {
         $user = $request->user();
-        $providerSlug = $user->provider_slug;
+        $providerSlug = Helpers::resolveProviderScopeSlug($user);
 
         // Clients grouped by status for provider
         $activeStatuses = ['activate', 'active'];
@@ -667,4 +668,3 @@ class ReportsController extends Controller
         );
     }
 }
-

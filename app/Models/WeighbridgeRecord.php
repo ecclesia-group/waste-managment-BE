@@ -17,7 +17,7 @@ class WeighbridgeRecord extends Model
         'fleet_code',
         'gross_weight',
         'amount',
-        'group_slug',
+        'zone_slug',
         'payment_status',
         'scan_status',
         'notes',

@@ -304,4 +304,15 @@ trait Helpers
 
         return $qrCodeUrl; // Return the API URL if download fails
     }
+
+    protected static function resolveProviderScopeSlug(object $user): ?string
+    {
+        if (! isset($user->provider_slug)) {
+            return null;
+        }
+
+        return (bool) ($user->is_main ?? true)
+            ? (string) $user->provider_slug
+            : (string) ($user->parent_slug ?: $user->provider_slug);
+    }
 }

@@ -49,9 +49,10 @@ class DashboardController extends Controller
     public function providerDashboard(Request $request)
     {
         $provider = $request->user();
-        $district = DistrictAssembly::query()->where('district_assembly_slug', $provider->district_assembly)->first();
-        $zones = $provider->zones()->get();
-        $effectiveProviderSlug = $provider->provider_slug;
+        $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
+        $providerModel = Provider::query()->where('provider_slug', $effectiveProviderSlug)->first();
+        $district = DistrictAssembly::query()->where('district_assembly_slug', $providerModel?->district_assembly)->first();
+        $zones = $providerModel?->zones()->get() ?? collect();
 
         $pendingHandover = WasteHandoverRequest::query()
             ->where(function ($q) use ($effectiveProviderSlug) {
@@ -66,7 +67,7 @@ class DashboardController extends Controller
             ->where('scan_status', 'scanned')
             ->count();
 
-        $groups = $provider->groups()->get();
+        $groups = $providerModel?->groups()->get() ?? collect();
 
         return self::apiResponse(
             in_error: false,
@@ -74,7 +75,7 @@ class DashboardController extends Controller
             reason: "Provider dashboard retrieved successfully",
             status_code: self::API_SUCCESS,
             data: [
-                'provider' => $provider->toArray(),
+                'provider' => ($providerModel ?? $provider)->toArray(),
                 'district_assembly' => $district?->toArray(),
                 'zones' => $zones?->toArray(),
                 'groups' => $groups->load('clients')->toArray(),
@@ -82,12 +83,12 @@ class DashboardController extends Controller
                 'scanned_bins_count' => $scannedBins,
                 'groups_count' => $groups->count(),
                 'zones_count' => $zones->count(),
-                'customers_count' => $provider->customers()->count(),
-                'drivers_count' => $provider->drivers()->count(),
-                'fleets_count' => $provider->fleets()->count(),
-                'routes_count' => $provider->routes()->count(),
-                'plans_count' => $provider->routes()->count(),
-                'assignments_count' => $provider->routes()->count(),
+                'customers_count' => $providerModel?->customers()->count() ?? 0,
+                'drivers_count' => $providerModel?->drivers()->count() ?? 0,
+                'fleets_count' => $providerModel?->fleets()->count() ?? 0,
+                'routes_count' => $providerModel?->routes()->count() ?? 0,
+                'plans_count' => $providerModel?->routes()->count() ?? 0,
+                'assignments_count' => $providerModel?->routes()->count() ?? 0,
             ]
         );
     }
@@ -178,7 +179,7 @@ class DashboardController extends Controller
     /**
      * Map-oriented pickup assignments: lat/lng, scan state, zone & MMDA hints.
      *
-     * @queryParam group_by provider|zone|mmda
+     * @queryParam group_by provider|plan|group|zone|mmda
      */
     public function mapPickupOverview(Request $request)
     {
@@ -190,11 +191,18 @@ class DashboardController extends Controller
             ->orderByDesc('updated_at');
 
         if (isset($user->provider_slug)) {
-            $query->where('provider_slug', $user->provider_slug);
+            $query->where('provider_slug', self::resolveProviderScopeSlug($user));
         } elseif (isset($user->district_assembly_slug)) {
             $query->whereIn('provider_slug', Provider::query()
                 ->where('district_assembly', $user->district_assembly_slug)
                 ->pluck('provider_slug'));
+        }
+
+        if ($request->filled('plan_id')) {
+            $query->where('route_planner_id', (int) $request->integer('plan_id'));
+        }
+        if ($request->filled('group_slug')) {
+            $query->where('group_slug', $request->string('group_slug'));
         }
 
         $assignments = $query->limit(500)->get();
@@ -215,9 +223,11 @@ class DashboardController extends Controller
             $zoneSlug = $providerZones[$a->provider_slug] ?? null;
 
             return [
+                'route_planner_id' => $a->route_planner_id,
                 'pickup_code' => $a->pickup_code,
                 'provider_slug' => $a->provider_slug,
                 'provider_id' => $a->provider_slug,
+                'group_slug' => $a->group_slug,
                 'zone_slug' => $zoneSlug,
                 'zone_id' => $zoneSlug,
                 'mmda_slug' => $providerDistricts[$a->provider_slug] ?? null,
@@ -231,6 +241,8 @@ class DashboardController extends Controller
         });
 
         $groups = match ($groupBy) {
+            'plan' => $items->groupBy('route_planner_id')->map->values(),
+            'group' => $items->groupBy('group_slug')->map->values(),
             'zone' => $items->groupBy('zone_slug')->map->values(),
             'mmda' => $items->groupBy('mmda_slug')->map->values(),
             default => $items->groupBy('provider_slug')->map->values(),

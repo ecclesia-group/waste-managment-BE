@@ -65,12 +65,12 @@ class Client extends Actor
         }
     }
 
-    public function requiresRegistrationPayment(): bool
-    {
-        $fee = (float) ($this->registration_fee ?? 0);
+    // public function requiresRegistrationPayment(): bool
+    // {
+    //     $fee = (float) ($this->registration_fee ?? 0);
 
-        return $fee > 0 && ! (bool) $this->registration_status;
-    }
+    //     return $fee > 0 && ! (bool) $this->registration_status;
+    // }
 
     public function complaints()
     {
