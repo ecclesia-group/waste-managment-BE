@@ -108,19 +108,19 @@ Route::prefix("client")->group(function () {
         Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
 
         // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
-        Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
-        Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
-        Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
-        Route::get('get_completed_pickups', [PickupController::class, 'getCompletedPickups']);
-        Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
-        Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
+        // Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
+        // Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
+        // Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
+        // Route::get('get_completed_pickups', [PickupController::class, 'getCompletedPickups']);
+        // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
+        // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
 
         // Notification Management
-        Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
+        // Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
         // Dashboard Content
-        Route::get('banners', [BannerController::class, 'listForAudience']);
-        Route::get('guides', [GuideController::class, 'listForAudience']);
-        Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
+        // Route::get('banners', [BannerController::class, 'listForAudience']);
+        // Route::get('guides', [GuideController::class, 'listForAudience']);
+        // Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
         });
