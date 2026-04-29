@@ -150,48 +150,14 @@ class ProductController extends Controller
         $data = $request->validated();
         $data = static::processImage(['images'], $data);
 
-        if (empty($data)) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No valid update fields were provided",
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        // Recalculate discount on partial updates as well (original or discounted can be sent independently).
-        if (array_key_exists('original_price', $data) || array_key_exists('discounted_price', $data)) {
-            $effectiveOriginal = (float) ($data['original_price'] ?? $product->original_price);
-            $effectiveDiscounted = $data['discounted_price'] ?? $product->discounted_price;
-
-            if ($effectiveDiscounted === null || $effectiveOriginal <= 0) {
-                $data['discount_percentage'] = 0;
-            } else {
-                $data['discount_percentage'] = (($effectiveOriginal - (float) $effectiveDiscounted) / $effectiveOriginal) * 100;
-            }
-        }
-
-        $product->fill($data);
-        if (! $product->isDirty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No changes detected. Product was not updated",
-                status_code: self::API_FAIL,
-                data: $product->toArray()
-            );
-        }
-
-        $product->save();
+        $product->update($data);
         $product = $product->fresh();
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Product updated successfully",
             status_code: self::API_SUCCESS,
-            data: $product->toArray()
+            data: $product->load('provider')->toArray()
         );
     }
 
