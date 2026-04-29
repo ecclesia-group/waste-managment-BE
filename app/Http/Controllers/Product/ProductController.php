@@ -156,6 +156,7 @@ class ProductController extends Controller
         }
 
         $product->update($data);
+        $product = $product->fresh();
 
         return self::apiResponse(
             in_error: false,

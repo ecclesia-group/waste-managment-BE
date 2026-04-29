@@ -129,9 +129,8 @@ class PickupController extends Controller
             'description' => $data['description'] ?? null,
             'location' => $data['location'] ?? null,
             'images' => $data['images'] ?? null,
-            'pickup_date' => $data['pickup_date'] ?? null,
+            // 'pickup_date' => $data['pickup_date'] ?? null,
             'status' => 'pending_approval',
-            'approval_status' => 'pending',
         ]);
 
         return self::apiResponse(
@@ -184,7 +183,7 @@ class PickupController extends Controller
             'description' => $data['description'] ?? $bulkRequest->description,
             'location' => $data['location'] ?? $bulkRequest->location,
             'images' => $data['images'] ?? $bulkRequest->images,
-            'pickup_date' => $data['pickup_date'] ?? $bulkRequest->pickup_date,
+            // 'pickup_date' => $data['pickup_date'] ?? $bulkRequest->pickup_date,
         ]);
 
         return self::apiResponse(
@@ -204,6 +203,7 @@ class PickupController extends Controller
             ->where('client_slug', $clientSlug)
             ->orderByDesc('created_at')
             ->get();
+
 
         return self::apiResponse(false, "Action Successful", "Bulk waste requests retrieved successfully", self::API_SUCCESS, $items->toArray());
     }
@@ -309,7 +309,6 @@ class PickupController extends Controller
 
         $approved = $data['status'] === 'approved';
         $bulkRequest->status = $approved ? 'approved' : 'rejected';
-        $bulkRequest->approval_status = $approved ? 'approved' : 'rejected';
         $bulkRequest->approved_at = $approved ? now() : null;
         $bulkRequest->rejected_at = $approved ? null : now();
         $bulkRequest->rejection_reason = $data['rejection_reason'] ?? null;

@@ -18,7 +18,7 @@ class BulkWasteRequest extends Model
         'description',
         'location',
         'images',
-        'pickup_date',
+        // 'pickup_date',
         'status',
         'approved_at',
         'rejected_at',
@@ -28,7 +28,7 @@ class BulkWasteRequest extends Model
     protected $casts = [
         'images' => 'array',
         'requested_pickup_date' => 'datetime',
-        'pickup_date' => 'datetime',
+        // 'pickup_date' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'deleted_at' => 'datetime',

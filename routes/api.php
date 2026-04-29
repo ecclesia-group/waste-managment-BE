@@ -113,7 +113,7 @@ Route::prefix("client")->group(function () {
         // Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
         // Route::get('get_completed_pickups', [PickupController::class, 'getCompletedPickups']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
-        // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
+        Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
 
         // Notification Management
         // Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
