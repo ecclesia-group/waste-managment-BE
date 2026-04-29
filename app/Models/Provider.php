@@ -65,7 +65,7 @@ class Provider extends Actor
     {
         return $this->belongsToMany(
             Zone::class,
-            'provider_zone_assignments',
+            'provider_zones',
             'provider_slug', // FK on pivot -> providers.provider_slug
             'zone_slug', // FK on pivot -> zones.zone_slug
             'provider_slug', // providers parent key

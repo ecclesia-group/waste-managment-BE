@@ -112,6 +112,25 @@ class Client extends Actor
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
+    public function groups()
+    {
+        return $this->belongsToMany(
+            Group::class,
+            'client_groups',
+            'client_slug',
+            'group_slug',
+            'client_slug',
+            'group_slug'
+        )
+            ->withPivot(['provider_slug'])
+            ->withTimestamps();
+    }
+
+    public function bins()
+    {
+        return $this->hasMany(Bin::class, 'client_slug', 'client_slug');
+    }
+
     public function getCoordinatesAttribute(): array
     {
         return [

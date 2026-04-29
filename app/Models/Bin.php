@@ -5,35 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class BulkWasteRequest extends Model
+class Bin extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'request_code',
+        'bin_slug',
+        'bin_code',
         'client_slug',
         'provider_slug',
-        'title',
-        'category',
-        'description',
-        'location',
-        'images',
-        'pickup_date',
+        'product_slug',
+        'source',
         'status',
-        'amount',
-        'approved_at',
-        'rejected_at',
-        'rejection_reason',
     ];
 
     protected $casts = [
-        'images' => 'array',
-        'requested_pickup_date' => 'datetime',
-        'pickup_date' => 'datetime',
-        'amount' => 'decimal:2',
-        'approved_at' => 'datetime',
-        'rejected_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function client()
@@ -46,8 +35,13 @@ class BulkWasteRequest extends Model
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_slug', 'product_slug');
+    }
+
     public function getRouteKeyName(): string
     {
-        return 'request_code';
+        return 'bin_slug';
     }
 }

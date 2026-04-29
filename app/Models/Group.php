@@ -38,6 +38,15 @@ class Group extends Model
 
     public function clients()
     {
-        return $this->hasMany(Client::class, 'group_slug', 'group_slug');
+        return $this->belongsToMany(
+            Client::class,
+            'client_groups',
+            'group_slug',
+            'client_slug',
+            'group_slug',
+            'client_slug'
+        )
+            ->withPivot(['provider_slug'])
+            ->withTimestamps();
     }
 }

@@ -146,7 +146,7 @@ class DistrictAssemblyManagementController extends Controller
             );
         }
 
-        $zoneSlugs = DB::table('provider_zone_assignments')
+        $zoneSlugs = DB::table('provider_zones')
             ->whereIn('provider_slug', $providerSlugs)
             ->where('status', 'active')
             ->pluck('zone_slug')

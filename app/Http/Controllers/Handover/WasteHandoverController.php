@@ -16,7 +16,7 @@ class WasteHandoverController extends Controller
     {
         $provider = $request->user();
         $effectiveProviderSlug = self::resolveProviderScopeSlug($provider);
-        $effectiveZoneSlugs = DB::table('provider_zone_assignments')
+        $effectiveZoneSlugs = DB::table('provider_zones')
             ->where('provider_slug', $effectiveProviderSlug)
             ->where('status', 'active')
             ->pluck('zone_slug')
@@ -36,7 +36,7 @@ class WasteHandoverController extends Controller
 
         if (isset($data['target_provider_slug'])) {
             $target = Provider::where('provider_slug', $data['target_provider_slug'])->first();
-            $targetZoneSlugs = DB::table('provider_zone_assignments')
+            $targetZoneSlugs = DB::table('provider_zones')
                 ->where('provider_slug', $target?->provider_slug)
                 ->where('status', 'active')
                 ->pluck('zone_slug')

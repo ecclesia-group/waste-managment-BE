@@ -55,7 +55,7 @@ class Zone extends Model
     {
         return $this->belongsToMany(
             Provider::class,
-            'provider_zone_assignments',
+            'provider_zones',
             'zone_slug', // FK on pivot -> zones.zone_slug
             'provider_slug', // FK on pivot -> providers.provider_slug
             'zone_slug', // zones parent key

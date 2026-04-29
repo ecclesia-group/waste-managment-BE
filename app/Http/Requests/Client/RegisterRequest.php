@@ -33,6 +33,8 @@ class RegisterRequest extends FormRequest
             'bin_size'        => 'required|string',
             'bin_code'        => 'nullable|string',
             'group_slug'      => 'nullable|string',
+            'group_slugs'     => 'nullable|array',
+            'group_slugs.*'   => 'string|exists:groups,group_slug',
             'registration_fee' => 'required|numeric|min:0',
             'qrcode'          => 'nullable|starts_with:data:,http://,https://',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',

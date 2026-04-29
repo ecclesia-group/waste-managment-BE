@@ -64,7 +64,6 @@ Route::prefix("client")->group(function () {
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
 
-        Route::middleware(["client.registration_paid"])->group(function () {
         // Complaint Management
         Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
@@ -123,7 +122,6 @@ Route::prefix("client")->group(function () {
         // Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
-        });
     });
 });
 
@@ -210,6 +208,7 @@ Route::prefix("provider")->group(function () {
         Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
         Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
         Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
+        Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
         Route::put("pickups/{pickupCode}", [PickupController::class, "providerUpdatePickup"]);
         Route::delete("pickups/{pickupCode}", [PickupController::class, "providerDeletePickup"]);
 

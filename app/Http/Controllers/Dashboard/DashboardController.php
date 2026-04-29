@@ -22,7 +22,7 @@ class DashboardController extends Controller
         $provider = Provider::query()->where('provider_slug', $client->provider_slug)->first();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $provider?->district_assembly)->first();
         $primaryZoneSlug = $provider
-            ? DB::table('provider_zone_assignments')
+            ? DB::table('provider_zones')
                 ->where('provider_slug', $provider->provider_slug)
                 ->where('status', 'active')
                 ->orderByDesc('assigned_at')
@@ -210,7 +210,7 @@ class DashboardController extends Controller
         $providerDistricts = Provider::query()
             ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
             ->pluck('district_assembly', 'provider_slug');
-        $providerZones = DB::table('provider_zone_assignments')
+        $providerZones = DB::table('provider_zones')
             ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
             ->where('status', 'active')
             ->orderByDesc('assigned_at')

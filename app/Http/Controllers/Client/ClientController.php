@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\RegisterRequest;
 use App\Http\Requests\Client\StatusRequest;
 use App\Http\Requests\Client\UpdateClientProfileRequest;
+use App\Models\Bin;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
@@ -23,6 +24,7 @@ class ClientController extends Controller
         $data['password']          = $password;
         $data['provider_slug']     = $user->provider_slug;
         $data['email_verified_at'] = now();
+        $groupData                 = $data;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -33,7 +35,9 @@ class ClientController extends Controller
         $data     = static::processImage($image_fields, $data);
         $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
 
-        $client = Client::create($data);
+        $client = Client::create(collect($data)->except('group_slugs')->all());
+        $this->syncClientGroups($client, $groupData);
+        $this->ensureRegistrationBin($client);
 
         self::sendEmail(
             $client->email,
@@ -51,7 +55,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client registered successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group')->toArray()
+            data: $client->load('group', 'groups', 'bins')->toArray()
         );
     }
 
@@ -59,7 +63,7 @@ class ClientController extends Controller
     {
         $user    = Auth::user();
         $clients = Client::where('provider_slug', $user->provider_slug)
-            ->with('group')
+            ->with('group', 'groups', 'bins')
             ->get();
         return self::apiResponse(
             in_error: false,
@@ -122,7 +126,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group')->toArray()
+            data: $client->load('group', 'groups', 'bins')->toArray()
         );
     }
 
@@ -156,7 +160,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group')->toArray()
+            data: $client->load('group', 'groups', 'bins')->toArray()
         );
     }
 
@@ -205,7 +209,9 @@ class ClientController extends Controller
             }
         }
 
-        $client->update($data);
+        $client->update(collect($data)->except('group_slugs')->all());
+        $this->syncClientGroups($client, $data);
+        $this->ensureRegistrationBin($client);
         $client->refresh();
 
         return self::apiResponse(
@@ -213,7 +219,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group')->toArray()
+            data: $client->load('group', 'groups', 'bins')->toArray()
         );
     }
 
@@ -267,6 +273,12 @@ class ClientController extends Controller
                 );
             }
 
+            $bin = Bin::query()
+                ->where('bin_code', $qrData['bin_code'])
+                ->where('provider_slug', $providerUser->provider_slug)
+                ->where('status', 'active')
+                ->first();
+
             $client = Client::where('client_slug', $qrData['client_slug'])
                 ->where('provider_slug', $providerUser->provider_slug)
                 ->first();
@@ -282,7 +294,7 @@ class ClientController extends Controller
             }
 
             // Prevent old/damaged QR codes from working after regeneration.
-            if ((string) $client->bin_code !== (string) ($qrData['bin_code'] ?? '')) {
+            if (! $bin && (string) $client->bin_code !== (string) ($qrData['bin_code'] ?? '')) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -306,6 +318,7 @@ class ClientController extends Controller
                     'pickup_location' => $client->pickup_location,
                     'bin_code'        => $client->bin_code,
                     'bin_size'        => $client->bin_size,
+                    'bin'             => $bin?->toArray(),
                 ]
             );
         } catch (\Exception $e) {
@@ -317,5 +330,43 @@ class ClientController extends Controller
                 data: []
             );
         }
+    }
+
+    private function syncClientGroups(Client $client, array $data): void
+    {
+        $groupSlugs = collect($data['group_slugs'] ?? [])
+            ->push($data['group_slug'] ?? null)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($groupSlugs->isEmpty()) {
+            return;
+        }
+
+        $syncPayload = $groupSlugs
+            ->mapWithKeys(fn (string $groupSlug) => [$groupSlug => ['provider_slug' => $client->provider_slug]])
+            ->all();
+
+        $client->groups()->sync($syncPayload);
+    }
+
+    private function ensureRegistrationBin(Client $client): void
+    {
+        if (empty($client->bin_code)) {
+            return;
+        }
+
+        Bin::query()->updateOrCreate(
+            ['bin_code' => $client->bin_code],
+            [
+                'bin_slug' => (string) Str::uuid(),
+                'client_slug' => $client->client_slug,
+                'provider_slug' => $client->provider_slug,
+                'product_slug' => null,
+                'source' => 'registration',
+                'status' => 'active',
+            ]
+        );
     }
 }

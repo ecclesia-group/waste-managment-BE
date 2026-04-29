@@ -49,7 +49,7 @@ class ProviderController extends Controller
 
             // Multi-zone assignment (single or multiple zone_slugs).
             foreach ($zoneSlugs as $zoneSlug) {
-                DB::table('provider_zone_assignments')->updateOrInsert(
+                DB::table('provider_zones')->updateOrInsert(
                     ['provider_slug' => $provider->provider_slug, 'zone_slug' => $zoneSlug],
                     [
                         'assigned_at' => now(),
@@ -152,19 +152,19 @@ class ProviderController extends Controller
                 ]);
             })->values();
 
-            $zoneAssignments = DB::table('provider_zone_assignments')
-                ->join('zones', 'zones.zone_slug', '=', 'provider_zone_assignments.zone_slug')
-                ->where('provider_zone_assignments.provider_slug', $providerSlug)
+            $zoneAssignments = DB::table('provider_zones')
+                ->join('zones', 'zones.zone_slug', '=', 'provider_zones.zone_slug')
+                ->where('provider_zones.provider_slug', $providerSlug)
                 ->select(
-                    'provider_zone_assignments.zone_slug',
-                    'provider_zone_assignments.assigned_at',
-                    'provider_zone_assignments.status',
+                    'provider_zones.zone_slug',
+                    'provider_zones.assigned_at',
+                    'provider_zones.status',
                     'zones.name as zone_name',
                     'zones.region as zone_region',
                     'zones.description as zone_description',
                     'zones.locations as zone_locations'
                 )
-                ->orderByDesc('provider_zone_assignments.assigned_at')
+                ->orderByDesc('provider_zones.assigned_at')
                 ->get()
                 ->toArray();
 

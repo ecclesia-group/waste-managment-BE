@@ -49,6 +49,8 @@ class UpdateClientProfileRequest extends FormRequest
             'bin_size'        => 'nullable|string|max:255',
             'bin_code'        => 'nullable|string|max:255',
             'group_slug'      => 'nullable|string|max:255',
+            'group_slugs'     => 'nullable|array',
+            'group_slugs.*'   => 'string|exists:groups,group_slug',
             'registration_fee' => 'sometimes|nullable|numeric|min:0',
 
             'qrcode'          => 'nullable|starts_with:data:,http://,https://',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
+use App\Models\Bin;
 use App\Models\Client;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -72,6 +73,20 @@ class ClientPaymentController extends Controller
 
             $client->registration_status = false;
             $client->save();
+
+            if (! empty($client->bin_code)) {
+                Bin::query()->updateOrCreate(
+                    ['bin_code' => $client->bin_code],
+                    [
+                        'bin_slug' => (string) Str::uuid(),
+                        'client_slug' => $clientSlug,
+                        'provider_slug' => $providerSlug,
+                        'product_slug' => null,
+                        'source' => 'registration',
+                        'status' => 'active',
+                    ]
+                );
+            }
         });
 
         if (! $payment instanceof Payment) {
@@ -85,7 +100,7 @@ class ClientPaymentController extends Controller
             status_code: self::API_CREATED,
             data: [
                 'payment' => $payment->toArray(),
-                'client' => $client->fresh()->load('group')->toArray(),
+                'client' => $client->fresh()->load('group', 'groups', 'bins')->toArray(),
             ]
         );
     }
@@ -103,7 +118,7 @@ class ClientPaymentController extends Controller
             message: 'Action Successful',
             reason: 'Registration payment status retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $client->load('group')->toArray(),
+            data: $client->load('group', 'groups', 'bins')->toArray(),
         );
     }
 }

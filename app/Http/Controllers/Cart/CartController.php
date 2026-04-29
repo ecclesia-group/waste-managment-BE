@@ -75,6 +75,20 @@ class CartController extends Controller
         }
 
         $data = $validator->validated();
+        $product = Product::query()
+            ->where('product_slug', $data['product_slug'])
+            ->where('provider_slug', $user->provider_slug)
+            ->first();
+
+        if (! $product) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Product not found for your provider",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
 
         $cart = Cart::query()->firstOrCreate(
             ['client_slug' => $user->client_slug],
@@ -231,12 +245,12 @@ class CartController extends Controller
 
             foreach ($cart->items as $cartItem) {
                 $product = $cartItem->product;
-                if (! $product) {
+                if (! $product || (string) $product->provider_slug !== (string) $user->provider_slug) {
                     DB::rollBack();
                     return self::apiResponse(
                         in_error: true,
                         message: "Action Failed",
-                        reason: "Product not found: " . $cartItem->product_slug,
+                        reason: "Product not found for your provider: " . $cartItem->product_slug,
                         status_code: self::API_FAIL,
                         data: []
                     );

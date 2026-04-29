@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseCreationRequest;
+use App\Models\Bin;
 use App\Models\Client;
 use App\Models\Notification;
 use App\Models\Payment;
@@ -80,7 +81,9 @@ class PurchaseController extends Controller
 
             // Validate products and calculate totals
             foreach ($data['items'] as $item) {
-                $product = Product::where('product_slug', $item['product_slug'])->first();
+                $product = Product::where('product_slug', $item['product_slug'])
+                    ->where('provider_slug', $user->provider_slug)
+                    ->first();
 
                 if (!$product) {
                     DB::rollBack();
@@ -135,7 +138,9 @@ class PurchaseController extends Controller
                 ]);
 
                 // Update product quantity
-                $product = Product::where('product_slug', $itemData['product_slug'])->first();
+                $product = Product::where('product_slug', $itemData['product_slug'])
+                    ->where('provider_slug', $user->provider_slug)
+                    ->first();
                 $product->quantity -= $itemData['quantity'];
                 $product->save();
             }
@@ -222,6 +227,7 @@ class PurchaseController extends Controller
             ]);
 
             $purchase->save();
+            $this->createBinsForPaidPurchase($purchase);
 
             // Generate QR code for the bin if this is a bin purchase
             // $client = Client::where('client_slug', $user->client_slug)->first();
@@ -336,6 +342,41 @@ class PurchaseController extends Controller
             logger()->error('Failed to generate QR code', ['error' => $e->getMessage()]);
             return null;
         }
+    }
+
+    private function createBinsForPaidPurchase(Purchase $purchase): void
+    {
+        $purchase->loadMissing('items');
+        $client = Client::query()->where('client_slug', $purchase->client_slug)->first();
+
+        if (! $client) {
+            return;
+        }
+
+        foreach ($purchase->items as $item) {
+            $product = Product::query()->where('product_slug', $item->product_slug)->first();
+
+            for ($i = 0; $i < (int) $item->quantity; $i++) {
+                Bin::query()->create([
+                    'bin_slug' => (string) Str::uuid(),
+                    'bin_code' => $this->generateUniqueBinCode(),
+                    'client_slug' => $client->client_slug,
+                    'provider_slug' => $product?->provider_slug ?? $client->provider_slug,
+                    'product_slug' => $item->product_slug,
+                    'source' => 'purchase',
+                    'status' => 'active',
+                ]);
+            }
+        }
+    }
+
+    private function generateUniqueBinCode(): string
+    {
+        do {
+            $code = 'BIN-' . Str::upper(Str::random(8));
+        } while (Bin::query()->where('bin_code', $code)->exists());
+
+        return $code;
     }
 
 }
