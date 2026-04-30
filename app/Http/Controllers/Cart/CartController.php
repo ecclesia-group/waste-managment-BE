@@ -95,11 +95,15 @@ class CartController extends Controller
             ['client_slug' => $user->client_slug]
         );
 
-        $item = CartItem::query()->where('cart_id', $cart->id)
+        $item = CartItem::withTrashed()
+            ->where('cart_id', $cart->id)
             ->where('product_slug', $data['product_slug'])
             ->first();
 
-        if ($item) {
+        if ($item && $item->trashed()) {
+            $item->quantity = $data['quantity'];
+            $item->restore();
+        } elseif ($item) {
             $item->quantity += $data['quantity'];
             $item->save();
         } else {
