@@ -15,20 +15,16 @@ class ZoneManagementController extends Controller
     // Lists all zones
     public function listZones()
     {
-        $zones = Zone::all();
-        if ($zones->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "No Zones Found",
-                reason: "No zones are registered in the system",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
+        $zones = Zone::query()
+            ->where('status', 'active')
+            ->get();
+        if (! $zones) {
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No zones found", status_code: self::API_FAIL);
         }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Zones retrieved successfully",
+            reason: "All zones retrieved successfully",
             status_code: self::API_SUCCESS,
             data: $zones->toArray()
         );
@@ -40,7 +36,7 @@ class ZoneManagementController extends Controller
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
-            reason: "Zone details retrieved successfully",
+            reason: "Zone retrieved successfully",
             status_code: self::API_SUCCESS,
             data: $zone->toArray()
         );

@@ -14,6 +14,23 @@ use Illuminate\Support\Str;
 
 class FacilityController extends Controller
 {
+    public function allFacilities()
+    {
+        $facilities = Facility::query()
+            ->where('status', 'active')
+            ->get();
+        if (! $facilities) {
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No facilities found", status_code: self::API_FAIL);
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "All facilities retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $facilities->toArray()
+        );
+    }
+
     public function register(FacilityOnboardingRequest $request)
     {
         $password              = Str::random(8);

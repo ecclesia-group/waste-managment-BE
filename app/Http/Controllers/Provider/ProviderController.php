@@ -19,6 +19,23 @@ use Illuminate\Support\Facades\DB;
 
 class ProviderController extends Controller
 {
+    public function allProviders()
+    {
+        $providers = Provider::query()
+            ->where('status', 'active')
+            ->get();
+        if (! $providers) {
+            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No providers found", status_code: self::API_FAIL);
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "All providers retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $providers->toArray()
+        );
+    }
+
     public function register(StoreProviderRegisterRequest $request)
     {
         $password = Str::random(8);

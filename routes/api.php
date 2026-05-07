@@ -282,6 +282,18 @@ Route::prefix("facility")->group(function () {
         // Facility reports/analytics
         Route::get("reports", [ReportsController::class, "facilityReports"]);
 
+        // all facilities
+        // Route::get("all_facilities", [FacilityController::class, "allFacilities"]);
+
+        // all zones
+        Route::get("all_zones", [ZoneManagementController::class, "listZones"]);
+
+        // all providers
+        Route::get("all_providers", [ProviderController::class, "allProviders"]);
+
+        // all fleets
+        Route::get("all_fleets", [FleetManagementController::class, "getAllFleets"]);
+
         // Weigh Bridge Management
         Route::post("register_weigh_bridge_entry", [WeighBridgeController::class, "registerEntry"]);
         Route::post("verify_weigh_bridge_ticket", [WeighBridgeController::class, "verifyByTicketCode"]);
