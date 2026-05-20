@@ -315,9 +315,13 @@ class CartController extends Controller
                 message: "Action Successful",
                 reason: "Cart checked out successfully",
                 status_code: self::API_SUCCESS,
-                data: $purchase->toArray()
+                data: [
+                    'client' => $cart->load('client')->client,
+                    'items' => $cart->load('items.product')->items,
+                    'purchase' => $purchase->load('items')->client,
+                ]
             );
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return self::apiResponse(
                 in_error: true,
