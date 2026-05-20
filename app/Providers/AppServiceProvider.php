@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Admin;
+use App\Models\Client;
+use App\Models\DistrictAssembly;
+use App\Models\Facility;
+use App\Models\Provider;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +25,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        
+        Relation::morphMap([
+            'admin' => Admin::class,
+            'client' => Client::class,
+            'district_assembly' => DistrictAssembly::class,
+            'facility' => Facility::class,
+            'provider' => Provider::class,
+        ]);
     }
 }

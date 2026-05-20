@@ -1,46 +1,46 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Group\GroupController;
-use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Driver\DriverController;
-use App\Http\Controllers\Pickup\PickupController;
-use App\Http\Controllers\ZoneManagementController;
-use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\Facility\FacilityController;
-use App\Http\Controllers\Feedback\FeedbackController;
-use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Purchase\PurchaseController;
 use App\Http\Controllers\Admin\AdminPasswordController;
+use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Client\ClientAuthenticationController;
+use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\ClientPasswordController;
-use App\Http\Controllers\Fleet\FleetManagementController;
-use App\Http\Controllers\WeighBridge\WeighBridgeController;
+use App\Http\Controllers\Complaint\ComplaintmanagementController;
 use App\Http\Controllers\Content\BannerController;
 use App\Http\Controllers\Content\GuideController;
-use App\Http\Controllers\Admin\AdminAuthenticationController;
-use App\Http\Controllers\Facility\FacilityPasswordController;
-// use App\Http\Controllers\Notification\NotificationController;
-use App\Http\Controllers\Provider\ProviderPasswordController;
-use App\Http\Controllers\RoutePlanner\RoutePlannerManagement;
-use App\Http\Controllers\Client\ClientAuthenticationController;
-use App\Http\Controllers\Complaint\ComplaintmanagementController;
-use App\Http\Controllers\Violation\ViolationManagementController;
-use App\Http\Controllers\Facility\FacilityAuthenticationController;
-use App\Http\Controllers\Provider\ProviderAuthenticationController;
-use App\Http\Controllers\Handover\WasteHandoverController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
-use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
+use App\Http\Controllers\DistrictAssembley\DistrictAssemblyController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssemblyManagementController;
-use App\Http\Controllers\Reports\ReportsController;
-use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Driver\DriverController;
+use App\Http\Controllers\Facility\FacilityAuthenticationController;
+use App\Http\Controllers\Facility\FacilityController;
+use App\Http\Controllers\Facility\FacilityPasswordController;
+use App\Http\Controllers\Feedback\FeedbackController;
+use App\Http\Controllers\Fleet\FleetManagementController;
+use App\Http\Controllers\Group\GroupController;
+use App\Http\Controllers\Handover\WasteHandoverController;
+use App\Http\Controllers\Notification\NotificationController;
 use App\Http\Controllers\Payment\ClientPaymentController;
 use App\Http\Controllers\Payment\ProviderPaymentController;
-use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Pickup\PickupController;
+use App\Http\Controllers\Product\ProductController;
+use App\Http\Controllers\Provider\ProviderAuthenticationController;
+use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Provider\ProviderPasswordController;
+use App\Http\Controllers\Purchase\PurchaseController;
+use App\Http\Controllers\Reports\ReportsController;
+use App\Http\Controllers\RoutePlanner\RoutePlannerManagement;
 use App\Http\Controllers\Teams\RoleController;
 use App\Http\Controllers\Teams\TeamMemberController;
+use App\Http\Controllers\Violation\ViolationManagementController;
+use App\Http\Controllers\WeighBridge\WeighBridgeController;
+use App\Http\Controllers\ZoneManagementController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -118,7 +118,7 @@ Route::prefix("client")->group(function () {
         // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
 
         // Notification Management
-        // Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);
+        Route::get('get_all_notifications', [NotificationController::class, 'getAllClientNotifications']);
         // Dashboard Content
         // Route::get('banners', [BannerController::class, 'listForAudience']);
         // Route::get('guides', [GuideController::class, 'listForAudience']);

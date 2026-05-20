@@ -27,6 +27,11 @@ class Notification extends Model
 
     public function actor()
     {
-        return $this->morphTo(__FUNCTION__, 'actor', 'actor_slug', 'actor_id');
+        return $this->morphTo(__FUNCTION__, 'actor', 'actor_id', 'id');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return "id";
     }
 }

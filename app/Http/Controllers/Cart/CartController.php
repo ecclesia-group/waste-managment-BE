@@ -20,7 +20,6 @@ class CartController extends Controller
 
         $cart = Cart::query()
             ->where('client_slug', $user->client_slug)
-            ->with(['items.product'])
             ->first();
 
         if (! $cart) {
@@ -35,22 +34,14 @@ class CartController extends Controller
             );
         }
 
-        $items = $cart->items->map(function (CartItem $item) {
-            return [
-                'product_slug' => $item->product_slug,
-                'quantity' => $item->quantity,
-                'product' => $item->product?->toArray(),
-            ];
-        })->values()->toArray();
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Cart retrieved successfully",
             status_code: self::API_SUCCESS,
             data: [
-                'client_slug' => $cart->client_slug,
-                'items' => $items,
+                'client' => $cart->load('client')->client,
+                'items' => $cart->load('items.product')->items,
             ]
         );
     }
@@ -120,7 +111,8 @@ class CartController extends Controller
             reason: "Cart item updated successfully",
             status_code: self::API_SUCCESS,
             data: [
-                'product' => $item->product->toArray(),
+                'client' => $cart->load('client')->client,
+                'items' => $cart->load('items.product')->items,
             ]
         );
     }
@@ -177,7 +169,10 @@ class CartController extends Controller
             message: "Action Successful",
             reason: "Cart item updated successfully",
             status_code: self::API_SUCCESS,
-            data: $item->toArray()
+            data: [
+                'client' => $cart->load('client')->client,
+                'items' => $cart->load('items.product')->items,
+            ]
         );
     }
 
@@ -218,7 +213,10 @@ class CartController extends Controller
             message: "Action Successful",
             reason: "Cart item removed successfully",
             status_code: self::API_SUCCESS,
-            data: []
+            data: [
+                'client' => $cart->load('client')->client,
+                'items' => $cart->load('items.product')->items,
+            ]
         );
     }
 

@@ -91,7 +91,7 @@ class Client extends Actor
 
     public function notifications()
     {
-        return $this->morphMany(Notification::class, 'actor', 'actor', 'actor_slug', 'actor_id');
+        return $this->morphMany(Notification::class, 'actor', 'actor', 'actor_id', 'id');
     }
 
     public function provider()

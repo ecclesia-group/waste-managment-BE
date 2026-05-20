@@ -2,16 +2,16 @@
 namespace App\Http\Controllers\Notification;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Notification;
 
 class NotificationController extends Controller
 {
-    public function getAllNotifications()
+    public function getAllClientNotifications()
     {
         $user          = request()->user();
-        // Avoid fragile morph configuration: notifications table already stores actor + actor_id + actor_slug.
-        $notifications = \App\Models\Notification::query()
+        $notifications = Notification::query()
             ->where('actor', 'client')
+            ->where('actor_slug', (string) $user->client_slug)
             ->where('actor_id', (string) $user->id)
             ->orderByDesc('created_at')
             ->get();
@@ -20,7 +20,7 @@ class NotificationController extends Controller
             message: "Action Successful",
             reason: "Notifications retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $notifications->toArray()
+            data: $notifications?->load('actor')->toArray()
         );
     }
 }

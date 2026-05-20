@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
+    protected $with = [
+        'provider',
+    ];
+
     use SoftDeletes;
 
     protected $fillable = [

@@ -8,9 +8,14 @@ class Feedback extends Model
 {
     use SoftDeletes;
 
+    protected $with = [
+            'client',
+        ];
+
     protected $fillable = [
         'code',
         'client_slug',
+        'provider_slug',
         'ratings',
         'comments',
         'score',
@@ -26,6 +31,11 @@ class Feedback extends Model
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_slug', 'client_slug');
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 
     public function getRouteKeyName(): string
