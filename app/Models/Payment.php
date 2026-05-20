@@ -16,6 +16,10 @@ class Payment extends Model
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUNDED = 'refunded';
 
+    protected $with = [
+        'client',
+    ];
+
     protected $fillable = [
         'client_slug',
         'provider_slug',

@@ -106,7 +106,7 @@ class PickupController extends Controller
 
     public function bulkWasteRequest(PickupCreationRequest $request)
     {
-        $code                  = Str::random(5);
+        $code                  = Str::upper(Str::random(8));
         $data                  = $request->validated();
         $user                  = request()->user();
         $providerSlug = $user->provider_slug ?? self::resolveProviderScopeSlug($user);
@@ -129,7 +129,6 @@ class PickupController extends Controller
             'description' => $data['description'] ?? null,
             'location' => $data['location'] ?? null,
             'images' => $data['images'] ?? null,
-            // 'pickup_date' => $data['pickup_date'] ?? null,
             'status' => 'pending_approval',
         ]);
 
@@ -138,7 +137,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request submitted and pending provider approval",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->load('client', 'provider')->toArray()
+            data: $bulkRequest->load('client')->toArray()
         );
     }
 
@@ -149,7 +148,7 @@ class PickupController extends Controller
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->where('client_slug', $user->client_slug)
-            ->with('client', 'provider')
+            ->with('client')
             ->first();
         if (! $bulkRequest) {
             return self::apiResponse(
@@ -177,21 +176,14 @@ class PickupController extends Controller
             );
         }
 
-        $bulkRequest->update([
-            'title' => $data['title'] ?? $bulkRequest->title,
-            'category' => $data['category'] ?? $bulkRequest->category,
-            'description' => $data['description'] ?? $bulkRequest->description,
-            'location' => $data['location'] ?? $bulkRequest->location,
-            'images' => $data['images'] ?? $bulkRequest->images,
-            // 'pickup_date' => $data['pickup_date'] ?? $bulkRequest->pickup_date,
-        ]);
+        $bulkRequest->update($data);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Bulk waste request updated successfully",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->fresh()->load('client', 'provider')->toArray()
+            data: $bulkRequest->load('client')->toArray()
         );
     }
 
@@ -199,7 +191,7 @@ class PickupController extends Controller
     {
         $clientSlug = (string) $request->user()->client_slug;
         $items = BulkWasteRequest::query()
-            ->with('client', 'provider')
+            ->with('client')
             ->where('client_slug', $clientSlug)
             ->orderByDesc('created_at')
             ->get();
@@ -225,11 +217,11 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $item->load('client', 'provider')->toArray()
+            data: $item->load('client')->toArray()
         );
     }
 
-    public function deleteBulkWasteRequest(Request $request, string $requestCode)
+    public function  deleteBulkWasteRequest(Request $request, string $requestCode)
     {
         $clientSlug = (string) $request->user()->client_slug;
         $bulkRequest = BulkWasteRequest::query()
@@ -262,7 +254,7 @@ class PickupController extends Controller
     {
         $providerSlug = self::resolveProviderScopeSlug($request->user());
         $query = BulkWasteRequest::query()
-            ->with('client', 'provider')
+            ->with('client')
             ->where('provider_slug', $providerSlug);
 
         if ($request->filled('status')) {
@@ -274,7 +266,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste requests retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $query->orderByDesc('created_at')->get()->load('client', 'provider')->toArray()
+            data: $query->orderByDesc('created_at')->get()->load('client')->toArray()
         );
     }
 
@@ -323,7 +315,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk request status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->load('client', 'provider')->toArray()
+            data: $bulkRequest->load('client')->toArray()
         );
     }
 
@@ -357,7 +349,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request price set successfully",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->load('client', 'provider')->toArray()
+            data: $bulkRequest->load('client')->toArray()
         );
     }
 
@@ -365,7 +357,7 @@ class PickupController extends Controller
     {
         $providerSlug = self::resolveProviderScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
-            ->with(['client.group'])
+            ->with('client')
             ->where('provider_slug', $providerSlug)
             ->where('request_code', $requestCode)
             ->first();

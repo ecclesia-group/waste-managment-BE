@@ -9,6 +9,10 @@ class Complaint extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $with = [
+        'client',
+    ];
+
     protected $fillable = [
         'client_slug',
         'provider_slug',
@@ -17,12 +21,10 @@ class Complaint extends Model
         'description',
         'status',
         'images',
-        'videos',
     ];
 
     protected $casts = [
         'images'     => 'array',
-        'videos'     => 'array',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

@@ -21,12 +21,11 @@ class UpdatePickupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'client_slug' => 'sometimes|string|exists:clients,client_slug',
             'title'       => ['sometimes', 'string'],
             'category'    => ['sometimes', 'string'],
             'description' => ['sometimes', 'string'],
             'location'    => ['sometimes', 'string'],
-            'pickup_date' => ['sometimes', 'date'],
+            // 'pickup_date' => ['sometimes', 'date'],
             'images'      => ['sometimes', 'array'],
             'images.*'    => ['sometimes', 'starts_with:data:,http://,https://'],
         ];

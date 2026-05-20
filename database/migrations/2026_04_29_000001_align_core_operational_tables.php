@@ -9,18 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('client_groups', function (Blueprint $table) {
-            $table->id();
-            $table->string('client_slug');
-            $table->string('group_slug');
-            $table->string('provider_slug');
-            $table->timestamps();
-            $table->softDeletes();
-
-            $table->unique(['client_slug', 'group_slug'], 'client_groups_unique');
-            $table->index(['provider_slug', 'group_slug'], 'client_groups_provider_group_idx');
-        });
-
         Schema::create('bins', function (Blueprint $table) {
             $table->id();
             $table->string('bin_slug')->unique();
@@ -55,21 +43,6 @@ return new class extends Migration
         });
 
         $now = now();
-
-        DB::table('clients')
-            ->whereNotNull('group_slug')
-            ->orderBy('id')
-            ->get(['client_slug', 'group_slug', 'provider_slug'])
-            ->each(function ($client) use ($now) {
-                DB::table('client_groups')->updateOrInsert(
-                    ['client_slug' => $client->client_slug, 'group_slug' => $client->group_slug],
-                    [
-                        'provider_slug' => $client->provider_slug,
-                        'updated_at' => $now,
-                        'created_at' => $now,
-                    ]
-                );
-            });
 
         DB::table('clients')
             ->whereNotNull('bin_code')
@@ -147,6 +120,5 @@ return new class extends Migration
 
         Schema::dropIfExists('provider_zones');
         Schema::dropIfExists('bins');
-        Schema::dropIfExists('client_groups');
     }
 };

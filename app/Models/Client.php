@@ -3,6 +3,12 @@ namespace App\Models;
 
 class Client extends Actor
 {
+    protected $with = [
+        'group',
+        'bin',
+        'provider'
+    ];
+
     protected $fillable = [
         'client_slug',
         'provider_slug',
@@ -16,14 +22,11 @@ class Client extends Actor
         'latitude',
         'longitude',
         'type',
-        'pickup_location',
-        'bin_size',
-        'bin_code',
         'status',
+        'bin_slug',
         'group_slug',
         'registration_fee',
         'registration_status',
-        'qrcode',
         'profile_image',
     ];
 
@@ -41,7 +44,6 @@ class Client extends Actor
         'updated_at'        => 'datetime',
         "password"          => "hashed",
         "profile_image"     => "array",
-        "qrcode"            => "array",
         'latitude'          => 'float',
         'longitude'         => 'float',
         'registration_fee'  => 'float',
@@ -87,11 +89,6 @@ class Client extends Actor
         return $this->hasMany(Pickup::class, 'client_slug', 'client_slug');
     }
 
-    // public function notifications()
-    // {
-    //     return $this->hasMany(Notification::class, 'actor_id', 'actor_slug')->where('actor', 'client');
-    // }
-
     public function notifications()
     {
         return $this->morphMany(Notification::class, 'actor', 'actor', 'actor_slug', 'actor_id');
@@ -112,18 +109,9 @@ class Client extends Actor
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
-    public function groups()
+    public function bin()
     {
-        return $this->belongsToMany(
-            Group::class,
-            'client_groups',
-            'client_slug',
-            'group_slug',
-            'client_slug',
-            'group_slug'
-        )
-            ->withPivot(['provider_slug'])
-            ->withTimestamps();
+        return $this->belongsTo(Bin::class, 'bin_slug', 'bin_slug');
     }
 
     public function bins()

@@ -53,7 +53,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violations retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $violations?->load('client', 'provider')->toArray()
+            data: $violations?->load('client')->toArray()
         );
     }
 
@@ -103,8 +103,26 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->load('client', 'provider')->toArray()
+            data: $violation->load('client')->toArray()
         );
+    }
+
+    public function createClientViolation(ViolationCreationRequest $request)
+    {
+        $user = $request->user();
+        $data = $request->validated();
+        $data['code'] = Str::upper(Str::random(8));
+        $data['client_slug'] = $user->client_slug;
+        $data['provider_slug'] = $user->provider_slug;
+        $violation = Violation::create($data)->fresh();
+        $this->createClientViolationNotification(
+            client: Client::where('client_slug', $user->client_slug)->first(),
+            violationType: (string) ($data['type'] ?? ''),
+            location: (string) ($data['location'] ?? ''),
+            description: $data['description'] ?? null,
+            violationCode: $data['code'] ?? null
+        );
+        return self::apiResponse(in_error: false, message: "Action Successful", reason: "Violation created successfully", status_code: self::API_SUCCESS, data: $violation->load('client')->toArray());
     }
 
     // create violation
@@ -281,17 +299,14 @@ class ViolationManagementController extends Controller
 
         $data         = $request->validated();
         $image_fields = ['images'];
-        $video_fields = ['videos'];
 
         // Get existing images to merge with new ones
         $existingData = [
             'images' => $violation->images ?? [],
-            'videos' => $violation->videos ?? [],
         ];
 
         // Process images and videos (merge with existing)
         $data = static::processImage($image_fields, $data, $existingData);
-        $data = static::processVideo($video_fields, $data, $existingData);
 
         $violation->update($data);
 
@@ -300,7 +315,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation updated successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->load('client', 'provider')->toArray()
+            data: $violation->load('client')->toArray()
         );
     }
 
@@ -363,7 +378,7 @@ class ViolationManagementController extends Controller
             message: "Action Successful",
             reason: "Violation status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $violation->load('client', 'provider')->toArray()
+            data: $violation->load('client')->toArray()
         );
     }
 
@@ -378,7 +393,7 @@ class ViolationManagementController extends Controller
         $data = static::processImage(['images'], $data, ['images' => $violation->images ?? []]);
         $violation->update($data);
 
-        return self::apiResponse(false, "Action Successful", "Violation updated successfully", self::API_SUCCESS, $violation->fresh()->load('client', 'provider')->toArray());
+        return self::apiResponse(false, "Action Successful", "Violation updated successfully", self::API_SUCCESS, $violation->fresh()->load('client')->toArray());
     }
 
     public function providerDeleteViolation(Violation $violation)

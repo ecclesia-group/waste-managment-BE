@@ -21,7 +21,7 @@ use App\Http\Controllers\Content\BannerController;
 use App\Http\Controllers\Content\GuideController;
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Facility\FacilityPasswordController;
-use App\Http\Controllers\Notification\NotificationController;
+// use App\Http\Controllers\Notification\NotificationController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
 use App\Http\Controllers\RoutePlanner\RoutePlannerManagement;
 use App\Http\Controllers\Client\ClientAuthenticationController;
@@ -61,19 +61,36 @@ Route::prefix("client")->group(function () {
         Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
 
+        // Bulk Waste Request Management
+        Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
+        Route::get('bulk_waste_requests', [PickupController::class, 'clientBulkWasteRequests']);
+        Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
+        Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
+        Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
+
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
 
         // Complaint Management
-        Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
+        // Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
-        Route::post('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
-        Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
+        // Route::post('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
+        // Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
+
+        // Report Management
+        Route::get('get_feedbacks', [FeedbackController::class, 'listFeedbacks']);
+        Route::post('create_feedback', [FeedbackController::class, 'createFeedback']);
+        Route::get('get_single_feedback/{feedback}', [FeedbackController::class, 'getFeedbackDetails']);
+        Route::delete('delete_feedback/{feedback}', [FeedbackController::class, 'deleteFeedback']);
+        Route::put('update_feedback/{feedback}', [FeedbackController::class, 'updateFeedback']);
 
         // Violation Management
         Route::get('get_violations', [ViolationManagementController::class, 'listViolations']);
         Route::get('get_single_violation/{violation}', [ViolationManagementController::class, 'getViolationDetails']);
+        Route::post('create_violation', [ViolationManagementController::class, 'createClientViolation']);
+        Route::put('update_violation/{violation}', [ViolationManagementController::class, 'updateViolation']);
+        Route::delete('delete_violation/{violation}', [ViolationManagementController::class, 'deleteViolation']);
         // Clients only view violations (education). Providers record them during pickup.
 
         // Product Management (View products for purchase)
@@ -92,27 +109,13 @@ Route::prefix("client")->group(function () {
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
         Route::get('get_payment_history', [PurchaseController::class, 'getPaymentHistory']);
 
-        // Report Management
-        Route::get('get_feedbacks', [FeedbackController::class, 'listFeedbacks']);
-        Route::post('create_feedback', [FeedbackController::class, 'createFeedback']);
-        Route::get('get_single_feedback/{feedback}', [FeedbackController::class, 'getFeedbackDetails']);
-        Route::delete('delete_feedback/{feedback}', [FeedbackController::class, 'deleteFeedback']);
-        Route::put('update_feedback/{feedback}', [FeedbackController::class, 'updateFeedback']);
-
-        // Bulk Waste Request Management
-        Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
-        Route::get('bulk_waste_requests', [PickupController::class, 'clientBulkWasteRequests']);
-        Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
-        Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
-        Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
-
         // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
         // Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
         // Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
         // Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
         // Route::get('get_completed_pickups', [PickupController::class, 'getCompletedPickups']);
         // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
-        Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
+        // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
 
         // Notification Management
         // Route::get('get_all_notifications', [NotificationController::class, 'getAllNotifications']);

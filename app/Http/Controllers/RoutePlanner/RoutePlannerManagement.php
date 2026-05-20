@@ -278,19 +278,13 @@ class RoutePlannerManagement extends Controller
             $zoneValidation = app(ProviderZoneValidationService::class);
 
             $clients = Client::query()
-                ->with('groups')
                 ->where('provider_slug', $routePlanner->provider_slug)
                 ->where('status', 'active')
                 ->when($selectedClientSlugs->isNotEmpty(), function ($query) use ($selectedClientSlugs) {
                     $query->whereIn('client_slug', $selectedClientSlugs->all());
                 })
                 ->when($pickupType === 'normal' && $selectedGroupSlugs->isNotEmpty(), function ($query) use ($selectedGroupSlugs) {
-                    $query->where(function ($nested) use ($selectedGroupSlugs) {
-                        $nested->whereIn('group_slug', $selectedGroupSlugs->all())
-                            ->orWhereHas('groups', function ($groupQuery) use ($selectedGroupSlugs) {
-                                $groupQuery->whereIn('groups.group_slug', $selectedGroupSlugs->all());
-                            });
-                    });
+                    $query->whereIn('group_slug', $selectedGroupSlugs->all());
                 })
                 ->get();
 
@@ -357,7 +351,7 @@ class RoutePlannerManagement extends Controller
                     'provider_slug' => $routePlanner->provider_slug,
                     'driver_slug' => $routePlanner->driver_slug,
                     'fleet_slug' => $routePlanner->fleet_slug,
-                    'group_slug' => $client->groups->first()?->group_slug ?: $client->group_slug ?: $routePlanner->group_slug,
+                    'group_slug' => $client->group_slug ?: $routePlanner->group_slug,
                     'client_slug' => $client->client_slug,
                     'pickup_code' => $pickupCode,
                     'scan_status' => 'pending',

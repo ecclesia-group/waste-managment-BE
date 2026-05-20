@@ -22,13 +22,11 @@ class ViolationUpdateRequest extends FormRequest
     {
         return [
             'type'        => ['sometimes', 'string'],
-            'description' => ['sometimes', 'string'],
+            'description' => ['sometimes', 'nullable', 'string'],
             'location'    => ['sometimes', 'string'],
             'status'      => ['sometimes', 'string', 'in:pending,open,in_progress,closed'],
             'images'      => ['nullable'],
-            'images.*'    => ['nullable'], // Can be file upload or URL string
-            'videos'      => ['nullable'],
-            'videos.*'    => ['nullable'], // Can be file upload or URL string
+            'images.*'    => ['nullable', 'starts_with:data:,http://,https://'],
         ];
     }
 }

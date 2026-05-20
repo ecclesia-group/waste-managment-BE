@@ -68,7 +68,6 @@ class ClientPaymentController extends Controller
                 'status' => Payment::STATUS_PENDING,
                 'purchase_id' => null,
                 'pickup_id' => null,
-                'payment_type' => 'registration',
             ]);
 
             $client->registration_status = false;
@@ -100,7 +99,7 @@ class ClientPaymentController extends Controller
             status_code: self::API_CREATED,
             data: [
                 'payment' => $payment->toArray(),
-                'client' => $client->fresh()->load('group', 'groups', 'bins')->toArray(),
+                'client' => $client->fresh()->load('group', 'bins')->toArray(),
             ]
         );
     }
@@ -118,7 +117,7 @@ class ClientPaymentController extends Controller
             message: 'Action Successful',
             reason: 'Registration payment status retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'groups', 'bins')->toArray(),
+            data: $client->load('group', 'bins')->toArray(),
         );
     }
 }

@@ -18,12 +18,10 @@ class Violation extends Model
         'location',
         'description',
         'images',
-        'videos',
     ];
 
     protected $casts = [
         'images'     => 'array',
-        'videos'     => 'array',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

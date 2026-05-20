@@ -24,7 +24,6 @@ class ClientController extends Controller
         $data['password']          = $password;
         $data['provider_slug']     = $user->provider_slug;
         $data['email_verified_at'] = now();
-        $groupData                 = $data;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -35,8 +34,14 @@ class ClientController extends Controller
         $data     = static::processImage($image_fields, $data);
         $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
 
+        if (empty($data['group_slug'])) {
+            $firstGroup = \Illuminate\Support\Arr::first($data['group_slugs'] ?? []);
+            if ($firstGroup) {
+                $data['group_slug'] = $firstGroup;
+            }
+        }
+
         $client = Client::create(collect($data)->except('group_slugs')->all());
-        $this->syncClientGroups($client, $groupData);
         $this->ensureRegistrationBin($client);
 
         self::sendEmail(
@@ -55,7 +60,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client registered successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'groups', 'bins')->toArray()
+            data: $client->load('group', 'bins')->toArray()
         );
     }
 
@@ -63,7 +68,7 @@ class ClientController extends Controller
     {
         $user    = Auth::user();
         $clients = Client::where('provider_slug', $user->provider_slug)
-            ->with('group', 'groups', 'bins')
+            ->with('group', 'bins')
             ->get();
         return self::apiResponse(
             in_error: false,
@@ -126,7 +131,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'groups', 'bins')->toArray()
+            data: $client->load('group', 'bins')->toArray()
         );
     }
 
@@ -160,7 +165,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'groups', 'bins')->toArray()
+            data: $client->load('group', 'bins')->toArray()
         );
     }
 
@@ -191,7 +196,6 @@ class ClientController extends Controller
 
         $data         = $request->validated();
         $image_fields = [
-            'qrcode',
             'profile_image',
         ];
 
@@ -209,8 +213,6 @@ class ClientController extends Controller
             }
         }
 
-        $client->update(collect($data)->except('group_slugs')->all());
-        $this->syncClientGroups($client, $data);
         $this->ensureRegistrationBin($client);
         $client->refresh();
 
@@ -219,7 +221,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'groups', 'bins')->toArray()
+            data: $client->toArray()
         );
     }
 
@@ -330,25 +332,6 @@ class ClientController extends Controller
                 data: []
             );
         }
-    }
-
-    private function syncClientGroups(Client $client, array $data): void
-    {
-        $groupSlugs = collect($data['group_slugs'] ?? [])
-            ->push($data['group_slug'] ?? null)
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($groupSlugs->isEmpty()) {
-            return;
-        }
-
-        $syncPayload = $groupSlugs
-            ->mapWithKeys(fn (string $groupSlug) => [$groupSlug => ['provider_slug' => $client->provider_slug]])
-            ->all();
-
-        $client->groups()->sync($syncPayload);
     }
 
     private function ensureRegistrationBin(Client $client): void

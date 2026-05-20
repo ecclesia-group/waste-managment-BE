@@ -20,7 +20,6 @@ return new class extends Migration
             $table->text('description');
             $table->string('status')->default('pending');
             $table->longText('images')->nullable();
-            $table->longText('videos')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

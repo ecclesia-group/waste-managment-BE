@@ -32,7 +32,7 @@ class RegisterRequest extends FormRequest
             'pickup_location' => 'required|string',
             'bin_size'        => 'required|string',
             'bin_code'        => 'nullable|string',
-            'group_slug'      => 'nullable|string',
+            'group_slug'      => 'nullable|string|exists:groups,group_slug',
             'group_slugs'     => 'nullable|array',
             'group_slugs.*'   => 'string|exists:groups,group_slug',
             'registration_fee' => 'required|numeric|min:0',

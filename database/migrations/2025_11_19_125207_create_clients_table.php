@@ -25,13 +25,11 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->string('type')->nullable();
-            $table->string('pickup_location')->nullable();
-            $table->string('bin_code')->nullable();
-            $table->string('bin_size')->nullable();
-            $table->string('bin_registration_number')->nullable();
+            $table->string('bin_slug')->nullable();
             $table->string('status')->default('active');
             $table->string('group_slug')->nullable();
-            $table->longText('qrcode')->nullable();
+            $table->decimal('registration_fee', 10, 2)->nullable();
+            $table->string('registration_status')->nullable();
             $table->longText('profile_image')->nullable();
             $table->softDeletes();
             $table->timestamps();

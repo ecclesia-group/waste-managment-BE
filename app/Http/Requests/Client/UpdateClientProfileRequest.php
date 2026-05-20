@@ -45,15 +45,9 @@ class UpdateClientProfileRequest extends FormRequest
             'latitude'        => 'nullable|numeric|between:-90,90',
             'longitude'       => 'nullable|numeric|between:-180,180',
             'type'            => 'nullable|string|max:255',
-            'pickup_location' => 'nullable|string|max:255',
-            'bin_size'        => 'nullable|string|max:255',
-            'bin_code'        => 'nullable|string|max:255',
-            'group_slug'      => 'nullable|string|max:255',
-            'group_slugs'     => 'nullable|array',
-            'group_slugs.*'   => 'string|exists:groups,group_slug',
+            'bin_slug'        => 'nullable|string|max:255',
+            'group_slug'      => 'nullable|string|exists:groups,group_slug',
             'registration_fee' => 'sometimes|nullable|numeric|min:0',
-
-            'qrcode'          => 'nullable|starts_with:data:,http://,https://',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',
         ];
     }
