@@ -4,147 +4,178 @@ namespace App\Traits;
 
 use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
+use Illuminate\Support\Collection;
 
 trait TransformsRoutePlannerResponse
 {
     use HasClientMapPayload;
 
+    protected static function assignmentIsScanned(RoutePlannerBinAssignment $assignment): bool
+    {
+        $assignmentScan = (string) ($assignment->scan_status ?? 'unscanned');
+
+        return $assignmentScan === 'scanned'
+            || ($assignment->pickup?->scan_status === 'scanned');
+    }
+
+    protected static function assignmentUiScanStatus(RoutePlannerBinAssignment $assignment): string
+    {
+        $status = (string) ($assignment->scan_status ?? 'unscanned');
+
+        return $status === 'scanned' ? 'scanned' : 'unscanned';
+    }
+
     /**
-     * Shape route planner "create route" / assignment payload for the Route Planner UI
-     * (provider sidebar, driver, fleet, group, assignment summary, per-client rows, map pins).
+     * Provider plan list: type, provider, fleet, groups summary, scan counts, date, coordinates.
      */
-    protected static function transformRoutePlannerForFrontend(RoutePlanner $plan): array
+    protected static function transformPlansList(Collection $plans): array
+    {
+        return $plans->map(function (RoutePlanner $plan) {
+            $plan->loadMissing([
+                'provider',
+                'driver',
+                'fleet',
+                'assignments.client.group',
+                'assignments.pickup',
+            ]);
+
+            $scanned = 0;
+            $unscanned = 0;
+            foreach ($plan->assignments as $assignment) {
+                if (static::assignmentIsScanned($assignment)) {
+                    $scanned++;
+                } else {
+                    $unscanned++;
+                }
+            }
+
+            $groups = $plan->assignments
+                ->groupBy(fn (RoutePlannerBinAssignment $a) => $a->client?->group_slug ?: 'ungrouped')
+                ->map(function (Collection $rows, string $groupSlug) {
+                    $first = $rows->first();
+                    $group = $first?->client?->group;
+
+                    return [
+                        'group_slug' => $groupSlug === 'ungrouped' ? null : $groupSlug,
+                        'name' => $group?->name ?? ($groupSlug === 'ungrouped' ? 'Ungrouped' : $groupSlug),
+                        'clients_count' => $rows->count(),
+                        'scanned' => $rows->filter(fn (RoutePlannerBinAssignment $a) => static::assignmentIsScanned($a))->count(),
+                        'unscanned' => $rows->reject(fn (RoutePlannerBinAssignment $a) => static::assignmentIsScanned($a))->count(),
+                    ];
+                })
+                ->values()
+                ->all();
+
+            return [
+                'id' => $plan->id,
+                'pickup_type' => $plan->pickup_type ?? ($plan->route_meta['pickup_type'] ?? 'normal'),
+                'pickup_date' => $plan->pickup_date?->toISOString(),
+                'status' => $plan->status,
+                'provider' => ($p = $plan->provider) ? static::transformRoutePlannerProviderBrief($p) : null,
+                'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
+                'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
+                'groups' => $groups,
+                'summary' => [
+                    'total' => $plan->assignments->count(),
+                    'scanned' => $scanned,
+                    'unscanned' => $unscanned,
+                ],
+                'route_meta' => $plan->route_meta,
+                'created_at' => $plan->created_at,
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * Plan detail: groups with client rows (lat/lng, scan status, pickup, price for bulk).
+     */
+    protected static function transformPlanDetail(RoutePlanner $plan): array
     {
         $plan->loadMissing([
             'provider',
             'driver',
             'fleet',
-            'group',
-            'assignments.pickup',
             'assignments.client.group',
+            'assignments.pickup',
         ]);
-
-        /** @var \Illuminate\Support\Collection<int, RoutePlannerBinAssignment> $assignments */
-        $assignments = $plan->assignments->sortBy('client_slug')->values();
 
         $scanned = 0;
         $unscanned = 0;
-        $clientsPayload = [];
-        $binsPayload = [];
 
-        foreach ($assignments as $assignment) {
-            $client = $assignment->client;
-            $pickup = $assignment->pickup;
+        $groups = $plan->assignments
+            ->groupBy(fn (RoutePlannerBinAssignment $a) => $a->client?->group_slug ?: 'ungrouped')
+            ->map(function (Collection $rows, string $groupSlug) use (&$scanned, &$unscanned) {
+                $first = $rows->first();
+                $group = $first?->client?->group;
 
-            $assignmentScan = $assignment->scan_status ?? 'pending';
-            $pickupScan = $pickup?->scan_status;
-            $effectiveForPin = $assignmentScan === 'scanned' || $pickupScan === 'scanned';
+                $clients = $rows->map(function (RoutePlannerBinAssignment $assignment) use (&$scanned, &$unscanned) {
+                    $client = $assignment->client;
+                    $pickup = $assignment->pickup;
+                    $isScanned = static::assignmentIsScanned($assignment);
 
-            if ($effectiveForPin) {
-                $scanned++;
-            } else {
-                $unscanned++;
-            }
+                    if ($isScanned) {
+                        $scanned++;
+                    } else {
+                        $unscanned++;
+                    }
 
-            $uiBinStatus = match ($assignmentScan) {
-                'scanned' => 'scanned',
-                'pending', 'not_scanned' => 'unscanned',
-                default => 'unscanned',
-            };
+                    $coords = static::clientCoordinatesForMap($client);
 
-            if ($client) {
-                $fullName = trim(($client->first_name ?? '').' '.($client->last_name ?? ''));
-                $coords = static::clientCoordinatesForMap($client);
-                $group = $client->group;
-
-                $clientsPayload[] = [
-                    'client_slug' => $client->client_slug,
-                    'customer_id' => $client->bin_registration_number
-                        ? (string) $client->bin_registration_number
-                        : (string) $client->id,
-                    'full_name' => $fullName,
-                    'phone_number' => $client->phone_number,
-                    'email' => $client->email,
-                    'gps_address' => $client->gps_address,
-                    'pickup_location' => $client->pickup_location,
-                    'category' => $client->type,
-                    'bin_code' => $client->bin_code,
-                    'group_slug' => $client->group_slug,
-                    'group_name' => $group?->name ?? $plan->group?->name,
-                    'group_tag' => ($group?->name) ?? ($plan->group?->name) ?? $client->group_slug,
-                    'coordinates' => $coords,
-                    'assignment' => [
+                    return [
+                        'client_slug' => $assignment->client_slug,
+                        'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+                        'phone_number' => $client?->phone_number,
+                        'email' => $client?->email,
+                        'gps_address' => $client?->gps_address,
+                        'pickup_location' => $client?->pickup_location,
+                        'bin_code' => $client?->bin_code,
+                        'coordinates' => $coords,
+                        'scan_status' => static::assignmentUiScanStatus($assignment),
                         'pickup_code' => $assignment->pickup_code,
-                        'scan_status' => $assignmentScan,
-                        'map_marker_color' => $effectiveForPin ? 'green' : 'red',
-                        'is_scanned' => $effectiveForPin,
-                    ],
-                    'pickup' => $pickup ? [
-                        'code' => $pickup->code,
-                        'scan_status' => $pickup->scan_status,
-                        'status' => $pickup->status,
-                        'location' => $pickup->location,
-                        'pickup_date' => $pickup->pickup_date,
-                    ] : null,
-                ];
-            }
+                        'pickup' => $pickup ? [
+                            'code' => $pickup->code,
+                            'status' => $pickup->status,
+                            'scan_status' => $pickup->scan_status,
+                            'pickup_date' => $pickup->pickup_date,
+                            'amount' => $pickup->amount,
+                            'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
+                            'requires_payment_before_pickup' => ! empty($pickup->bulk_waste_request_code),
+                        ] : null,
+                    ];
+                })->values()->all();
 
-            $binsPayload[] = [
-                'pickup_code' => $assignment->pickup_code,
-                'client_slug' => $assignment->client_slug,
-                'stop_order' => $assignment->stop_order,
-                'eta_minutes' => $assignment->eta_minutes,
-                'scan_status' => $uiBinStatus,
-                'map_marker_color' => $uiBinStatus === 'scanned' ? 'green' : 'red',
-                'scanned_at' => $assignment->scanned_at?->toISOString(),
-                'unscanned_at' => $assignment->unscanned_at?->toISOString(),
-                'coordinates' => static::clientCoordinatesForMap($client),
-                'client' => $client?->only([
-                    'client_slug',
-                    'first_name',
-                    'last_name',
-                    'phone_number',
-                    'email',
-                    'gps_address',
-                    'pickup_location',
-                    'type',
-                    'bin_code',
-                ]),
-                'pickup' => $pickup?->only([
-                    'code',
-                    'scan_status',
-                    'status',
-                    'location',
-                    'pickup_date',
-                ]),
-            ];
-        }
+                return [
+                    'group_slug' => $groupSlug === 'ungrouped' ? null : $groupSlug,
+                    'name' => $group?->name ?? ($groupSlug === 'ungrouped' ? 'Ungrouped' : $groupSlug),
+                    'clients' => $clients,
+                ];
+            })
+            ->values()
+            ->all();
 
         return [
-            'assignment' => [
-                'id' => $plan->id,
-                'route_planner_id' => $plan->id,
-                'status' => $plan->status,
-                'provider_slug' => $plan->provider_slug,
-                'driver_slug' => $plan->driver_slug,
-                'fleet_slug' => $plan->fleet_slug,
-                'group_slug' => $plan->group_slug,
-                'created_at' => $plan->created_at,
-                'updated_at' => $plan->updated_at,
-                'summary' => [
-                    'total_clients' => count($clientsPayload),
-                    'scanned' => $scanned,
-                    'unscanned' => $unscanned,
-                ],
-                'route_meta' => $plan->route_meta,
-            ],
+            'id' => $plan->id,
+            'pickup_type' => $plan->pickup_type ?? ($plan->route_meta['pickup_type'] ?? 'normal'),
+            'pickup_date' => $plan->pickup_date?->toISOString(),
+            'status' => $plan->status,
             'provider' => ($p = $plan->provider) ? static::transformRoutePlannerProviderBrief($p) : null,
             'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
             'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
-            'group' => ($g = $plan->group) ? static::transformRoutePlannerGroupBrief($g) : null,
-            'clients' => $clientsPayload,
-            'bins' => $binsPayload,
+            'groups' => $groups,
+            'summary' => [
+                'total' => $scanned + $unscanned,
+                'scanned' => $scanned,
+                'unscanned' => $unscanned,
+            ],
+            'route_meta' => $plan->route_meta,
+            'created_at' => $plan->created_at,
+            'updated_at' => $plan->updated_at,
         ];
+    }
+
+    protected static function transformRoutePlannerForFrontend(RoutePlanner $plan): array
+    {
+        return static::transformPlanDetail($plan);
     }
 
     protected static function transformRoutePlannerProviderBrief($provider): array
@@ -156,7 +187,6 @@ trait TransformsRoutePlannerResponse
             'business_name' => $provider->business_name,
             'first_name' => $provider->first_name,
             'last_name' => $provider->last_name,
-            'business_registration_number' => $provider->business_registration_number,
             'phone_number' => $provider->phone_number,
             'email' => $provider->email,
             'region' => $provider->region ?? null,
@@ -185,6 +215,9 @@ trait TransformsRoutePlannerResponse
             'status' => $driver->status,
             'display_label' => $full !== '' ? $full : $driver->driver_slug,
             'profile_image' => $profileUrl,
+            'coordinates' => ($driver->latitude !== null && $driver->longitude !== null)
+                ? ['latitude' => (float) $driver->latitude, 'longitude' => (float) $driver->longitude, 'map_ready' => true]
+                : ['latitude' => null, 'longitude' => null, 'map_ready' => false],
         ];
     }
 

@@ -67,6 +67,7 @@ Route::prefix("client")->group(function () {
         Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
         Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
         Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
+        Route::post('bulk_waste_requests/{requestCode}/pay', [PickupController::class, 'payBulkWasteRequest']);
 
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
@@ -203,17 +204,17 @@ Route::prefix("provider")->group(function () {
         Route::delete("delete_fleet/{fleet}", [FleetManagementController::class, "deleteFleet"]);
 
         // Pickup Management
-        Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
-        Route::get("get_all_client_pickups", [PickupController::class, "getAllPickups"]);
-        Route::get("get_single_client_pickup/{pickup}", [PickupController::class, "getSinglePickup"]);
-        Route::post("set_pickup_price", [PickupController::class, "setPickupPrice"]);
-        Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
-        Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
-        Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
-        Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
-        Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
-        Route::put("pickups/{pickupCode}", [PickupController::class, "providerUpdatePickup"]);
-        Route::delete("pickups/{pickupCode}", [PickupController::class, "providerDeletePickup"]);
+        // Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
+        // Route::get("get_all_client_pickups", [PickupController::class, "getAllPickups"]);
+        // Route::get("get_single_client_pickup/{pickup}", [PickupController::class, "getSinglePickup"]);
+        // Route::post("set_pickup_price", [PickupController::class, "setPickupPrice"]);
+        // Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
+        // Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
+        // Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
+        // Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
+        // Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
+        // Route::put("pickups/{pickupCode}", [PickupController::class, "providerUpdatePickup"]);
+        // Route::delete("pickups/{pickupCode}", [PickupController::class, "providerDeletePickup"]);
 
         // Complaint Management
         // Providers can file complaints to platform support from the provider dashboard.
@@ -244,8 +245,8 @@ Route::prefix("provider")->group(function () {
         Route::post("handover_requests/{handover}/complete", [WasteHandoverController::class, "complete"]);
 
         // Dashboard Content
-        Route::get('banners', [BannerController::class, 'listForAudience']);
-        Route::get('guides', [GuideController::class, 'listForAudience']);
+        // Route::get('banners', [BannerController::class, 'listForAudience']);
+        // Route::get('guides', [GuideController::class, 'listForAudience']);
 
         // Team RBAC (provider only)
         Route::get("permissions", [RoleController::class, "permissions"]);

@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Violation;
+use App\Services\GhanaPostGpsService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
@@ -38,6 +39,14 @@ class ClientController extends Controller
             $firstGroup = \Illuminate\Support\Arr::first($data['group_slugs'] ?? []);
             if ($firstGroup) {
                 $data['group_slug'] = $firstGroup;
+            }
+        }
+
+        if (empty($data['latitude']) || empty($data['longitude'])) {
+            $coords = app(GhanaPostGpsService::class)->resolveCoordinates((string) $data['gps_address']);
+            if ($coords) {
+                $data['latitude'] = $coords['latitude'];
+                $data['longitude'] = $coords['longitude'];
             }
         }
 

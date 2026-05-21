@@ -21,6 +21,7 @@ class BulkWasteRequest extends Model
         'pickup_date',
         'status',
         'amount',
+        'payment_status',
         'approved_at',
         'rejected_at',
         'rejection_reason',

@@ -9,6 +9,7 @@ use App\Http\Requests\Pickup\UpdatePickupRequest;
 use App\Models\Bin;
 use App\Models\BulkWasteRequest;
 use App\Models\Client;
+use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\PickupScanEvent;
 use App\Models\RoutePlannerBinAssignment;
@@ -16,6 +17,7 @@ use App\Support\Geo\Haversine;
 use App\Traits\HasClientMapPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PickupController extends Controller
@@ -341,6 +343,7 @@ class PickupController extends Controller
 
         $bulkRequest->amount = $data['amount'];
         $bulkRequest->status = 'approved';
+        $bulkRequest->payment_status = ((float) $data['amount']) > 0 ? 'unpaid' : 'paid';
         $bulkRequest->approved_at ??= now();
         $bulkRequest->save();
 
@@ -735,10 +738,20 @@ class PickupController extends Controller
 
         $canonicalStatus = match ($data['status']) {
             'scanned' => 'scanned',
-            'not_scanned' => 'not_scanned',
-            'unscanned' => 'not_scanned',
+            'not_scanned' => 'unscanned',
+            'unscanned' => 'unscanned',
             default => $data['status'],
         };
+
+        if ($canonicalStatus === 'scanned' && self::bulkPickupIsUnpaid($pickup)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Bulk waste pickup must be paid before the driver can complete the scan',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
 
         if ($canonicalStatus === 'scanned'
             && isset($data['driver_latitude'], $data['driver_longitude'])
@@ -769,8 +782,8 @@ class PickupController extends Controller
         // End-to-end flow: once a bin is scanned successfully, treat the pickup as completed.
         if ($canonicalStatus === 'scanned') {
             $pickup->status = 'completed';
-        } elseif ($canonicalStatus === 'not_scanned') {
-            $pickup->status = 'pending';
+        } elseif ($canonicalStatus === 'unscanned') {
+            $pickup->status = 'scheduled';
         }
         $pickup->save();
 
@@ -783,7 +796,7 @@ class PickupController extends Controller
             $assignment->scan_status = $canonicalStatus;
             // Keep timestamps mutually exclusive for cleaner map UI.
             $assignment->scanned_at = $canonicalStatus === 'scanned' ? now() : null;
-            $assignment->unscanned_at = $canonicalStatus === 'not_scanned' ? now() : null;
+            $assignment->unscanned_at = $canonicalStatus === 'unscanned' ? now() : null;
             $assignment->save();
         }
 
@@ -860,7 +873,7 @@ class PickupController extends Controller
         $pendingAssignments = RoutePlannerBinAssignment::query()
             ->where('client_slug', $bin->client_slug)
             ->where('provider_slug', $bin->provider_slug)
-            ->where('scan_status', 'pending')
+            ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
             ->orderByDesc('created_at')
             ->get(['pickup_code']);
 
@@ -878,8 +891,8 @@ class PickupController extends Controller
 
         $pickups = Pickup::with(['provider', 'client.group'])
             ->whereIn('code', $pickupCodes)
-            ->where('status', 'pending')
-            ->where('scan_status', 'pending')
+            ->whereIn('status', ['pending', 'scheduled'])
+            ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
             ->get();
 
         return self::apiResponse(
@@ -893,21 +906,154 @@ class PickupController extends Controller
 
     public function getPickupDates()
     {
-        $user         = request()->user();
-        $providerSlug = $user->provider_slug ?? self::resolveProviderScopeSlug($user);
-        $pickup_dates = Pickup::where(function ($query) use ($user, $providerSlug) {
-            $query->where('client_slug', $user->client_slug)
-                ->where('provider_slug', $providerSlug);
-        })
+        $user = request()->user();
+        $pickups = Pickup::query()
+            ->where('client_slug', $user->client_slug)
             ->whereNotNull('pickup_date')
+            ->orderByDesc('pickup_date')
             ->get();
+
+        $payload = $pickups->map(function (Pickup $pickup) {
+            $requiresPayment = ! empty($pickup->bulk_waste_request_code);
+            $paymentStatus = null;
+            if ($requiresPayment && $pickup->bulk_waste_request_code) {
+                $paymentStatus = BulkWasteRequest::query()
+                    ->where('request_code', $pickup->bulk_waste_request_code)
+                    ->value('payment_status');
+            }
+
+            return [
+                'code' => $pickup->code,
+                'pickup_date' => $pickup->pickup_date,
+                'amount' => $pickup->amount,
+                'status' => $pickup->status,
+                'scan_status' => $pickup->scan_status,
+                'category' => $pickup->category,
+                'requires_payment_before_pickup' => $requiresPayment,
+                'payment_status' => $paymentStatus,
+                'can_be_serviced' => ! $requiresPayment || $paymentStatus === 'paid',
+            ];
+        })->values()->all();
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Pickup dates retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $pickup_dates->toArray()
+            data: $payload
         );
+    }
+
+    public function payBulkWasteRequest(Request $request, string $requestCode)
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'payment_method' => 'required|string|in:momo,card',
+            'network' => 'nullable|string',
+            'phone_number' => 'nullable|string',
+            'name' => 'required|string',
+            'client_email' => 'nullable|email',
+        ]);
+
+        $bulkRequest = BulkWasteRequest::query()
+            ->where('request_code', $requestCode)
+            ->where('client_slug', $user->client_slug)
+            ->first();
+
+        if (! $bulkRequest) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Bulk waste request not found",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $amount = (float) ($bulkRequest->amount ?? 0);
+        if ($amount <= 0) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Bulk request has no price set yet",
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        if (($bulkRequest->payment_status ?? 'unpaid') === 'paid') {
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Bulk waste request is already paid",
+                status_code: self::API_SUCCESS,
+                data: $bulkRequest->toArray()
+            );
+        }
+
+        DB::beginTransaction();
+        try {
+            Payment::create([
+                'client_slug' => $user->client_slug,
+                'provider_slug' => $bulkRequest->provider_slug,
+                'payment_type' => 'bulk_waste_request',
+                'transaction_id' => 'BULK-'.now()->format('YmdHis'),
+                'payment_method' => $data['payment_method'],
+                'network' => $data['network'] ?? 'unknown',
+                'phone_number' => $data['phone_number'] ?? $user->phone_number,
+                'name' => $data['name'],
+                'client_email' => $data['client_email'] ?? $user->email,
+                'amount' => $amount,
+                'currency' => 'GHS',
+                'status' => Payment::STATUS_PAID,
+                'pickup_id' => null,
+                'purchase_id' => null,
+            ]);
+
+            $bulkRequest->payment_status = 'paid';
+            $bulkRequest->save();
+
+            DB::commit();
+
+            return self::apiResponse(
+                in_error: false,
+                message: "Action Successful",
+                reason: "Bulk waste request paid successfully",
+                status_code: self::API_SUCCESS,
+                data: $bulkRequest->fresh()->toArray()
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Payment failed: ".$e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+    }
+
+    private static function bulkPickupIsUnpaid(Pickup $pickup): bool
+    {
+        if (empty($pickup->bulk_waste_request_code)) {
+            return false;
+        }
+
+        $bulk = BulkWasteRequest::query()
+            ->where('request_code', $pickup->bulk_waste_request_code)
+            ->first();
+
+        if (! $bulk) {
+            return false;
+        }
+
+        $amount = (float) ($bulk->amount ?? 0);
+        if ($amount <= 0) {
+            return false;
+        }
+
+        return ($bulk->payment_status ?? 'unpaid') !== 'paid';
     }
 }

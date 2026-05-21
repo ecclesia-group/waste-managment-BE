@@ -43,8 +43,11 @@ trait HasClientMapPayload
         return array_merge($pickup->toArray(), [
             'map' => [
                 'coordinates' => $coords,
+                'gps_address' => $client?->gps_address,
+                'pickup_location' => $client?->pickup_location,
             ],
-            'provider' => $pickup->provider->toArray(),
+            'requires_payment_before_pickup' => ! empty($pickup->bulk_waste_request_code),
+            'provider' => $pickup->provider?->toArray(),
             // 'customer' => $client ? [
             //     'client_slug' => $client->client_slug,
             //     'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),

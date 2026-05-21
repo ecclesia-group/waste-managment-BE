@@ -71,6 +71,7 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
         'driver_slug' => $driver->driver_slug,
         'fleet_slug' => $fleet->fleet_slug,
         'pickup_type' => 'normal',
+        'pickup_date' => now()->addDay()->toDateString(),
         'group_slugs' => [$groupA->group_slug, $groupB->group_slug],
     ]);
 
@@ -139,6 +140,7 @@ it('creates bulk waste pickup plan from selected request codes', function () {
         'driver_slug' => $driver->driver_slug,
         'fleet_slug' => $fleet->fleet_slug,
         'pickup_type' => 'bulk_waste_request',
+        'pickup_date' => now()->addDay()->toDateString(),
         'bulk_request_codes' => [$bulkCode],
     ]);
 

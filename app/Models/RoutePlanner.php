@@ -14,6 +14,8 @@ class RoutePlanner extends Model
         'fleet_slug',
         'group_slug',
         'status',
+        'pickup_date',
+        'pickup_type',
         'route_meta',
     ];
 
@@ -22,6 +24,7 @@ class RoutePlanner extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'route_meta' => 'array',
+        'pickup_date' => 'datetime',
     ];
 
     public function provider()
