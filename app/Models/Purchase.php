@@ -9,6 +9,10 @@ class Purchase extends Model
 {
     use SoftDeletes;
 
+    protected $with = [
+        'client',
+    ];
+
     protected $fillable = [
         'client_slug',
         'number_of_items',

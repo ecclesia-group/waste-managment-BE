@@ -206,7 +206,6 @@ class PurchaseController extends Controller
             $payment = Payment::create([
                 'client_slug' => $user->client_slug,
                 'provider_slug' => $user->provider_slug,
-                'payment_type' => null,
                 'transaction_id' => $transactionId,
                 'payment_method' => $data['payment_method'],
                 'network' => $data['network'] ?? 'unknown',

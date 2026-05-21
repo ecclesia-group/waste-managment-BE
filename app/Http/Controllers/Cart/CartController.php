@@ -308,7 +308,7 @@ class CartController extends Controller
 
             DB::commit();
 
-            $purchase->load('items');
+            $purchase->load(['client', 'items']);
 
             return self::apiResponse(
                 in_error: false,
@@ -316,9 +316,9 @@ class CartController extends Controller
                 reason: "Cart checked out successfully",
                 status_code: self::API_SUCCESS,
                 data: [
-                    'client' => $cart->load('client')->client,
-                    'items' => $cart->load('items.product')->items,
-                    'purchase' => $purchase->load('items')->client,
+                    'purchase' => $purchase->toArray(),
+                    'client' => $purchase->client?->toArray(),
+                    'items' => $purchase->items->toArray(),
                 ]
             );
         } catch (\Exception $e) {
