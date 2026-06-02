@@ -29,14 +29,10 @@ class RegisterRequest extends FormRequest
             'latitude'        => 'nullable|numeric|between:-90,90',
             'longitude'       => 'nullable|numeric|between:-180,180',
             'type'            => 'required|string',
-            'pickup_location' => 'required|string',
-            'bin_size'        => 'required|string',
-            'bin_code'        => 'nullable|string',
+            'bin_slug'        => 'nullable|string',
             'group_slug'      => 'nullable|string|exists:groups,group_slug',
-            'group_slugs'     => 'nullable|array',
-            'group_slugs.*'   => 'string|exists:groups,group_slug',
-            'registration_fee' => 'required|numeric|min:0',
-            'qrcode'          => 'nullable|starts_with:data:,http://,https://',
+            'registration_fee' => 'nullable|numeric|min:0',
+            'registration_status' => 'nullable|boolean',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',
         ];
     }

@@ -28,19 +28,11 @@ class ClientController extends Controller
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
-            'qrcode',
             'profile_image',
         ];
 
         $data     = static::processImage($image_fields, $data);
         $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
-
-        if (empty($data['group_slug'])) {
-            $firstGroup = \Illuminate\Support\Arr::first($data['group_slugs'] ?? []);
-            if ($firstGroup) {
-                $data['group_slug'] = $firstGroup;
-            }
-        }
 
         if (empty($data['latitude']) || empty($data['longitude'])) {
             $coords = app(GhanaPostGpsService::class)->resolveCoordinates((string) $data['gps_address']);
@@ -50,7 +42,7 @@ class ClientController extends Controller
             }
         }
 
-        $client = Client::create(collect($data)->except('group_slugs')->all());
+        $client = Client::create(collect($data)->except('registration_status')->all());
         $this->ensureRegistrationBin($client);
 
         self::sendEmail(
@@ -69,7 +61,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client registered successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'bins')->toArray()
+            data: $client->load('bin')->toArray()
         );
     }
 
@@ -77,7 +69,7 @@ class ClientController extends Controller
     {
         $user    = Auth::user();
         $clients = Client::where('provider_slug', $user->provider_slug)
-            ->with('group', 'bins')
+            ->with('bin')
             ->get();
         return self::apiResponse(
             in_error: false,
@@ -140,7 +132,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'bins')->toArray()
+            data: $client->load('bin')->toArray()
         );
     }
 
@@ -174,7 +166,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'bins')->toArray()
+            data: $client->load('bin')->toArray()
         );
     }
 
