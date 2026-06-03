@@ -112,86 +112,32 @@ class RoutePlannerManagement extends Controller
         }
 
         $pickupType = (string) $data['pickup_type'];
-        $pickupDate = Carbon::parse($data['pickup_date']);
-        $selectedGroupSlugs = collect($data['group_slugs'] ?? [])->filter()->unique()->values();
-        $selectedClientSlugs = collect($data['client_slugs'] ?? [])->filter()->unique()->values();
-        $selectedBulkCodes = collect($data['bulk_request_codes'] ?? [])->filter()->unique()->values();
-
-        if ($pickupType === 'normal' && $selectedGroupSlugs->isEmpty() && $selectedClientSlugs->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "For normal pickup plans, provide group_slugs or client_slugs",
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        if ($pickupType === 'bulk_waste_request'
-            && $selectedBulkCodes->isEmpty()
-            && $selectedClientSlugs->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "For bulk pickup plans, provide bulk_request_codes or client_slugs",
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
+        $pickupDate = isset($data['pickup_date'])
+            ? Carbon::parse($data['pickup_date'])
+            : Carbon::now();
+        $groupSlugs = collect($data['group_slugs'] ?? [])->filter()->unique()->values();
+        $bulkCodes = collect($data['bulk_request_codes'] ?? [])->filter()->unique()->values();
 
         DB::beginTransaction();
         try {
-            if (! $this->authorizeDriverFleetGroups($data, $user)) {
+            if (! $this->authorizePlanResources($data, $user, $pickupType, $groupSlugs, $bulkCodes)) {
                 DB::rollBack();
 
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
-                    reason: "Driver, fleet, or group is not authorized for this provider",
+                    reason: "Driver, fleet, group, or bulk request is not valid for this provider",
                     status_code: self::API_FAIL,
                     data: []
                 );
             }
 
-            $bulkRequestsByClientSlug = collect();
-            if ($pickupType === 'bulk_waste_request') {
-                $bulkQuery = BulkWasteRequest::query()
-                    ->where('provider_slug', $data['provider_slug'])
-                    ->where('status', 'approved');
-
-                if ($selectedBulkCodes->isNotEmpty()) {
-                    $bulkQuery->whereIn('request_code', $selectedBulkCodes->all());
-                }
-                if ($selectedClientSlugs->isNotEmpty()) {
-                    $bulkQuery->whereIn('client_slug', $selectedClientSlugs->all());
-                }
-
-                $bulkRequests = $bulkQuery
-                    ->orderByDesc('created_at')
-                    ->get();
-
-                if ($bulkRequests->isEmpty()) {
-                    DB::rollBack();
-
-                    return self::apiResponse(
-                        in_error: true,
-                        message: "Action Failed",
-                        reason: "No approved bulk waste requests found for this provider",
-                        status_code: self::API_NOT_FOUND,
-                        data: []
-                    );
-                }
-
-                $bulkRequestsByClientSlug = $bulkRequests->keyBy('client_slug');
-                $selectedClientSlugs = $bulkRequestsByClientSlug->keys()->values();
-            }
-
-            $clients = Client::query()
-                ->where('provider_slug', $data['provider_slug'])
-                ->where('status', 'active')
-                ->when($selectedClientSlugs->isNotEmpty(), fn ($q) => $q->whereIn('client_slug', $selectedClientSlugs->all()))
-                ->when($pickupType === 'normal' && $selectedGroupSlugs->isNotEmpty(), fn ($q) => $q->whereIn('group_slug', $selectedGroupSlugs->all()))
-                ->get();
+            [$clients, $bulkByClient] = $this->resolvePlanClients(
+                $data['provider_slug'],
+                $pickupType,
+                $groupSlugs,
+                $bulkCodes
+            );
 
             if ($clients->isEmpty()) {
                 DB::rollBack();
@@ -199,7 +145,9 @@ class RoutePlannerManagement extends Controller
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
-                    reason: "No active clients found for this plan",
+                    reason: $pickupType === 'bulk_waste_request'
+                        ? 'No approved bulk waste requests found for the selected codes'
+                        : 'No active clients found in the selected groups',
                     status_code: self::API_NOT_FOUND,
                     data: []
                 );
@@ -209,54 +157,19 @@ class RoutePlannerManagement extends Controller
                 'provider_slug' => $data['provider_slug'],
                 'driver_slug' => $data['driver_slug'],
                 'fleet_slug' => $data['fleet_slug'],
-                'group_slug' => $selectedGroupSlugs->first(),
+                'group_slug' => $pickupType === 'normal' ? $groupSlugs->first() : null,
                 'pickup_date' => $pickupDate,
                 'pickup_type' => $pickupType,
                 'status' => $data['status'] ?? 'pending',
                 'route_meta' => [
                     'pickup_type' => $pickupType,
                     'pickup_date' => $pickupDate->toISOString(),
-                    'selected_group_slugs' => $selectedGroupSlugs->values()->all(),
-                    'selected_client_slugs' => $selectedClientSlugs->values()->all(),
-                    'selected_bulk_request_codes' => $selectedBulkCodes->values()->all(),
+                    'selected_group_slugs' => $groupSlugs->all(),
+                    'selected_bulk_request_codes' => $bulkCodes->all(),
                 ],
             ]);
 
-            foreach ($clients as $client) {
-                $bulkRequest = $bulkRequestsByClientSlug->get($client->client_slug);
-                $pickupCode = self::generateUniquePickupCode();
-
-                Pickup::create([
-                    'code' => $pickupCode,
-                    'bulk_waste_request_code' => $bulkRequest?->request_code,
-                    'client_slug' => $client->client_slug,
-                    'title' => $bulkRequest?->title ?? 'Scheduled pickup',
-                    'category' => $pickupType === 'bulk_waste_request' ? 'bulk_waste_request' : 'normal_pickup',
-                    'description' => $bulkRequest?->description,
-                    'amount' => $bulkRequest?->amount,
-                    'status' => 'scheduled',
-                    'scan_status' => 'unscanned',
-                    'location' => $client->pickup_location ?: ($client->gps_address ?: 'Unknown'),
-                    'provider_slug' => $routePlanner->provider_slug,
-                    'images' => $bulkRequest?->images,
-                    'pickup_date' => $pickupDate,
-                ]);
-
-                if ($bulkRequest) {
-                    $this->scheduleBulkRequest($bulkRequest, $pickupDate);
-                }
-
-                RoutePlannerBinAssignment::create([
-                    'route_planner_id' => $routePlanner->id,
-                    'provider_slug' => $routePlanner->provider_slug,
-                    'driver_slug' => $routePlanner->driver_slug,
-                    'fleet_slug' => $routePlanner->fleet_slug,
-                    'group_slug' => $client->group_slug,
-                    'client_slug' => $client->client_slug,
-                    'pickup_code' => $pickupCode,
-                    'scan_status' => 'unscanned',
-                ]);
-            }
+            $this->createPlanStops($routePlanner, $clients, $bulkByClient, $pickupType, $pickupDate);
 
             DB::commit();
 
@@ -464,8 +377,94 @@ class RoutePlannerManagement extends Controller
         $bulkRequest->save();
     }
 
-    private function authorizeDriverFleetGroups(array $data, object $user): bool
-    {
+    /**
+     * @return array{0: \Illuminate\Support\Collection<int, Client>, 1: \Illuminate\Support\Collection<string, BulkWasteRequest>}
+     */
+    private function resolvePlanClients(
+        string $providerSlug,
+        string $pickupType,
+        \Illuminate\Support\Collection $groupSlugs,
+        \Illuminate\Support\Collection $bulkCodes
+    ): array {
+        $bulkByClient = collect();
+
+        if ($pickupType === 'bulk_waste_request') {
+            $bulkByClient = BulkWasteRequest::query()
+                ->where('provider_slug', $providerSlug)
+                ->where('status', 'approved')
+                ->whereIn('request_code', $bulkCodes->all())
+                ->get()
+                ->keyBy('client_slug');
+
+            $clients = Client::query()
+                ->where('provider_slug', $providerSlug)
+                ->where('status', 'active')
+                ->whereIn('client_slug', $bulkByClient->keys()->all())
+                ->get();
+
+            return [$clients, $bulkByClient];
+        }
+
+        $clients = Client::query()
+            ->where('provider_slug', $providerSlug)
+            ->where('status', 'active')
+            ->whereIn('group_slug', $groupSlugs->all())
+            ->get();
+
+        return [$clients, $bulkByClient];
+    }
+
+    private function createPlanStops(
+        RoutePlanner $plan,
+        \Illuminate\Support\Collection $clients,
+        \Illuminate\Support\Collection $bulkByClient,
+        string $pickupType,
+        Carbon $pickupDate
+    ): void {
+        foreach ($clients as $client) {
+            $bulkRequest = $bulkByClient->get($client->client_slug);
+            $pickupCode = self::generateUniquePickupCode();
+
+            Pickup::create([
+                'code' => $pickupCode,
+                'bulk_waste_request_code' => $bulkRequest?->request_code,
+                'client_slug' => $client->client_slug,
+                'title' => $bulkRequest?->title ?? 'Scheduled pickup',
+                'category' => $pickupType === 'bulk_waste_request' ? 'bulk_waste_request' : 'normal_pickup',
+                'description' => $bulkRequest?->description,
+                'amount' => $bulkRequest?->amount,
+                'status' => 'scheduled',
+                'scan_status' => 'unscanned',
+                'location' => $client->pickup_location ?: ($client->gps_address ?: 'Unknown'),
+                'provider_slug' => $plan->provider_slug,
+                'images' => $bulkRequest?->images,
+                'pickup_date' => $pickupDate,
+            ]);
+
+            if ($bulkRequest) {
+                $this->scheduleBulkRequest($bulkRequest, $pickupDate);
+            }
+
+            RoutePlannerBinAssignment::create([
+                'route_planner_id' => $plan->id,
+                'provider_slug' => $plan->provider_slug,
+                'driver_slug' => $plan->driver_slug,
+                'fleet_slug' => $plan->fleet_slug,
+                'group_slug' => $client->group_slug,
+                'client_slug' => $client->client_slug,
+                'pickup_code' => $pickupCode,
+                'scan_status' => 'unscanned',
+            ]);
+        }
+    }
+
+    private function authorizePlanResources(
+        array $data,
+        object $user,
+        string $pickupType,
+        \Illuminate\Support\Collection $groupSlugs,
+        \Illuminate\Support\Collection $bulkCodes
+    ): bool {
         if (! isset($user->provider_slug)) {
             return true;
         }
@@ -486,19 +485,22 @@ class RoutePlannerManagement extends Controller
             return false;
         }
 
-        $groupSlugs = $data['group_slugs'] ?? [];
-        if (! empty($groupSlugs)) {
+        if ($pickupType === 'normal') {
             $count = Group::query()
-                ->whereIn('group_slug', $groupSlugs)
+                ->whereIn('group_slug', $groupSlugs->all())
                 ->where('provider_slug', $providerSlug)
                 ->count();
 
-            if ($count !== count(array_unique($groupSlugs))) {
-                return false;
-            }
+            return $count === $groupSlugs->count();
         }
 
-        return true;
+        $bulkCount = BulkWasteRequest::query()
+            ->where('provider_slug', $providerSlug)
+            ->where('status', 'approved')
+            ->whereIn('request_code', $bulkCodes->all())
+            ->count();
+
+        return $bulkCount === $bulkCodes->count();
     }
 
     protected static function generateUniquePickupCode(): string

@@ -10,7 +10,7 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Violation;
-use App\Services\GhanaPostGpsService;
+use App\Services\ClientLocationGeocodingService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,13 +34,7 @@ class ClientController extends Controller
         $data     = static::processImage($image_fields, $data);
         $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
 
-        if (empty($data['latitude']) || empty($data['longitude'])) {
-            $coords = app(GhanaPostGpsService::class)->resolveCoordinates((string) $data['gps_address']);
-            if ($coords) {
-                $data['latitude'] = $coords['latitude'];
-                $data['longitude'] = $coords['longitude'];
-            }
-        }
+        $data = $this->applyGeocodedCoordinates($data);
 
         $client = Client::create(collect($data)->except('registration_status')->all());
         $this->ensureRegistrationBin($client);
@@ -214,16 +208,49 @@ class ClientController extends Controller
             }
         }
 
+        $addressChanged = isset($data['gps_address'])
+            && (string) $data['gps_address'] !== (string) $client->gps_address;
+
+        if ($addressChanged || empty($client->latitude) || empty($client->longitude)) {
+            $data = $this->applyGeocodedCoordinates($data, force: $addressChanged);
+        }
+
+        $client->update($data);
         $this->ensureRegistrationBin($client);
-        $client->refresh();
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->toArray()
+            data: $client->fresh()->load('bin')->toArray()
         );
+    }
+
+    /**
+     * Fill latitude/longitude from gps_address when missing (Google Maps, then Ghana Post GPS).
+     */
+    private function applyGeocodedCoordinates(array $data, bool $force = false): array
+    {
+        if (! $force && ! empty($data['latitude']) && ! empty($data['longitude'])) {
+            return $data;
+        }
+
+        if (empty($data['gps_address'])) {
+            return $data;
+        }
+
+        $coords = app(ClientLocationGeocodingService::class)
+            ->resolveCoordinates((string) $data['gps_address']);
+
+        if ($coords === null) {
+            return $data;
+        }
+
+        $data['latitude'] = $coords['latitude'];
+        $data['longitude'] = $coords['longitude'];
+
+        return $data;
     }
 
     public function deleteClient(Client $client)

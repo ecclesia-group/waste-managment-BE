@@ -37,6 +37,8 @@ return [
 
     'google' => [
         'maps_key' => env('GOOGLE_MAPS_API_KEY'),
+        // Biases Geocoding API results (e.g. Ghana Post digital addresses).
+        'geocode_region' => env('GOOGLE_GEOCODE_REGION', 'gh'),
     ],
 
     'mapbox' => [

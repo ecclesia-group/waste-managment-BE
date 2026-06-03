@@ -235,8 +235,8 @@ class DashboardController extends Controller
                 'longitude' => $c?->longitude !== null ? (float) $c->longitude : null,
                 'scanned' => $a->scan_status === 'scanned',
                 'scan_status' => $a->scan_status,
-                'stop_order' => $a->stop_order,
-                'eta_minutes' => $a->eta_minutes,
+                // 'stop_order' => $a->stop_order,
+                // 'eta_minutes' => $a->eta_minutes,
             ];
         });
 

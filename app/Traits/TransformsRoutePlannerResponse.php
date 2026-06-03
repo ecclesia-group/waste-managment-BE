@@ -26,6 +26,31 @@ trait TransformsRoutePlannerResponse
     }
 
     /**
+     * Flat list of map markers for a plan (used on all_plans and detail).
+     */
+    protected static function buildPlanMapPins(RoutePlanner $plan): array
+    {
+        $plan->loadMissing(['assignments.client', 'assignments.pickup']);
+
+        return $plan->assignments->map(function (RoutePlannerBinAssignment $assignment) {
+            $client = $assignment->client;
+            $coords = static::clientCoordinatesForMap($client);
+
+            return [
+                'client_slug' => $assignment->client_slug,
+                'pickup_code' => $assignment->pickup_code,
+                'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+                'bin_code' => $client?->bin_code,
+                'gps_address' => $client?->gps_address,
+                'latitude' => $coords['latitude'],
+                'longitude' => $coords['longitude'],
+                'map_ready' => $coords['map_ready'],
+                'scan_status' => static::assignmentUiScanStatus($assignment),
+            ];
+        })->values()->all();
+    }
+
+    /**
      * Provider plan list: type, provider, fleet, groups summary, scan counts, date, coordinates.
      */
     protected static function transformPlansList(Collection $plans): array
@@ -80,6 +105,7 @@ trait TransformsRoutePlannerResponse
                     'scanned' => $scanned,
                     'unscanned' => $unscanned,
                 ],
+                'map_pins' => static::buildPlanMapPins($plan),
                 'route_meta' => $plan->route_meta,
                 'created_at' => $plan->created_at,
             ];
@@ -167,6 +193,7 @@ trait TransformsRoutePlannerResponse
                 'scanned' => $scanned,
                 'unscanned' => $unscanned,
             ],
+            'map_pins' => static::buildPlanMapPins($plan),
             'route_meta' => $plan->route_meta,
             'created_at' => $plan->created_at,
             'updated_at' => $plan->updated_at,

@@ -56,12 +56,12 @@ return new class extends Migration
             }
         });
 
-        Schema::table('route_planner_bin_assignments', function (Blueprint $table) {
-            if (! Schema::hasColumn('route_planner_bin_assignments', 'stop_order')) {
-                $table->unsignedInteger('stop_order')->nullable()->after('pickup_code');
-                $table->unsignedSmallInteger('eta_minutes')->nullable()->after('stop_order');
-            }
-        });
+        // Schema::table('route_planner_bin_assignments', function (Blueprint $table) {
+        //     if (! Schema::hasColumn('route_planner_bin_assignments', 'stop_order')) {
+        //         $table->unsignedInteger('stop_order')->nullable()->after('pickup_code');
+        //         $table->unsignedSmallInteger('eta_minutes')->nullable()->after('stop_order');
+        //     }
+        // });
 
         Schema::create('pickup_scan_events', function (Blueprint $table) {
             $table->id();
@@ -76,11 +76,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('pickup_scan_events');
-        Schema::table('route_planner_bin_assignments', function (Blueprint $table) {
-            if (Schema::hasColumn('route_planner_bin_assignments', 'stop_order')) {
-                $table->dropColumn(['stop_order', 'eta_minutes']);
-            }
-        });
+        // Schema::table('route_planner_bin_assignments', function (Blueprint $table) {
+        //     if (Schema::hasColumn('route_planner_bin_assignments', 'stop_order')) {
+        //         $table->dropColumn(['stop_order', 'eta_minutes']);
+        //     }
+        // });
         Schema::table('route_planners', function (Blueprint $table) {
             if (Schema::hasColumn('route_planners', 'route_meta')) {
                 $table->dropColumn('route_meta');

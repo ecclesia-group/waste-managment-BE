@@ -239,9 +239,12 @@ Route::prefix("provider")->group(function () {
         // Waste Handover Requests
         Route::post("handover_requests", [WasteHandoverController::class, "create"]);
         Route::get("handover_requests", [WasteHandoverController::class, "list"]);
+        Route::get("handover_requests/available", [WasteHandoverController::class, "availableInZone"]);
+        Route::get("handover_requests/drivers/{driverSlug}/fleets", [WasteHandoverController::class, "fleetsForDriver"]);
         Route::get("handover_requests/{handover}", [WasteHandoverController::class, "show"]);
         Route::post("handover_requests/{handover}/accept", [WasteHandoverController::class, "accept"]);
         Route::post("handover_requests/{handover}/decline", [WasteHandoverController::class, "decline"]);
+        Route::post("handover_requests/{handover}/confirm_payment", [WasteHandoverController::class, "confirmPayment"]);
         Route::post("handover_requests/{handover}/complete", [WasteHandoverController::class, "complete"]);
 
         // Dashboard Content
