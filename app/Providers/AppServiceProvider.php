@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Notification actor_type values map to model classes (lowercase keys).
         Relation::morphMap([
             'admin' => Admin::class,
             'client' => Client::class,

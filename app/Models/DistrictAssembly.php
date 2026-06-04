@@ -42,13 +42,16 @@ class DistrictAssembly extends Actor
         return "district_assembly_slug";
     }
 
-    public function suburbs()
-    {
-        return $this->hasMany(Suburb::class, 'district_assembly_slug', 'district_assembly_slug');
-    }
-
+    /** Zones assigned to this MMDA via district_assembly_zones pivot. */
     public function zones()
     {
-        return $this->hasMany(Zone::class, 'district_assembly_slug', 'district_assembly_slug');
+        return $this->belongsToMany(
+            Zone::class,
+            'district_assembly_zones',
+            'district_assembly_slug',
+            'zone_slug',
+            'district_assembly_slug',
+            'zone_slug'
+        )->withPivot(['assigned_at', 'status']);
     }
 }

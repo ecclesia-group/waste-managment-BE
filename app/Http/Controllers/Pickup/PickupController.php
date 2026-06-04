@@ -11,9 +11,7 @@ use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
-use App\Models\PickupScanEvent;
 use App\Models\RoutePlannerBinAssignment;
-use App\Support\Geo\Haversine;
 use App\Traits\HasClientMapPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -658,61 +656,19 @@ class PickupController extends Controller
         );
     }
 
+    /**
+     * Update pickup scan status (map: scanned = green, unscanned = red).
+     * No GPS proximity or offline lag checks — status updates immediately.
+     */
     public function setScanStatus()
     {
-        // Scan status is used by the map UI: scanned => green, unscanned => red.
         $data = request()->validate([
-            'code'   => 'required|string|exists:pickups,code',
+            'code' => 'required|string|exists:pickups,code',
             'status' => 'required|string|in:scanned,not_scanned,unscanned',
-            'driver_latitude' => 'nullable|numeric|between:-90,90',
-            'driver_longitude' => 'nullable|numeric|between:-180,180',
-            'idempotency_key' => 'nullable|string|max:128',
-            'device_scanned_at' => 'nullable|date',
+            'comment' => 'nullable|string|max:2000',
         ]);
 
         $user = request()->user();
-
-        if (! empty($data['idempotency_key'])) {
-            $existing = PickupScanEvent::query()
-                ->where('idempotency_key', $data['idempotency_key'])
-                ->first();
-            if ($existing) {
-                $pickup = Pickup::where('code', $existing->pickup_code)->first();
-                if ($pickup) {
-                    $pickup->loadMissing(['client.group']);
-
-                    return self::apiResponse(
-                        in_error: false,
-                        message: 'Action Successful',
-                        reason: 'Duplicate idempotency key — previously recorded scan',
-                        status_code: self::API_SUCCESS,
-                        data: self::enrichPickupForPickupUi($pickup)
-                    );
-                }
-            }
-        }
-
-        if (! empty($data['device_scanned_at'])) {
-            $deviceAt = \Carbon\Carbon::parse($data['device_scanned_at']);
-            if ($deviceAt->isFuture()) {
-                return self::apiResponse(
-                    in_error: true,
-                    message: 'Action Failed',
-                    reason: 'device_scanned_at cannot be in the future',
-                    status_code: self::API_FAIL,
-                    data: []
-                );
-            }
-            if ($deviceAt->lt(now()->subDays(7))) {
-                return self::apiResponse(
-                    in_error: true,
-                    message: 'Action Failed',
-                    reason: 'device_scanned_at is outside the allowed sync window (7 days)',
-                    status_code: self::API_FAIL,
-                    data: []
-                );
-            }
-        }
 
         $pickup = Pickup::where('code', $data['code'])->first();
         if (! $pickup) {
@@ -743,41 +699,11 @@ class PickupController extends Controller
             default => $data['status'],
         };
 
-        if ($canonicalStatus === 'scanned' && self::bulkPickupIsUnpaid($pickup)) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Bulk waste pickup must be paid before the driver can complete the scan',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        if ($canonicalStatus === 'scanned'
-            && isset($data['driver_latitude'], $data['driver_longitude'])
-        ) {
-            $pickup->loadMissing('client');
-            $client = $pickup->client;
-            if ($client && $client->latitude !== null && $client->longitude !== null) {
-                $meters = Haversine::meters(
-                    (float) $data['driver_latitude'],
-                    (float) $data['driver_longitude'],
-                    (float) $client->latitude,
-                    (float) $client->longitude
-                );
-                if ($meters > 100) {
-                    return self::apiResponse(
-                        in_error: true,
-                        message: 'Action Failed',
-                        reason: 'Scan rejected: driver is farther than 100m from the client location',
-                        status_code: self::API_FAIL,
-                        data: ['distance_meters' => round($meters, 2)]
-                    );
-                }
-            }
-        }
-
         $pickup->scan_status = $canonicalStatus;
+
+        if (! empty($data['comment'])) {
+            $pickup->description = $data['comment'];
+        }
 
         // End-to-end flow: once a bin is scanned successfully, treat the pickup as completed.
         if ($canonicalStatus === 'scanned') {
@@ -806,19 +732,6 @@ class PickupController extends Controller
                 'wms:last_scanned_client_slug:' . $pickup->provider_slug,
                 $pickup->client_slug,
                 15 * 60 // 15 minutes TTL
-            );
-        }
-
-        if (! empty($data['idempotency_key']) && $pickup->provider_slug) {
-            PickupScanEvent::query()->updateOrCreate(
-                ['idempotency_key' => $data['idempotency_key']],
-                [
-                    'provider_slug' => $pickup->provider_slug,
-                    'pickup_code' => $pickup->code,
-                    'device_scanned_at' => isset($data['device_scanned_at'])
-                        ? \Carbon\Carbon::parse($data['device_scanned_at'])
-                        : null,
-                ]
             );
         }
 
@@ -1033,27 +946,5 @@ class PickupController extends Controller
                 data: []
             );
         }
-    }
-
-    private static function bulkPickupIsUnpaid(Pickup $pickup): bool
-    {
-        if (empty($pickup->bulk_waste_request_code)) {
-            return false;
-        }
-
-        $bulk = BulkWasteRequest::query()
-            ->where('request_code', $pickup->bulk_waste_request_code)
-            ->first();
-
-        if (! $bulk) {
-            return false;
-        }
-
-        $amount = (float) ($bulk->amount ?? 0);
-        if ($amount <= 0) {
-            return false;
-        }
-
-        return ($bulk->payment_status ?? 'unpaid') !== 'paid';
     }
 }

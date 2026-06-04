@@ -44,14 +44,6 @@ Response `data.data` contains `token` (Passport) and client profile.
 
 Response `data.data`: `[]`
 
-### Client Dashboard Content
-
-#### GET `/client/banners` (Auth: Bearer)
-Returns active hero banners for clients.
-
-#### GET `/client/guides?category=bin_use` (Auth: Bearer)
-Returns guides for clients. `category` optional.
-
 ### Complaints (Client)
 
 #### POST `/client/create_complaint` (Auth: Bearer)
@@ -238,12 +230,14 @@ Each bin includes:
 ```
 
 #### POST `/provider/change_scan_status` (Auth: Bearer)
-Updates scan status for a pickup code and keeps route planner assignment rows in sync.
-If `status` is `scanned`, the backend also sets the pickup `status` to `completed`.
+Updates scan status immediately (no GPS or offline lag checks). Syncs route planner assignment rows for the map.
+If `status` is `scanned`, pickup `status` becomes `completed`.
+Optional `comment` is stored on the pickup `description`. Record violations separately via `POST /provider/create_violation`.
 ```json
 {
   "code": "PICKUP-CODE",
-  "status": "scanned" | "not_scanned" | "unscanned"
+  "status": "scanned" | "not_scanned" | "unscanned",
+  "comment": "optional driver note"
 }
 ```
 
@@ -273,11 +267,6 @@ Response `data` keys (current backend):
   "violation_overview": { "total_violations": 0, "by_type": [] }
 }
 ```
-
-### Provider Dashboard Content
-
-#### GET `/provider/banners` (Auth: Bearer)
-#### GET `/provider/guides?category=scanning` (Auth: Bearer)
 
 ### Waste Handover Requests (Provider)
 
@@ -376,38 +365,9 @@ Returns consolidated analytics for the authenticated MMDA (providers/facilities 
 
 ---
 
-### Admin (Super Admin) — Content
-
 ### Admin Reports (Analytics)
 #### GET `/admin/reports` (Auth: Bearer)
 Returns platform-wide summary metrics (customers/providers/facility scanned assignments + total violations).
-
-#### POST `/admin/banners` (Auth: Bearer)
-
-```json
-{
-  "title": "System maintenance",
-  "message": "Maintenance on Friday 10pm",
-  "audience": "all",
-  "status": "active",
-  "image": ["data:image/png;base64,iVBORw0..."],
-  "starts_at": "2026-03-10",
-  "ends_at": "2026-03-12"
-}
-```
-
-#### POST `/admin/guides` (Auth: Bearer)
-
-```json
-{
-  "title": "Proper bin use",
-  "category": "bin_use",
-  "content": "Step-by-step guide...",
-  "audience": "client",
-  "status": "active",
-  "attachments": ["data:application/pdf;base64,JVBERi0x..."]
-}
-```
 
 ---
 

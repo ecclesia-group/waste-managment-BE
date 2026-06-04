@@ -6,6 +6,9 @@ use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
 use Illuminate\Support\Collection;
 
+/**
+ * Maps route_planners + pickups into frontend "assignments" with nested pickup stops.
+ */
 trait TransformsRoutePlannerResponse
 {
     use HasClientMapPayload;

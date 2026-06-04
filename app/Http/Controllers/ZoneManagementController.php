@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/** Admin zone CRUD and zone assignment for MMDAs, providers, and facilities. */
 class ZoneManagementController extends Controller
 {
     use TransformsRoutePlannerResponse;

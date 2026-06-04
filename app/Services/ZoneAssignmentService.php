@@ -5,8 +5,13 @@ namespace App\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Central zone assignment rules:
+ * Admin → MMDA (district_assembly_zones) → Provider/Facility (provider_zones / facility_zones).
+ */
 class ZoneAssignmentService
 {
+    /** Full zone rows linked to an MMDA (for onboarding pickers). */
     public function zonesForMmda(string $districtAssemblySlug): Collection
     {
         return DB::table('district_assembly_zones')
@@ -46,6 +51,7 @@ class ZoneAssignmentService
         }
     }
 
+    /** Provider/facility zone_slugs must be a subset of the parent MMDA's zones. */
     public function assertZonesBelongToMmda(string $districtAssemblySlug, array $zoneSlugs): bool
     {
         if ($zoneSlugs === []) {
@@ -53,11 +59,8 @@ class ZoneAssignmentService
         }
 
         $allowed = $this->mmdaZoneSlugs($districtAssemblySlug);
-        if ($allowed === []) {
-            return false;
-        }
 
-        return count(array_diff($zoneSlugs, $allowed)) === 0;
+        return $allowed !== [] && count(array_diff($zoneSlugs, $allowed)) === 0;
     }
 
     public function assignZonesToProvider(string $providerSlug, array $zoneSlugs): void

@@ -153,7 +153,7 @@ When adding new endpoints or improving existing ones:
 1. Use pagination for “list” endpoints (avoid `->get()` returning everything).
 2. Add selective indexes to migrations for frequent filters.
 3. Cache read-heavy content:
-   - banners/guides/products (audience + status + updated_at rules)
+   - products (audience + status + updated_at rules)
 4. Keep scanning endpoints:
    - O(1) lookups using codes/unique keys
    - atomic writes (use DB transactions)

@@ -8,8 +8,6 @@ use App\Http\Controllers\Client\ClientAuthenticationController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\ClientPasswordController;
 use App\Http\Controllers\Complaint\ComplaintmanagementController;
-use App\Http\Controllers\Content\BannerController;
-use App\Http\Controllers\Content\GuideController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyAuthenticationController;
 use App\Http\Controllers\DistrictAssembley\DistrictAssembleyPasswordController;
@@ -73,11 +71,8 @@ Route::prefix("client")->group(function () {
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
 
         // Complaint Management
-        // Route::post('create_complaint', [ComplaintmanagementController::class, 'createComplaint']);
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
         Route::get('get_single_complaint/{complaint}', [ComplaintmanagementController::class, 'getComplaintDetails']);
-        // Route::post('update_complaint/{complaint}', [ComplaintmanagementController::class, 'updateComplaint']);
-        // Route::delete('delete_complaint/{complaint}', [ComplaintmanagementController::class, 'deleteComplaint']);
 
         // Report Management
         Route::get('get_feedbacks', [FeedbackController::class, 'listFeedbacks']);
@@ -110,22 +105,12 @@ Route::prefix("client")->group(function () {
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
         Route::get('get_payment_history', [PurchaseController::class, 'getPaymentHistory']);
 
-        // Route::post('update_status', [PickupController::class, 'updatePickupStatus']);
-        // Route::delete('delete_pickup/{pickup}', [PickupController::class, 'deletePickup']);
-        // Route::post('reschedule_pickup', [PickupController::class, 'reschedulePickup']);
         Route::get('get_client_pickups', [PickupController::class, 'getClientPickups']);
-        // Route::get('get_completed_pickups', [PickupController::class, 'getCompletedPickups']);
         Route::get('get_single_pickup/{pickupCode}', [PickupController::class, 'getSinglePickup']);
         Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
 
         // Notification Management
         Route::get('get_all_notifications', [NotificationController::class, 'getAllClientNotifications']);
-        // Dashboard Content
-        // Route::get('banners', [BannerController::class, 'listForAudience']);
-        // Route::get('guides', [GuideController::class, 'listForAudience']);
-        // Route::get('dashboard', [DashboardController::class, 'clientDashboard']);
-        // Route::get('get_single_pickup/{pickup}', [PickupController::class, 'getSinglePickup']);
-        // Route::get('get_pickup_dates', [PickupController::class, 'getPickupDates']);
     });
 });
 
@@ -203,19 +188,6 @@ Route::prefix("provider")->group(function () {
         Route::put("update_fleet_details/{fleet}", [FleetManagementController::class, "updateFleet"]);
         Route::delete("delete_fleet/{fleet}", [FleetManagementController::class, "deleteFleet"]);
 
-        // Pickup Management
-        // Route::post("provider_pickup_creation", [PickupController::class, "providerPickupCreation"]);
-        // Route::get("get_all_client_pickups", [PickupController::class, "getAllPickups"]);
-        // Route::get("get_single_client_pickup/{pickup}", [PickupController::class, "getSinglePickup"]);
-        // Route::post("set_pickup_price", [PickupController::class, "setPickupPrice"]);
-        // Route::post("set_pickup_date", [PickupController::class, "setPickupDate"]);
-        // Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
-        // Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
-        // Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
-        // Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
-        // Route::put("pickups/{pickupCode}", [PickupController::class, "providerUpdatePickup"]);
-        // Route::delete("pickups/{pickupCode}", [PickupController::class, "providerDeletePickup"]);
-
         // Complaint Management
         // Providers can file complaints to platform support from the provider dashboard.
         Route::post("create_complaint", [ComplaintmanagementController::class, "createComplaint"]);
@@ -246,10 +218,6 @@ Route::prefix("provider")->group(function () {
         Route::post("handover_requests/{handover}/decline", [WasteHandoverController::class, "decline"]);
         Route::post("handover_requests/{handover}/confirm_payment", [WasteHandoverController::class, "confirmPayment"]);
         Route::post("handover_requests/{handover}/complete", [WasteHandoverController::class, "complete"]);
-
-        // Dashboard Content
-        // Route::get('banners', [BannerController::class, 'listForAudience']);
-        // Route::get('guides', [GuideController::class, 'listForAudience']);
 
         // Team RBAC (provider only)
         Route::get("permissions", [RoleController::class, "permissions"]);
@@ -288,9 +256,6 @@ Route::prefix("facility")->group(function () {
 
         // Facility reports/analytics
         Route::get("reports", [ReportsController::class, "facilityReports"]);
-
-        // all facilities
-        // Route::get("all_facilities", [FacilityController::class, "allFacilities"]);
 
         // all zones
         Route::get("all_zones", [ZoneManagementController::class, "listZones"]);
@@ -459,17 +424,6 @@ Route::prefix("admin")->group(function () {
         // Assignment logs (super admin map/dashboard filtering)
         Route::get('assignment_logs', [RoutePlannerManagement::class, 'assignmentLogs']);
         Route::get('get_single_plan/{plan}', [RoutePlannerManagement::class, 'show']);
-
-        // Banner and Guide Management
-        Route::get('banners', [BannerController::class, 'adminList']);
-        Route::post('banners', [BannerController::class, 'adminCreate']);
-        Route::put('banners/{banner}', [BannerController::class, 'adminUpdate']);
-        Route::delete('banners/{banner}', [BannerController::class, 'adminDelete']);
-
-        Route::get('guides', [GuideController::class, 'adminList']);
-        Route::post('guides', [GuideController::class, 'adminCreate']);
-        Route::put('guides/{guide}', [GuideController::class, 'adminUpdate']);
-        Route::delete('guides/{guide}', [GuideController::class, 'adminDelete']);
 
         // Team RBAC (admin only)
         Route::get("permissions", [RoleController::class, "permissions"]);
