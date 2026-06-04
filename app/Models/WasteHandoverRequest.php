@@ -13,8 +13,13 @@ class WasteHandoverRequest extends Model
         'code',
         'requester_provider_slug',
         'requester_type',
+        'requester_name',
+        'requester_phone',
+        'requester_email',
+        'submitted_by_slug',
         'target_provider_slug',
         'zone_slug',
+        'zone_slugs',
         'title',
         'waste_types',
         'description',
@@ -34,6 +39,7 @@ class WasteHandoverRequest extends Model
 
     protected $casts = [
         'waste_types' => 'array',
+        'zone_slugs' => 'array',
         'images' => 'array',
         'fee_amount' => 'float',
         'latitude' => 'float',
@@ -64,5 +70,26 @@ class WasteHandoverRequest extends Model
     public function fleet()
     {
         return $this->belongsTo(Fleet::class, 'selected_fleet_slug', 'fleet_slug');
+    }
+
+    /** Pending requests visible to a provider based on shared zone assignments. */
+    public function scopeVisibleInProviderZones($query, array $providerZoneSlugs, ?string $excludeRequesterSlug = null)
+    {
+        $query->where('status', 'pending');
+
+        if ($excludeRequesterSlug) {
+            $query->where('requester_provider_slug', '!=', $excludeRequesterSlug);
+        }
+
+        if ($providerZoneSlugs === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->where(function ($q) use ($providerZoneSlugs) {
+            $q->whereIn('zone_slug', $providerZoneSlugs);
+            foreach ($providerZoneSlugs as $slug) {
+                $q->orWhereJsonContains('zone_slugs', $slug);
+            }
+        });
     }
 }

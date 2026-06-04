@@ -268,25 +268,46 @@ Response `data` keys (current backend):
 }
 ```
 
-### Waste Handover Requests (Provider)
+### Waste Handover Requests (Provider / team member)
+
+Team members submit aboboya requests on behalf of their provider. All **other** providers in the same zone(s) receive SMS, email, and in-app notifications. Records appear under `GET /provider/handover_requests/available` for zone peers to accept.
 
 #### POST `/provider/handover_requests` (Auth: Bearer)
 
 ```json
 {
-  "title": "Handover request",
-  "waste_types": ["mixed_waste", "plastics"],
-  "description": "Need a bigger truck to take over",
-  "pickup_location": "Zone A - roadside",
-  "fee_amount": 25,
-  "target_provider_slug": "optional-provider-uuid",
-  "images": ["data:image/png;base64,iVBORw0..."]
+  "title": "Aboboya pickup",
+  "requester_type": "aboboya",
+  "requester_name": "Kofi Mensah",
+  "requester_phone": "0241234567",
+  "requester_email": "kofi@example.com",
+  "waste_types": ["mixed_waste"],
+  "pickup_location": "Osu, Accra",
+  "latitude": 5.6037,
+  "longitude": -0.1870,
+  "fee_amount": 0,
+  "images": []
 }
 ```
+
+Optional on create: `selected_driver_slug`, `selected_fleet_slug` (usually set on accept instead).
+
+#### GET `/provider/handover_requests/available` (Auth: Bearer)
+Pending requests in your zone(s) you may accept (excludes your own submissions).
 
 #### GET `/provider/handover_requests?status=pending` (Auth: Bearer)
 
 #### POST `/provider/handover_requests/{handover}/accept` (Auth: Bearer)
+First provider in the zone wins. Requester receives SMS + email with provider name, phone, fleet, and driver (if assigned).
+
+```json
+{
+  "driver_slug": "optional-driver-uuid",
+  "fleet_slug": "optional-fleet-uuid"
+}
+```
+
+#### POST `/provider/handover_requests/{handover}/confirm_payment` (Auth: Bearer)
 
 #### POST `/provider/handover_requests/{handover}/complete` (Auth: Bearer)
 Optionally include fee payment details:
@@ -425,13 +446,11 @@ Use this section as the implementation checklist for mobile/web frontend teams.
 
 ### 5) Waste Handover Requests
 
-- **Create:** `POST /provider/handover_requests`
-- **List:** `GET /provider/handover_requests?status=pending|accepted|declined|completed`
-- **Accept/Decline/Complete:**
-  - `POST /provider/handover_requests/{handover}/accept`
-  - `POST /provider/handover_requests/{handover}/decline`
-  - `POST /provider/handover_requests/{handover}/complete`
-- Complete supports optional fee payment capture payload (`transaction_id`, `payment_method`, etc).
+- **Create (team member):** `POST /provider/handover_requests` with `requester_name`, `requester_phone`, location, `requester_type` (`aboboya`)
+- **Zone inbox:** `GET /provider/handover_requests/available`
+- **Accept:** `POST /provider/handover_requests/{handover}/accept` — notifies requester by SMS/email
+- **Payment:** `POST /provider/handover_requests/{handover}/confirm_payment` (if fee > 0)
+- **Complete:** `POST /provider/handover_requests/{handover}/complete`
 
 ### 6) Cross-Role Visibility Rules (Frontend Expectations)
 
