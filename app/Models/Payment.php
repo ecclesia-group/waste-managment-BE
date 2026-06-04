@@ -9,8 +9,14 @@ class Payment extends Model
     use SoftDeletes;
 
     public const PAYMENT_TYPE_REGISTRATION_FEE = 'registration_fee';
+    public const PAYMENT_TYPE_BULK_WASTE = 'bulk_waste_request';
+    public const PAYMENT_TYPE_PICKUP = 'pickup';
+    public const PAYMENT_TYPE_PURCHASE = 'purchase';
+    public const PAYMENT_TYPE_HANDOVER = 'waste_handover';
+    public const PAYMENT_TYPE_WEIGHBRIDGE = 'weighbridge';
 
     public const STATUS_PAID = 'paid';
+    public const STATUS_SUCCESSFUL = 'successful';
     public const STATUS_PENDING = 'pending';
     public const STATUS_FAILED = 'failed';
     public const STATUS_CANCELLED = 'cancelled';
@@ -39,10 +45,16 @@ class Payment extends Model
         'status',
         'purchase_id',
         'pickup_id',
+        'calpay_order_code',
+        'payable_reference',
+        'gateway_payload',
+        'callback_payload',
     ];
 
     protected $casts = [
         'amount'     => 'float',
+        'gateway_payload' => 'array',
+        'callback_payload' => 'array',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

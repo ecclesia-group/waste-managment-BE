@@ -22,6 +22,8 @@ use App\Http\Controllers\Fleet\FleetManagementController;
 use App\Http\Controllers\Group\GroupController;
 use App\Http\Controllers\Handover\WasteHandoverController;
 use App\Http\Controllers\Notification\NotificationController;
+use App\Http\Controllers\Payment\CalPayCallbackController;
+use App\Http\Controllers\Payment\CalPayPaymentController;
 use App\Http\Controllers\Payment\ClientPaymentController;
 use App\Http\Controllers\Payment\ProviderPaymentController;
 use App\Http\Controllers\Pickup\PickupController;
@@ -48,6 +50,12 @@ Route::get("yes", function () {
     return "yes yes";
 });
 
+/** CalPay server-to-server callback (no auth). */
+Route::post('payment_callback', [CalPayCallbackController::class, 'handle']);
+
+/** Registration fee checkout before client login. */
+Route::post('payments/calpay/initiate-registration', [CalPayPaymentController::class, 'initiateRegistration']);
+
 Route::prefix("client")->group(function () {
     Route::post("login", [ClientAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
@@ -69,6 +77,8 @@ Route::prefix("client")->group(function () {
 
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
+        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
+        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
 
         // Complaint Management
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
@@ -138,6 +148,8 @@ Route::prefix("provider")->group(function () {
         Route::get("payments/bins", [ProviderPaymentController::class, "binsPayments"]);
         Route::get("payments/waste_handover_request", [ProviderPaymentController::class, "wasteHandoverRequestPayments"]);
         Route::get("payments/weighbridge_records", [ProviderPaymentController::class, "weighbridgeRecords"]);
+        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
+        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
 
         // Store/Product Management (provider-owned)
         Route::post('create_product', [ProductController::class, 'createProduct']);

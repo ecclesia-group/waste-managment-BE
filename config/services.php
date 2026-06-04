@@ -57,4 +57,6 @@ return [
         'public' => env('PAYSTACK_PUBLIC_KEY'),
     ],
 
+    'calpay' => require __DIR__.'/calpay.php',
+
 ];

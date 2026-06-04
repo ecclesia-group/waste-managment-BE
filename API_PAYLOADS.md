@@ -44,6 +44,52 @@ Response `data.data` contains `token` (Passport) and client profile.
 
 Response `data.data`: `[]`
 
+### CalPay payments (aggregator)
+
+Gateway: `POST https://calpayapi.caleservice.net/api/calpay` with header `x-auth` (set `CALPAY_X_AUTH` in `.env`).
+
+**Server callback (no auth):** `POST /api/payment_callback` — configure as `CALPAY_CALLBACK_URL`.
+
+**Initiate (returns `checkout_url` for browser redirect):**
+
+| Route | Auth | `payment_type` | `reference` |
+|-------|------|----------------|-------------|
+| `POST /api/payments/calpay/initiate-registration` | No | `registration_fee` | `client_slug` |
+| `POST /api/client/payments/calpay/initiate` | Client | `bulk_waste_request`, `pickup`, `purchase` | request code, pickup code, purchase id |
+| `POST /api/provider/payments/calpay/initiate` | Provider | `waste_handover`, `weighbridge` | handover code, weighbridge ticket code |
+
+```json
+{
+  "payment_type": "registration_fee",
+  "reference": "client-uuid-slug",
+  "customer_name": "Divine Deliverer",
+  "customer_email": "user@example.com",
+  "customer_contact": "0556906969",
+  "datacompleteurl": "https://your-frontend.com/payment/success",
+  "datacancelurl": "https://your-frontend.com/payment/cancelled"
+}
+```
+
+Response `data` (after CalPay accepts invoice):
+
+```json
+{
+  "order_code": "WMS-REG-XXXXXXXXXX",
+  "calpay_order_code": "20260603SN6QGBZDIVYP",
+  "checkout_url": "https://calpay.caleservice.net/pay/secure/index.php?paytoken=...",
+  "payment_token": "f35c53e5-e83c-4d07-9ee0-813fa11528c7",
+  "payment_code": "20260603SN6QGBZDIVYP",
+  "qr_code_url": "https://calpay.caleservice.net/paymentqrs/....png",
+  "payment": { }
+}
+```
+
+Redirect the user to `checkout_url`. CalPay wraps the gateway body in a `return` JSON string; the backend parses `RESULT[0].APIPAYREDIRECTURL` automatically.
+
+**Status poll:** `GET /api/client/payments/calpay/status?order_code=WMS-REG-...` (same on provider prefix).
+
+Supported types: `registration_fee`, `bulk_waste_request`, `pickup`, `purchase`, `waste_handover`, `weighbridge` (weighbridge skips if already `credit`).
+
 ### Complaints (Client)
 
 #### POST `/client/create_complaint` (Auth: Bearer)
