@@ -186,7 +186,9 @@ class RoutePlannerManagement extends Controller
                 message: "Action Successful",
                 reason: "Route created successfully",
                 status_code: self::API_SUCCESS,
-                data: self::transformPlanDetail($routePlanner)
+                data: [
+                    'assignment' => self::transformAssignment($routePlanner),
+                ]
             );
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -223,7 +225,7 @@ class RoutePlannerManagement extends Controller
             reason: "Routes retrieved successfully",
             status_code: self::API_SUCCESS,
             data: [
-                'plans' => self::transformPlansList($plans),
+                'assignments' => self::transformAssignmentsList($plans),
             ]
         );
     }
@@ -263,7 +265,9 @@ class RoutePlannerManagement extends Controller
             message: "Action Successful",
             reason: "Route details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: self::transformPlanDetail($plan)
+            data: [
+                'assignment' => self::transformAssignment($plan),
+            ]
         );
     }
 
@@ -295,7 +299,9 @@ class RoutePlannerManagement extends Controller
             message: "Action Successful",
             reason: "Route planner status updated successfully",
             status_code: self::API_SUCCESS,
-            data: self::transformPlanDetail($routePlanner)
+            data: [
+                'assignment' => self::transformAssignment($routePlanner),
+            ]
         );
     }
 
@@ -337,7 +343,9 @@ class RoutePlannerManagement extends Controller
             message: "Action Successful",
             reason: "Route details updated successfully",
             status_code: self::API_SUCCESS,
-            data: self::transformPlanDetail($plan)
+            data: [
+                'assignment' => self::transformAssignment($plan),
+            ]
         );
     }
 

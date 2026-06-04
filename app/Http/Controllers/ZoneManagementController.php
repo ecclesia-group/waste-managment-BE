@@ -4,136 +4,224 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Zone\ZoneCreationRequest;
 use App\Http\Requests\Zone\ZoneStatusUpdateRequest;
 use App\Http\Requests\Zone\ZoneUpdationRequest;
+use App\Models\Client;
+use App\Models\DistrictAssembly;
+use App\Models\Facility;
+use App\Models\Pickup;
 use App\Models\Provider;
+use App\Models\RoutePlanner;
+use App\Models\RoutePlannerBinAssignment;
 use App\Models\Zone;
+use App\Services\ZoneAssignmentService;
+use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ZoneManagementController extends Controller
 {
-    // Lists all zones
+    use TransformsRoutePlannerResponse;
     public function listZones()
     {
-        $zones = Zone::query()
-            ->where('status', 'active')
-            ->get();
-        if (! $zones) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No zones found", status_code: self::API_FAIL);
-        }
+        $zones = Zone::query()->orderBy('name')->get();
+
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "All zones retrieved successfully",
+            message: 'Action Successful',
+            reason: 'All zones retrieved successfully',
             status_code: self::API_SUCCESS,
             data: $zones->toArray()
         );
     }
 
-    // Gets details of a single zone
     public function getZoneDetails(Zone $zone)
     {
+        return $this->zoneOverview($zone);
+    }
+
+    /**
+     * Zone hub: providers, facilities, clients, plans, assignment logs in this zone.
+     */
+    public function zoneOverview(Zone $zone)
+    {
+        $zones = app(ZoneAssignmentService::class);
+        $providerSlugs = $zones->providerSlugsInZone($zone->zone_slug);
+        $facilitySlugs = $zones->facilitySlugsInZone($zone->zone_slug);
+
+        $providers = Provider::query()
+            ->whereIn('provider_slug', $providerSlugs)
+            ->get();
+
+        $facilities = Facility::query()
+            ->whereIn('facility_slug', $facilitySlugs)
+            ->get();
+
+        $clients = Client::query()
+            ->whereIn('provider_slug', $providerSlugs)
+            ->where('status', 'active')
+            ->with('group')
+            ->get();
+
+        $plans = RoutePlanner::query()
+            ->whereIn('provider_slug', $providerSlugs)
+            ->with(['provider', 'driver', 'fleet', 'assignments.client.group', 'assignments.pickup'])
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        $assignmentLogs = RoutePlannerBinAssignment::query()
+            ->where('provider_slug', $providerSlugs)
+            ->with(['client', 'pickup', 'routePlanner'])
+            ->latest()
+            ->limit(100)
+            ->get();
+
+        $pickups = Pickup::query()
+            ->whereIn('provider_slug', $providerSlugs)
+            ->latest()
+            ->limit(100)
+            ->get();
+
+        $mmdas = DB::table('district_assembly_zones')
+            ->join('district_assemblies', 'district_assemblies.district_assembly_slug', '=', 'district_assembly_zones.district_assembly_slug')
+            ->where('district_assembly_zones.zone_slug', $zone->zone_slug)
+            ->where('district_assembly_zones.status', 'active')
+            ->select('district_assemblies.district_assembly_slug', 'district_assemblies.region', 'district_assemblies.district', 'district_assemblies.first_name', 'district_assemblies.last_name')
+            ->get();
+
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Zone retrieved successfully",
+            message: 'Action Successful',
+            reason: 'Zone overview retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $zone->toArray()
+            data: [
+                'zone' => $zone->toArray(),
+                'mmdas' => $mmdas->toArray(),
+                'providers' => $providers->toArray(),
+                'facilities' => $facilities->toArray(),
+                'clients_count' => $clients->count(),
+                'clients' => $clients->toArray(),
+                'assignments' => self::transformAssignmentsList($plans),
+                'assignment_logs' => $assignmentLogs->toArray(),
+                'pickups' => $pickups->toArray(),
+            ]
         );
     }
 
-    // Creates a new zone
     public function createZone(ZoneCreationRequest $request)
     {
-        $data              = $request->validated();
-        $data['zone_slug'] = Str::uuid();
-        $zone              = Zone::create($data);
+        $data = $request->validated();
+        $data['zone_slug'] = (string) Str::uuid();
+        $data['status'] = $data['status'] ?? 'active';
+        $zone = Zone::create($data);
+
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Zone created successfully",
+            message: 'Action Successful',
+            reason: 'Zone created successfully',
             status_code: self::API_SUCCESS,
             data: $zone->toArray()
         );
     }
 
-    // Updates an existing zone
     public function updateZone(ZoneUpdationRequest $request, Zone $zone)
     {
-        $data = $request->validated();
-        $zone->update($data);
+        $zone->update($request->validated());
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Zone updated successfully",
+            message: 'Action Successful',
+            reason: 'Zone updated successfully',
             status_code: self::API_SUCCESS,
             data: $zone->toArray()
         );
     }
 
-    // Updates the status of a zone
     public function updateZoneStatus(ZoneStatusUpdateRequest $request)
     {
-        $data        = $request->validated();
-        $zone        = Zone::where('zone_slug', $data['zone_slug'])->first();
+        $data = $request->validated();
+        $zone = Zone::where('zone_slug', $data['zone_slug'])->firstOrFail();
         $zone->status = $data['status'];
         $zone->save();
+
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Zone status updated successfully",
+            message: 'Action Successful',
+            reason: 'Zone status updated successfully',
             status_code: self::API_SUCCESS,
             data: $zone->toArray()
         );
     }
 
-    // Deletes a zone
     public function deleteZone(Zone $zone)
     {
         $zone->delete();
+
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Zone deleted successfully",
+            message: 'Action Successful',
+            reason: 'Zone deleted successfully',
             status_code: self::API_SUCCESS,
             data: []
         );
     }
 
-    // -------- Admin Zone <-> Provider assignments --------
+    /** Zones assigned to an MMDA (for facility/provider onboarding pickers). */
+    public function listMmdaZones(DistrictAssembly $district_assembly)
+    {
+        $zones = app(ZoneAssignmentService::class)->zonesForMmda($district_assembly->district_assembly_slug);
 
-    // Lists all zones assigned to a provider (admin use).
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'MMDA zones retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $zones->toArray()
+        );
+    }
+
+    /** Admin assigns zones to MMDA. */
+    public function assignMmdaZones(Request $request, DistrictAssembly $district_assembly)
+    {
+        $data = $request->validate([
+            'zone_slugs' => ['required', 'array', 'min:1'],
+            'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
+        ]);
+
+        app(ZoneAssignmentService::class)->assignZonesToMmda(
+            $district_assembly->district_assembly_slug,
+            $data['zone_slugs']
+        );
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Zones assigned to MMDA successfully',
+            status_code: self::API_SUCCESS,
+            data: app(ZoneAssignmentService::class)
+                ->zonesForMmda($district_assembly->district_assembly_slug)
+                ->toArray()
+        );
+    }
+
     public function listProviderZones(Provider $provider)
     {
         $assignments = DB::table('provider_zones')
             ->join('zones', 'zones.zone_slug', '=', 'provider_zones.zone_slug')
             ->where('provider_zones.provider_slug', $provider->provider_slug)
-            ->select(
-                'provider_zones.zone_slug',
-                'provider_zones.provider_slug',
-                'provider_zones.assigned_at',
-                'provider_zones.status',
-                'zones.name as zone_name',
-                'zones.region as zone_region',
-                'zones.description as zone_description',
-                'zones.locations as zone_locations',
-                'zones.status as zone_status'
-            )
+            ->select('provider_zones.*', 'zones.name', 'zones.region', 'zones.description', 'zones.locations', 'zones.status as zone_status')
             ->orderByDesc('provider_zones.assigned_at')
             ->get();
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Provider zones retrieved successfully",
+            message: 'Action Successful',
+            reason: 'Provider zones retrieved successfully',
             status_code: self::API_SUCCESS,
             data: $assignments->toArray()
         );
     }
 
-    // Assign/activate zones for a provider (admin use).
-    // This endpoint does not revoke zones automatically; use revoke endpoint for that.
     public function assignProviderZones(Request $request, Provider $provider)
     {
         $data = $request->validate([
@@ -141,47 +229,87 @@ class ZoneManagementController extends Controller
             'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
         ]);
 
-        $zoneSlugs = array_values($data['zone_slugs']);
-
-        foreach ($zoneSlugs as $zoneSlug) {
-            DB::table('provider_zones')->updateOrInsert(
-                ['provider_slug' => $provider->provider_slug, 'zone_slug' => $zoneSlug],
-                [
-                    'assigned_at' => now(),
-                    'status' => 'active',
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
+        $mmdaSlug = (string) ($provider->district_assembly ?? '');
+        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $data['zone_slugs'])) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'One or more zones are not assigned to this MMDA',
+                status_code: self::API_FAIL,
+                data: []
             );
         }
+
+        app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $data['zone_slugs']);
 
         $assignments = DB::table('provider_zones')
             ->join('zones', 'zones.zone_slug', '=', 'provider_zones.zone_slug')
             ->where('provider_zones.provider_slug', $provider->provider_slug)
-            ->select(
-                'provider_zones.zone_slug',
-                'provider_zones.provider_slug',
-                'provider_zones.assigned_at',
-                'provider_zones.status',
-                'zones.name as zone_name',
-                'zones.region as zone_region',
-                'zones.description as zone_description',
-                'zones.locations as zone_locations',
-                'zones.status as zone_status'
-            )
-            ->orderByDesc('provider_zones.assigned_at')
+            ->where('provider_zones.status', 'active')
             ->get();
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Provider zones assigned successfully",
+            message: 'Action Successful',
+            reason: 'Provider zones assigned successfully',
             status_code: self::API_SUCCESS,
             data: $assignments->toArray()
         );
     }
 
-    // Revoke a specific provider zone and suspend provider (admin use).
+    public function listFacilityZones(Facility $facility)
+    {
+        $assignments = DB::table('facility_zones')
+            ->join('zones', 'zones.zone_slug', '=', 'facility_zones.zone_slug')
+            ->where('facility_zones.facility_slug', $facility->facility_slug)
+            ->select('facility_zones.*', 'zones.name', 'zones.region', 'zones.description', 'zones.locations', 'zones.status as zone_status')
+            ->orderByDesc('facility_zones.assigned_at')
+            ->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Facility zones retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $assignments->toArray()
+        );
+    }
+
+    public function assignFacilityZones(Request $request, Facility $facility)
+    {
+        $data = $request->validate([
+            'zone_slugs' => ['required', 'array', 'min:1'],
+            'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
+        ]);
+
+        $mmdaSlug = (string) ($facility->district_assembly ?? '');
+        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $data['zone_slugs'])) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'One or more zones are not assigned to this MMDA',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $data['zone_slugs']);
+
+        $assignments = DB::table('facility_zones')
+            ->join('zones', 'zones.zone_slug', '=', 'facility_zones.zone_slug')
+            ->where('facility_zones.facility_slug', $facility->facility_slug)
+            ->where('facility_zones.status', 'active')
+            ->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Facility zones assigned successfully',
+            status_code: self::API_SUCCESS,
+            data: $assignments->toArray()
+        );
+    }
+
     public function revokeProviderZone(Request $request, Provider $provider, Zone $zone)
     {
         $updated = DB::table('provider_zones')
@@ -192,26 +320,19 @@ class ZoneManagementController extends Controller
         if ($updated === 0) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Provider zone assignment not found",
+                message: 'Action Failed',
+                reason: 'Provider zone assignment not found',
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
         }
 
-        // Operational safety: revoke implies provider suspension (matches your doc requirement).
-        $provider->status = 'deactivate';
-        $provider->save();
-
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Provider zone revoked and provider suspended successfully",
+            message: 'Action Successful',
+            reason: 'Provider zone revoked successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'provider' => $provider->toArray(),
-                'zone' => $zone->toArray(),
-            ]
+            data: []
         );
     }
 }

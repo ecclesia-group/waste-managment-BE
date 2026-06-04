@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\Violation;
+use App\Services\ZoneAssignmentService;
 use App\Models\WeighbridgeRecord;
 use function Symfony\Component\Clock\now;
 use Illuminate\Support\Str;
@@ -60,23 +61,21 @@ class ProviderController extends Controller
 
         $data = static::processImage($image_fields, $data);
 
+        $mmdaSlug = (string) ($data['district_assembly'] ?? '');
+        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $zoneSlugs)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Selected zones must be assigned to the chosen MMDA',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         DB::beginTransaction();
         try {
             $provider = Provider::create($data);
-
-            // Multi-zone assignment (single or multiple zone_slugs).
-            foreach ($zoneSlugs as $zoneSlug) {
-                DB::table('provider_zones')->updateOrInsert(
-                    ['provider_slug' => $provider->provider_slug, 'zone_slug' => $zoneSlug],
-                    [
-                        'assigned_at' => now(),
-                        'status' => 'active',
-                        'updated_at' => now(),
-                        // created_at is auto-managed only for Eloquent models, so set it here for first insert.
-                        'created_at' => now(),
-                    ]
-                );
-            }
+            app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();

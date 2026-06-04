@@ -29,6 +29,8 @@ class OnboardingRequest extends FormRequest
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'nullable|string|max:255',
             'profile_image' => 'nullable|starts_with:data:,http://,https://',
+            'zone_slugs' => 'required|array|min:1',
+            'zone_slugs.*' => 'required|string|distinct|exists:zones,zone_slug',
         ];
     }
 }

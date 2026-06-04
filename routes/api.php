@@ -425,7 +425,9 @@ Route::prefix("admin")->group(function () {
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
-        Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'getZoneDetails']);
+        Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'zoneOverview']);
+        Route::get('district_assemblies/{district_assembly}/zones', [ZoneManagementController::class, 'listMmdaZones']);
+        Route::post('district_assemblies/{district_assembly}/zones', [ZoneManagementController::class, 'assignMmdaZones']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
         Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);
@@ -435,6 +437,8 @@ Route::prefix("admin")->group(function () {
         Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
         Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
         Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
+        Route::get('facilities/{facility}/zones', [ZoneManagementController::class, 'listFacilityZones']);
+        Route::post('facilities/{facility}/zones', [ZoneManagementController::class, 'assignFacilityZones']);
 
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);

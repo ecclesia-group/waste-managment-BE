@@ -13,9 +13,10 @@ use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\Zone;
+use App\Services\ZoneAssignmentService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DistrictAssemblyManagementController extends Controller
 {
@@ -127,54 +128,14 @@ class DistrictAssemblyManagementController extends Controller
     public function listZones(Request $request)
     {
         $districtSlug = $this->districtSlug($request);
-
-        $providerSlugs = Provider::query()
-            ->where('district_assembly', $districtSlug)
-            ->pluck('provider_slug')
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
-
-        if (empty($providerSlugs)) {
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "No zones found for this district assembly",
-                status_code: self::API_SUCCESS,
-                data: []
-            );
-        }
-
-        $zoneSlugs = DB::table('provider_zones')
-            ->whereIn('provider_slug', $providerSlugs)
-            ->where('status', 'active')
-            ->pluck('zone_slug')
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
-
-        if (empty($zoneSlugs)) {
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "No zones found for this district assembly",
-                status_code: self::API_SUCCESS,
-                data: []
-            );
-        }
-
-        $zones = Zone::query()
-            ->whereIn('zone_slug', $zoneSlugs)
-            ->get();
+        $zones = app(ZoneAssignmentService::class)->zonesForMmda($districtSlug);
 
         return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Zones retrieved successfully",
-                status_code: self::API_SUCCESS,
-                data: $zones->toArray()
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Zones assigned to this MMDA (use when onboarding providers/facilities)',
+            status_code: self::API_SUCCESS,
+            data: $zones->toArray()
         );
     }
 
@@ -284,8 +245,22 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
+        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
+        unset($data['zone_slugs']);
+
+        if (! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($userDistrictSlug, $zoneSlugs)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Selected zones must be assigned to your MMDA',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data = static::processImage($image_fields, $data);
         $provider = Provider::create($data);
+        app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
 
         self::sendEmail(
             $provider->email,
@@ -325,8 +300,22 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
+        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
+        unset($data['zone_slugs']);
+
+        if (! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($userDistrictSlug, $zoneSlugs)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Selected zones must be assigned to your MMDA',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         $data = static::processImage($image_fields, $data);
         $facility = Facility::create($data);
+        app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
 
         self::sendEmail(
             $facility->email,

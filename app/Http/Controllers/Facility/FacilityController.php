@@ -8,7 +8,9 @@ use App\Http\Requests\Facility\UpdateFacilityProfileRequest;
 use App\Models\Facility;
 use App\Models\Notification;
 use App\Models\WeighbridgeRecord;
+use App\Services\ZoneAssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -47,8 +49,31 @@ class FacilityController extends Controller
             'profile_image',
         ];
 
-        $data     = static::processImage($image_fields, $data);
-        $facility = Facility::create($data);
+        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
+        unset($data['zone_slugs']);
+        $mmdaSlug = (string) ($data['district_assembly'] ?? '');
+
+        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $zoneSlugs)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Selected zones must be assigned to the chosen MMDA',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $data = static::processImage($image_fields, $data);
+
+        DB::beginTransaction();
+        try {
+            $facility = Facility::create($data);
+            app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
 
         self::sendEmail(
             $facility->email,
