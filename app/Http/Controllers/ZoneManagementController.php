@@ -5,7 +5,6 @@ use App\Http\Requests\Zone\ZoneCreationRequest;
 use App\Http\Requests\Zone\ZoneStatusUpdateRequest;
 use App\Http\Requests\Zone\ZoneUpdationRequest;
 use App\Models\Client;
-use App\Models\DistrictAssembly;
 use App\Models\Facility;
 use App\Models\Pickup;
 use App\Models\Provider;
@@ -18,7 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-/** Admin zone CRUD and zone assignment for MMDAs, providers, and facilities. */
+/** Admin zone CRUD and zone assignment for providers and facilities. */
 class ZoneManagementController extends Controller
 {
     use TransformsRoutePlannerResponse;
@@ -83,13 +82,6 @@ class ZoneManagementController extends Controller
             ->limit(100)
             ->get();
 
-        $mmdas = DB::table('district_assembly_zones')
-            ->join('district_assemblies', 'district_assemblies.district_assembly_slug', '=', 'district_assembly_zones.district_assembly_slug')
-            ->where('district_assembly_zones.zone_slug', $zone->zone_slug)
-            ->where('district_assembly_zones.status', 'active')
-            ->select('district_assemblies.district_assembly_slug', 'district_assemblies.region', 'district_assemblies.district', 'district_assemblies.first_name', 'district_assemblies.last_name')
-            ->get();
-
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
@@ -97,7 +89,6 @@ class ZoneManagementController extends Controller
             status_code: self::API_SUCCESS,
             data: [
                 'zone' => $zone->toArray(),
-                'mmdas' => $mmdas->toArray(),
                 'providers' => $providers->toArray(),
                 'facilities' => $facilities->toArray(),
                 'clients_count' => $clients->count(),
@@ -167,44 +158,6 @@ class ZoneManagementController extends Controller
         );
     }
 
-    /** Zones assigned to an MMDA (for facility/provider onboarding pickers). */
-    public function listMmdaZones(DistrictAssembly $district_assembly)
-    {
-        $zones = app(ZoneAssignmentService::class)->zonesForMmda($district_assembly->district_assembly_slug);
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'MMDA zones retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $zones->toArray()
-        );
-    }
-
-    /** Admin assigns zones to MMDA. */
-    public function assignMmdaZones(Request $request, DistrictAssembly $district_assembly)
-    {
-        $data = $request->validate([
-            'zone_slugs' => ['required', 'array', 'min:1'],
-            'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
-        ]);
-
-        app(ZoneAssignmentService::class)->assignZonesToMmda(
-            $district_assembly->district_assembly_slug,
-            $data['zone_slugs']
-        );
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Zones assigned to MMDA successfully',
-            status_code: self::API_SUCCESS,
-            data: app(ZoneAssignmentService::class)
-                ->zonesForMmda($district_assembly->district_assembly_slug)
-                ->toArray()
-        );
-    }
-
     public function listProviderZones(Provider $provider)
     {
         $assignments = DB::table('provider_zones')
@@ -229,17 +182,6 @@ class ZoneManagementController extends Controller
             'zone_slugs' => ['required', 'array', 'min:1'],
             'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
         ]);
-
-        $mmdaSlug = (string) ($provider->district_assembly ?? '');
-        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $data['zone_slugs'])) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'One or more zones are not assigned to this MMDA',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
 
         app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $data['zone_slugs']);
 
@@ -282,17 +224,6 @@ class ZoneManagementController extends Controller
             'zone_slugs' => ['required', 'array', 'min:1'],
             'zone_slugs.*' => ['required', 'string', 'distinct', 'exists:zones,zone_slug'],
         ]);
-
-        $mmdaSlug = (string) ($facility->district_assembly ?? '');
-        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $data['zone_slugs'])) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'One or more zones are not assigned to this MMDA',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
 
         app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $data['zone_slugs']);
 

@@ -25,6 +25,7 @@ class Client extends Actor
         'status',
         'bin_slug',
         'group_slug',
+        'zone_slug',
         'registration_fee',
         'registration_status',
         'profile_image',
@@ -117,6 +118,36 @@ class Client extends Actor
     public function bins()
     {
         return $this->hasMany(Bin::class, 'client_slug', 'client_slug');
+    }
+
+    public function primaryBin(): ?Bin
+    {
+        if ($this->relationLoaded('bin') && $this->bin) {
+            return $this->bin;
+        }
+
+        if ($this->bin_slug) {
+            return $this->bin()->first();
+        }
+
+        return $this->bins()->where('status', 'active')->orderByDesc('id')->first();
+    }
+
+    public function getBinCodeAttribute(): ?string
+    {
+        return $this->primaryBin()?->bin_code;
+    }
+
+    public function getPickupLocationAttribute(): ?string
+    {
+        return $this->gps_address;
+    }
+
+    public function getBinSizeAttribute(): ?string
+    {
+        $bin = $this->primaryBin();
+
+        return $bin?->product?->size;
     }
 
     public function getCoordinatesAttribute(): array

@@ -8,38 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('district_assembly_zones')) {
-            Schema::create('district_assembly_zones', function (Blueprint $table) {
-                $table->id();
-                $table->string('district_assembly_slug');
-                $table->string('zone_slug');
-                $table->timestamp('assigned_at')->nullable();
-                $table->string('status')->default('active');
-                $table->timestamps();
+        Schema::create('facility_zones', function (Blueprint $table) {
+            $table->id();
+            $table->string('facility_slug');
+            $table->string('zone_slug');
+            $table->timestamp('assigned_at')->nullable();
+            $table->string('status')->default('active');
+            $table->timestamps();
 
-                $table->unique(['district_assembly_slug', 'zone_slug'], 'da_zone_unique');
-                $table->index(['zone_slug', 'status'], 'da_zone_zone_status_idx');
-            });
-        }
-
-        if (! Schema::hasTable('facility_zones')) {
-            Schema::create('facility_zones', function (Blueprint $table) {
-                $table->id();
-                $table->string('facility_slug');
-                $table->string('zone_slug');
-                $table->timestamp('assigned_at')->nullable();
-                $table->string('status')->default('active');
-                $table->timestamps();
-
-                $table->unique(['facility_slug', 'zone_slug'], 'facility_zone_unique');
-                $table->index(['zone_slug', 'status'], 'facility_zone_zone_status_idx');
-            });
-        }
+            $table->unique(['facility_slug', 'zone_slug'], 'facility_zone_unique');
+            $table->index(['zone_slug', 'status'], 'facility_zone_zone_status_idx');
+        });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('facility_zones');
-        Schema::dropIfExists('district_assembly_zones');
     }
 };

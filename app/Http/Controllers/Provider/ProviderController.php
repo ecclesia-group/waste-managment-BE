@@ -61,21 +61,12 @@ class ProviderController extends Controller
 
         $data = static::processImage($image_fields, $data);
 
-        $mmdaSlug = (string) ($data['district_assembly'] ?? '');
-        if ($mmdaSlug !== '' && ! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($mmdaSlug, $zoneSlugs)) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Selected zones must be assigned to the chosen MMDA',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
         DB::beginTransaction();
         try {
             $provider = Provider::create($data);
-            app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
+            if ($zoneSlugs !== []) {
+                app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
+            }
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();

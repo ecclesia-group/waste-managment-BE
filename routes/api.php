@@ -403,8 +403,6 @@ Route::prefix("admin")->group(function () {
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
         Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'zoneOverview']);
-        Route::get('district_assemblies/{district_assembly}/zones', [ZoneManagementController::class, 'listMmdaZones']);
-        Route::post('district_assemblies/{district_assembly}/zones', [ZoneManagementController::class, 'assignMmdaZones']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
         Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);

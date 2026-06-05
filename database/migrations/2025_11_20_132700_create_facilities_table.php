@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('facilities', function (Blueprint $table) {
             $table->id();
+            $table->string('parent_slug')->nullable();
+            $table->boolean('is_main')->default(true);
+            $table->uuid('role_slug')->nullable();
             $table->string('facility_slug')->unique();
             $table->string('region');
             $table->string('district')->nullable();
@@ -38,6 +41,8 @@ return new class extends Migration
             $table->timestamp('suspended_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('role_slug');
         });
     }
 

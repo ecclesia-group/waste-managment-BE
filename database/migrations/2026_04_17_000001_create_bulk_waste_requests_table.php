@@ -19,7 +19,9 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->longText('images')->nullable();
             $table->timestamp('pickup_date')->nullable();
-            $table->string('status')->default('pending_approval'); // pending_approval|approved|rejected|scheduled|completed
+            $table->string('status')->default('pending_approval');
+            $table->decimal('amount', 10, 2)->nullable();
+            $table->string('payment_status')->default('unpaid');
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->text('rejection_reason')->nullable();

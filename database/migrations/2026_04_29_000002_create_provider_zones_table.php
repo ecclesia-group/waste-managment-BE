@@ -8,24 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('provider_zone_assignments', function (Blueprint $table) {
+        Schema::create('provider_zones', function (Blueprint $table) {
             $table->id();
             $table->string('provider_slug');
             $table->string('zone_slug');
-
-            // Used for admin/overviews; operational logic can decide how to interpret it.
             $table->timestamp('assigned_at')->nullable();
-            $table->string('status')->default('active'); // active | revoked
-
+            $table->string('status')->default('active');
             $table->timestamps();
 
-            $table->unique(['provider_slug', 'zone_slug']);
+            $table->unique(['provider_slug', 'zone_slug'], 'provider_zones_unique');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('provider_zone_assignments');
+        Schema::dropIfExists('provider_zones');
     }
 };
-

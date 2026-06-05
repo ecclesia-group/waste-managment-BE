@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('drivers', function (Blueprint $table) {
@@ -36,14 +33,16 @@ return new class extends Migration
             $table->longText('license_back_image')->nullable();
             $table->longText('profile_image')->nullable();
             $table->string('status')->default('active');
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->timestamp('last_location_at')->nullable();
             $table->softDeletes();
             $table->timestamps();
+
+            $table->index(['provider_slug', 'latitude'], 'drivers_provider_lat_idx');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('drivers');

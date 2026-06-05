@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Violation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Violation\ViolationCreationRequest;
 use App\Http\Requests\Violation\ViolationUpdateRequest;
+use App\Models\Bin;
 use App\Models\Notification;
 use App\Models\Client;
 use App\Models\Violation;
@@ -234,13 +235,26 @@ class ViolationManagementController extends Controller
 
     protected function regenerateClientBinQrAndCode(Client $client): void
     {
-        // bin_code is used for manual scanning; QR data includes bin_code as well.
-        // Regeneration invalidates the old QR codes.
         do {
-            $newBinCode = Str::upper(Str::random(10));
-        } while (Client::where('bin_code', $newBinCode)->exists());
+            $newBinCode = 'BIN-' . Str::upper(Str::random(8));
+        } while (Bin::query()->where('bin_code', $newBinCode)->exists());
 
-        $client->bin_code = $newBinCode;
+        $bin = $client->primaryBin();
+        $binSlug = $bin?->bin_slug ?? (string) Str::uuid();
+
+        Bin::query()->updateOrCreate(
+            ['bin_slug' => $binSlug],
+            [
+                'bin_code' => $newBinCode,
+                'client_slug' => $client->client_slug,
+                'provider_slug' => $client->provider_slug,
+                'product_slug' => $bin?->product_slug,
+                'source' => $bin?->source ?? 'registration',
+                'status' => 'active',
+            ]
+        );
+
+        $client->update(['bin_slug' => $binSlug]);
 
         $qrData = json_encode([
             'client_slug' => $client->client_slug,
@@ -248,12 +262,10 @@ class ViolationManagementController extends Controller
             'phone' => $client->phone_number,
             'email' => $client->email,
             'location' => $client->gps_address,
-            'bin_code' => $client->bin_code,
+            'bin_code' => $newBinCode,
         ]);
 
-        $qrCodeUrl = static::generateQRCodeImage($qrData, $client->client_slug);
-        $client->qrcode = $qrCodeUrl ? [$qrCodeUrl] : [];
-        $client->save();
+        static::generateQRCodeImage($qrData, $client->client_slug);
     }
 
     protected function createClientViolationNotification(

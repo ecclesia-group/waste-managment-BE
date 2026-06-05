@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('district_assemblies', function (Blueprint $table) {
             $table->id();
+            $table->string('parent_slug')->nullable();
+            $table->boolean('is_main')->default(true);
+            $table->uuid('role_slug')->nullable();
             $table->string('district_assembly_slug')->unique();
             $table->string('region');
             $table->string('district');
@@ -29,6 +32,8 @@ return new class extends Migration
             $table->longText('profile_image')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('role_slug');
         });
     }
 

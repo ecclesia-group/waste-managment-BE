@@ -57,18 +57,4 @@ class Zone extends Model
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();
     }
-
-    public function districtAssemblies()
-    {
-        return $this->belongsToMany(
-            DistrictAssembly::class,
-            'district_assembly_zones',
-            'zone_slug',
-            'district_assembly_slug',
-            'zone_slug',
-            'district_assembly_slug'
-        )
-            ->withPivot(['assigned_at', 'status'])
-            ->withTimestamps();
-    }
 }

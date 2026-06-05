@@ -73,18 +73,9 @@ class ClientPaymentController extends Controller
             $client->registration_status = false;
             $client->save();
 
-            if (! empty($client->bin_code)) {
-                Bin::query()->updateOrCreate(
-                    ['bin_code' => $client->bin_code],
-                    [
-                        'bin_slug' => (string) Str::uuid(),
-                        'client_slug' => $clientSlug,
-                        'provider_slug' => $providerSlug,
-                        'product_slug' => null,
-                        'source' => 'registration',
-                        'status' => 'active',
-                    ]
-                );
+            $bin = $client->primaryBin();
+            if ($bin) {
+                $client->update(['bin_slug' => $bin->bin_slug]);
             }
         });
 

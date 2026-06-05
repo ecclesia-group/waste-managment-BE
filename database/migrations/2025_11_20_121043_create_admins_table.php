@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('admins', function (Blueprint $table) {
             $table->id();
+            $table->string('parent_slug')->nullable();
+            $table->boolean('is_main')->default(true);
+            $table->uuid('role_slug')->nullable();
             $table->string('admin_slug')->unique();
             $table->string('first_name');
             $table->string('last_name')->nullable();
@@ -27,12 +27,11 @@ return new class extends Migration
             $table->timestamp('suspended_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('role_slug');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('admins');

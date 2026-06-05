@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('route_planners', function (Blueprint $table) {
@@ -18,14 +15,14 @@ return new class extends Migration
             $table->string('fleet_slug')->nullable();
             $table->string('group_slug')->nullable();
             $table->string('status')->default('pending');
+            $table->json('route_meta')->nullable();
+            $table->timestamp('pickup_date')->nullable();
+            $table->string('pickup_type')->default('normal');
             $table->timestamps();
             $table->softDeletes();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('route_planners');

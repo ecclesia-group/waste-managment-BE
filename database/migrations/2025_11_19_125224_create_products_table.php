@@ -6,14 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('product_slug')->unique();
+            $table->string('provider_slug')->nullable();
             $table->string('category')->nullable();
             $table->string('name');
             $table->string('color')->nullable();
@@ -25,14 +23,12 @@ return new class extends Migration
             $table->integer('quantity')->default(0);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('category', 'products_category_idx');
+            $table->index(['provider_slug', 'category'], 'products_provider_category_idx');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

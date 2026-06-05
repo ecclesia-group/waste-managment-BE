@@ -2,67 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Central zone assignment rules:
- * Admin → MMDA (district_assembly_zones) → Provider/Facility (provider_zones / facility_zones).
+ * Admin assigns providers and facilities to zones (provider_zones / facility_zones).
  */
 class ZoneAssignmentService
 {
-    /** Full zone rows linked to an MMDA (for onboarding pickers). */
-    public function zonesForMmda(string $districtAssemblySlug): Collection
-    {
-        return DB::table('district_assembly_zones')
-            ->join('zones', 'zones.zone_slug', '=', 'district_assembly_zones.zone_slug')
-            ->where('district_assembly_zones.district_assembly_slug', $districtAssemblySlug)
-            ->where('district_assembly_zones.status', 'active')
-            ->select(
-                'zones.*',
-                'district_assembly_zones.assigned_at',
-                'district_assembly_zones.status as assignment_status'
-            )
-            ->orderBy('zones.name')
-            ->get();
-    }
-
-    public function mmdaZoneSlugs(string $districtAssemblySlug): array
-    {
-        return DB::table('district_assembly_zones')
-            ->where('district_assembly_slug', $districtAssemblySlug)
-            ->where('status', 'active')
-            ->pluck('zone_slug')
-            ->all();
-    }
-
-    public function assignZonesToMmda(string $districtAssemblySlug, array $zoneSlugs): void
-    {
-        foreach (array_unique($zoneSlugs) as $zoneSlug) {
-            DB::table('district_assembly_zones')->updateOrInsert(
-                ['district_assembly_slug' => $districtAssemblySlug, 'zone_slug' => $zoneSlug],
-                [
-                    'assigned_at' => now(),
-                    'status' => 'active',
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
-        }
-    }
-
-    /** Provider/facility zone_slugs must be a subset of the parent MMDA's zones. */
-    public function assertZonesBelongToMmda(string $districtAssemblySlug, array $zoneSlugs): bool
-    {
-        if ($zoneSlugs === []) {
-            return false;
-        }
-
-        $allowed = $this->mmdaZoneSlugs($districtAssemblySlug);
-
-        return $allowed !== [] && count(array_diff($zoneSlugs, $allowed)) === 0;
-    }
-
     public function assignZonesToProvider(string $providerSlug, array $zoneSlugs): void
     {
         foreach (array_unique($zoneSlugs) as $zoneSlug) {
@@ -108,6 +54,35 @@ class ZoneAssignmentService
             ->where('zone_slug', $zoneSlug)
             ->where('status', 'active')
             ->pluck('facility_slug')
+            ->all();
+    }
+
+    /** Zones linked to providers/facilities under a district assembly. */
+    public function zoneSlugsForDistrict(string $districtAssemblySlug): array
+    {
+        $providerSlugs = DB::table('providers')
+            ->where('district_assembly', $districtAssemblySlug)
+            ->pluck('provider_slug');
+
+        $facilitySlugs = DB::table('facilities')
+            ->where('district_assembly', $districtAssemblySlug)
+            ->pluck('facility_slug');
+
+        return collect()
+            ->merge(
+                DB::table('provider_zones')
+                    ->whereIn('provider_slug', $providerSlugs)
+                    ->where('status', 'active')
+                    ->pluck('zone_slug')
+            )
+            ->merge(
+                DB::table('facility_zones')
+                    ->whereIn('facility_slug', $facilitySlugs)
+                    ->where('status', 'active')
+                    ->pluck('zone_slug')
+            )
+            ->unique()
+            ->values()
             ->all();
     }
 }

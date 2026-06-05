@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->string('client_slug');
             $table->string('provider_slug');
+            $table->string('payment_type', 64)->nullable();
+            $table->string('payable_reference', 128)->nullable();
             $table->string('transaction_id')->unique();
+            $table->string('calpay_order_code', 64)->nullable()->unique();
             $table->string('payment_method');
             $table->string('network');
             $table->string('phone_number')->nullable();
@@ -28,16 +28,17 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('currency');
             $table->string('status');
-            $table->string('purchase_id');
-            $table->string('pickup_id');
+            $table->json('gateway_payload')->nullable();
+            $table->json('callback_payload')->nullable();
+            $table->string('purchase_id')->nullable();
+            $table->string('pickup_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['client_slug', 'payment_type', 'status'], 'payments_client_type_status_idx');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('payments');

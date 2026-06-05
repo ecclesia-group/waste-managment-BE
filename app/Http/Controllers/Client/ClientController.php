@@ -364,20 +364,35 @@ class ClientController extends Controller
 
     private function ensureRegistrationBin(Client $client): void
     {
-        if (empty($client->bin_code)) {
+        $existing = Bin::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('status', 'active')
+            ->first();
+
+        if ($existing) {
+            if (empty($client->bin_slug)) {
+                $client->update(['bin_slug' => $existing->bin_slug]);
+            }
+
             return;
         }
 
-        Bin::query()->updateOrCreate(
-            ['bin_code' => $client->bin_code],
-            [
-                'bin_slug' => (string) Str::uuid(),
-                'client_slug' => $client->client_slug,
-                'provider_slug' => $client->provider_slug,
-                'product_slug' => null,
-                'source' => 'registration',
-                'status' => 'active',
-            ]
-        );
+        do {
+            $binCode = 'BIN-' . Str::upper(Str::random(8));
+        } while (Bin::query()->where('bin_code', $binCode)->exists());
+
+        $binSlug = (string) Str::uuid();
+
+        Bin::query()->create([
+            'bin_slug' => $binSlug,
+            'bin_code' => $binCode,
+            'client_slug' => $client->client_slug,
+            'provider_slug' => $client->provider_slug,
+            'product_slug' => null,
+            'source' => 'registration',
+            'status' => 'active',
+        ]);
+
+        $client->update(['bin_slug' => $binSlug]);
     }
 }

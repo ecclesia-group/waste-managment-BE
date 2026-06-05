@@ -6,14 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('pickups', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
+            $table->string('bulk_waste_request_code')->nullable();
             $table->string('client_slug');
             $table->string('title');
             $table->string('category');
@@ -27,12 +25,11 @@ return new class extends Migration
             $table->timestamp('pickup_date')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['provider_slug', 'client_slug', 'bulk_waste_request_code'], 'pickups_provider_client_bulk_idx');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pickups');

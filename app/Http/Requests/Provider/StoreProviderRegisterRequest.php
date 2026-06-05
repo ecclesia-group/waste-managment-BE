@@ -33,7 +33,7 @@ class StoreProviderRegisterRequest extends FormRequest
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
             'tax_certificate_image'            => 'nullable|starts_with:data:,http://,https://',
             'epa_permit_image'                 => 'nullable|starts_with:data:,http://,https://',
-            'zone_slugs'                       => 'required|array|min:1',
+            'zone_slugs'                       => 'nullable|array',
             'zone_slugs.*'                     => 'required|string|distinct|exists:zones,zone_slug',
             'region'                           => 'required|string',
             'location'                         => 'required|string',

@@ -75,7 +75,7 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
     ]);
 });
 
-it('lists district zones via provider-zone assignments', function () {
+it('lists district zones from provider and facility zone assignments', function () {
     $district = DistrictAssembly::query()->create([
         'district_assembly_slug' => 'mmda-'.Str::lower(Str::random(8)),
         'region' => 'Greater Accra',

@@ -15,7 +15,6 @@ use App\Models\Purchase;
 use App\Models\Zone;
 use App\Services\ZoneAssignmentService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DistrictAssemblyManagementController extends Controller
@@ -128,12 +127,17 @@ class DistrictAssemblyManagementController extends Controller
     public function listZones(Request $request)
     {
         $districtSlug = $this->districtSlug($request);
-        $zones = app(ZoneAssignmentService::class)->zonesForMmda($districtSlug);
+        $zoneSlugs = app(ZoneAssignmentService::class)->zoneSlugsForDistrict($districtSlug);
+
+        $zones = Zone::query()
+            ->whereIn('zone_slug', $zoneSlugs)
+            ->orderBy('name')
+            ->get();
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Zones assigned to this MMDA (use when onboarding providers/facilities)',
+            reason: 'Zones used by providers and facilities in this district assembly',
             status_code: self::API_SUCCESS,
             data: $zones->toArray()
         );
@@ -245,22 +249,10 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
         unset($data['zone_slugs']);
-
-        if (! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($userDistrictSlug, $zoneSlugs)) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Selected zones must be assigned to your MMDA',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
 
         $data = static::processImage($image_fields, $data);
         $provider = Provider::create($data);
-        app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
 
         self::sendEmail(
             $provider->email,
@@ -300,22 +292,10 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
         unset($data['zone_slugs']);
-
-        if (! app(ZoneAssignmentService::class)->assertZonesBelongToMmda($userDistrictSlug, $zoneSlugs)) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Selected zones must be assigned to your MMDA',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
 
         $data = static::processImage($image_fields, $data);
         $facility = Facility::create($data);
-        app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
 
         self::sendEmail(
             $facility->email,

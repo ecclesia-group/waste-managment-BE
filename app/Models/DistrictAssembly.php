@@ -41,17 +41,4 @@ class DistrictAssembly extends Actor
     {
         return "district_assembly_slug";
     }
-
-    /** Zones assigned to this MMDA via district_assembly_zones pivot. */
-    public function zones()
-    {
-        return $this->belongsToMany(
-            Zone::class,
-            'district_assembly_zones',
-            'district_assembly_slug',
-            'zone_slug',
-            'district_assembly_slug',
-            'zone_slug'
-        )->withPivot(['assigned_at', 'status']);
-    }
 }

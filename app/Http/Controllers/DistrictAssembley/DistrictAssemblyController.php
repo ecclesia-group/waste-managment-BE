@@ -14,7 +14,6 @@ use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\Violation;
 use App\Models\WeighbridgeRecord;
-use App\Services\ZoneAssignmentService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -32,16 +31,8 @@ class DistrictAssemblyController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
-        unset($data['zone_slugs']);
-
         $data              = static::processImage($image_fields, $data);
         $district_assembly = DistrictAssembly::create($data);
-
-        app(ZoneAssignmentService::class)->assignZonesToMmda(
-            $district_assembly->district_assembly_slug,
-            $zoneSlugs
-        );
 
         self::sendEmail(
             $district_assembly->email,
