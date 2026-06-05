@@ -2,8 +2,13 @@
 
 namespace App\Traits;
 
+use App\Models\BulkWasteRequest;
+use App\Models\Driver;
+use App\Models\Fleet;
+use App\Models\Group;
 use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
+use App\Services\RoutePlannerService;
 use Illuminate\Support\Collection;
 
 /**
@@ -80,7 +85,9 @@ trait TransformsRoutePlannerResponse
             ];
         }
 
-        $pickupType = $plan->pickup_type ?? ($plan->route_meta['pickup_type'] ?? 'normal');
+        $pickupType = $plan->pickup_type ?? ($plan->route_meta['pickup_type'] ?? RoutePlannerService::PICKUP_TYPE_NORMAL);
+        $selectedGroupSlugs = $plan->selectedGroupSlugs();
+        $selectedBulkCodes = $plan->selectedBulkRequestCodes();
 
         return [
             'assignment_id' => $plan->id,
@@ -92,6 +99,9 @@ trait TransformsRoutePlannerResponse
             'provider_slug' => $plan->provider_slug,
             'driver_slug' => $plan->driver_slug,
             'fleet_slug' => $plan->fleet_slug,
+            'selected_group_slugs' => $selectedGroupSlugs,
+            'selected_bulk_request_codes' => $selectedBulkCodes,
+            'selection' => static::transformPlanSelection($plan, $pickupType, $selectedGroupSlugs, $selectedBulkCodes),
             'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
             'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
             'summary' => [
@@ -105,6 +115,60 @@ trait TransformsRoutePlannerResponse
         ];
     }
 
+    /**
+     * @param  list<string>  $selectedGroupSlugs
+     * @param  list<string>  $selectedBulkCodes
+     * @return array<string, mixed>
+     */
+    protected static function transformPlanSelection(
+        RoutePlanner $plan,
+        string $pickupType,
+        array $selectedGroupSlugs,
+        array $selectedBulkCodes
+    ): array {
+        if ($pickupType === RoutePlannerService::PICKUP_TYPE_BULK) {
+            $bulkRequests = BulkWasteRequest::query()
+                ->with('client')
+                ->where('provider_slug', $plan->provider_slug)
+                ->whereIn('request_code', $selectedBulkCodes)
+                ->get();
+
+            return [
+                'mode' => RoutePlannerService::PICKUP_TYPE_BULK,
+                'bulk_waste_requests' => $bulkRequests->map(fn (BulkWasteRequest $bulk) => [
+                    'request_code' => $bulk->request_code,
+                    'title' => $bulk->title,
+                    'status' => $bulk->status,
+                    'client_slug' => $bulk->client_slug,
+                    'client_name' => trim(($bulk->client?->first_name ?? '').' '.($bulk->client?->last_name ?? '')),
+                ])->values()->all(),
+            ];
+        }
+
+        $groups = Group::query()
+            ->with(['clients' => fn ($query) => $query
+                ->where('provider_slug', $plan->provider_slug)
+                ->where('status', 'active')])
+            ->where('provider_slug', $plan->provider_slug)
+            ->whereIn('group_slug', $selectedGroupSlugs)
+            ->get();
+
+        return [
+            'mode' => RoutePlannerService::PICKUP_TYPE_NORMAL,
+            'groups' => $groups->map(fn (Group $group) => [
+                'group_slug' => $group->group_slug,
+                'name' => $group->name,
+                'clients_count' => $group->clients->count(),
+                'clients' => $group->clients->map(fn ($client) => [
+                    'client_slug' => $client->client_slug,
+                    'first_name' => $client->first_name,
+                    'last_name' => $client->last_name,
+                    'phone_number' => $client->phone_number,
+                ])->values()->all(),
+            ])->values()->all(),
+        ];
+    }
+
     protected static function transformAssignmentsList(Collection $plans): array
     {
         return $plans->map(fn (RoutePlanner $plan) => static::transformAssignment($plan))->values()->all();
@@ -115,7 +179,7 @@ trait TransformsRoutePlannerResponse
         return static::transformAssignment($plan);
     }
 
-    protected static function transformRoutePlannerDriverBrief($driver): array
+    protected static function transformRoutePlannerDriverBrief(Driver $driver): array
     {
         $full = trim(implode(' ', array_filter([
             $driver->first_name,
@@ -136,7 +200,7 @@ trait TransformsRoutePlannerResponse
         ];
     }
 
-    protected static function transformRoutePlannerFleetBrief($fleet): array
+    protected static function transformRoutePlannerFleetBrief(Fleet $fleet): array
     {
         return [
             'fleet_slug' => $fleet->fleet_slug,

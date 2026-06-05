@@ -1,0 +1,825 @@
+[
+    {
+        "model": "App\\Models\\Actor",
+        "table": "actors",
+        "route_key": "id",
+        "fillable": [],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\Admin",
+        "table": "admins",
+        "route_key": "id",
+        "fillable": [
+            "admin_slug",
+            "parent_slug",
+            "is_main",
+            "role_slug",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "email",
+            "password",
+            "email_verified_at",
+            "profile_image",
+            "status",
+            "suspension_reason",
+            "corrective_action",
+            "suspended_at"
+        ],
+        "casts": {
+            "id": "int",
+            "email_verified_at": "datetime",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "is_main": "boolean",
+            "password": "hashed",
+            "profile_image": "array",
+            "status": "string",
+            "suspension_reason": "string",
+            "corrective_action": "string",
+            "suspended_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Bin",
+        "table": "bins",
+        "route_key": "bin_slug",
+        "fillable": [
+            "bin_slug",
+            "bin_code",
+            "client_slug",
+            "provider_slug",
+            "product_slug",
+            "source",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\BulkWasteRequest",
+        "table": "bulk_waste_requests",
+        "route_key": "request_code",
+        "fillable": [
+            "request_code",
+            "client_slug",
+            "provider_slug",
+            "title",
+            "category",
+            "description",
+            "location",
+            "images",
+            "pickup_date",
+            "status",
+            "amount",
+            "payment_status",
+            "approved_at",
+            "rejected_at",
+            "rejection_reason"
+        ],
+        "casts": {
+            "id": "int",
+            "images": "array",
+            "requested_pickup_date": "datetime",
+            "pickup_date": "datetime",
+            "amount": "decimal:2",
+            "approved_at": "datetime",
+            "rejected_at": "datetime",
+            "deleted_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Cart",
+        "table": "carts",
+        "route_key": "id",
+        "fillable": [
+            "client_slug"
+        ],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\CartItem",
+        "table": "cart_items",
+        "route_key": "id",
+        "fillable": [
+            "cart_id",
+            "product_slug",
+            "quantity"
+        ],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\Client",
+        "table": "clients",
+        "route_key": "client_slug",
+        "fillable": [
+            "client_slug",
+            "provider_slug",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "email",
+            "password",
+            "email_verified_at",
+            "gps_address",
+            "latitude",
+            "longitude",
+            "type",
+            "status",
+            "bin_slug",
+            "group_slug",
+            "zone_slug",
+            "registration_fee",
+            "registration_status",
+            "profile_image"
+        ],
+        "casts": {
+            "id": "int",
+            "email_verified_at": "datetime",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "password": "hashed",
+            "profile_image": "array",
+            "latitude": "float",
+            "longitude": "float",
+            "registration_fee": "float",
+            "registration_status": "boolean"
+        }
+    },
+    {
+        "model": "App\\Models\\Complaint",
+        "table": "complaints",
+        "route_key": "code",
+        "fillable": [
+            "client_slug",
+            "provider_slug",
+            "code",
+            "location",
+            "description",
+            "status",
+            "images"
+        ],
+        "casts": {
+            "id": "int",
+            "images": "array",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\DistrictAssembly",
+        "table": "district_assemblies",
+        "route_key": "district_assembly_slug",
+        "fillable": [
+            "district_assembly_slug",
+            "parent_slug",
+            "is_main",
+            "role_slug",
+            "region",
+            "district",
+            "email",
+            "phone_number",
+            "password",
+            "gps_address",
+            "first_name",
+            "last_name",
+            "status",
+            "suspension_reason",
+            "corrective_action",
+            "suspended_at",
+            "profile_image"
+        ],
+        "casts": {
+            "id": "int",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "deleted_at": "datetime",
+            "suspended_at": "datetime",
+            "is_main": "boolean",
+            "profile_image": "array",
+            "password": "hashed"
+        }
+    },
+    {
+        "model": "App\\Models\\Driver",
+        "table": "drivers",
+        "route_key": "driver_slug",
+        "fillable": [
+            "driver_slug",
+            "provider_slug",
+            "first_name",
+            "middle_name",
+            "last_name",
+            "date_of_birth",
+            "id_card_type",
+            "id_card_number",
+            "license_class",
+            "license_number",
+            "license_date_issued",
+            "license_expiry_issued",
+            "email",
+            "password",
+            "phone_number",
+            "address",
+            "emergency_contact_name",
+            "emergency_phone_number",
+            "emergency_contract_address",
+            "license_front_image",
+            "license_back_image",
+            "profile_image",
+            "status",
+            "latitude",
+            "longitude",
+            "last_location_at"
+        ],
+        "casts": {
+            "id": "int",
+            "date_of_birth": "date",
+            "license_date_issued": "date",
+            "license_expiry_issued": "date",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "deleted_at": "datetime",
+            "profile_image": "array",
+            "license_back_image": "array",
+            "license_front_image": "array",
+            "password": "hashed",
+            "latitude": "float",
+            "longitude": "float",
+            "last_location_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Facility",
+        "table": "facilities",
+        "route_key": "facility_slug",
+        "fillable": [
+            "facility_slug",
+            "parent_slug",
+            "is_main",
+            "role_slug",
+            "region",
+            "district",
+            "name",
+            "email",
+            "phone_number",
+            "password",
+            "gps_address",
+            "first_name",
+            "last_name",
+            "business_registration_name",
+            "business_certificate_image",
+            "district_assembly",
+            "district_assembly_contract_image",
+            "tax_certificate_image",
+            "epa_permit_image",
+            "profile_image",
+            "type",
+            "ownership",
+            "status",
+            "suspension_reason",
+            "corrective_action",
+            "suspended_at"
+        ],
+        "casts": {
+            "id": "int",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "deleted_at": "datetime",
+            "suspended_at": "datetime",
+            "is_main": "boolean",
+            "business_certificate_image": "array",
+            "district_assembly_contract_image": "array",
+            "tax_certificate_image": "array",
+            "epa_permit_image": "array",
+            "profile_image": "array",
+            "password": "hashed"
+        }
+    },
+    {
+        "model": "App\\Models\\Feedback",
+        "table": "feedback",
+        "route_key": "code",
+        "fillable": [
+            "code",
+            "client_slug",
+            "provider_slug",
+            "ratings",
+            "comments",
+            "score",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Fleet",
+        "table": "fleets",
+        "route_key": "fleet_slug",
+        "fillable": [
+            "fleet_slug",
+            "vehicle_make",
+            "model",
+            "manufacture_year",
+            "license_plate",
+            "bin_capacity",
+            "color",
+            "owner_first_name",
+            "owner_last_name",
+            "owner_phone_number",
+            "owner_address",
+            "provider_slug",
+            "insurance_expiry_date",
+            "insurance_policy_number",
+            "vehicle_images",
+            "vehicle_registration_certificate_image",
+            "vehicle_insurance_certificate_image",
+            "vehicle_roadworthy_certificate_image",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "vehicle_images": "array",
+            "vehicle_registration_certificate_image": "array",
+            "vehicle_insurance_certificate_image": "array",
+            "vehicle_roadworthy_certificate_image": "array",
+            "insurance_expiry_date": "datetime",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Group",
+        "table": "groups",
+        "route_key": "group_slug",
+        "fillable": [
+            "name",
+            "group_slug",
+            "provider_slug",
+            "description",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Notification",
+        "table": "notifications",
+        "route_key": "id",
+        "fillable": [
+            "actor",
+            "actor_id",
+            "actor_slug",
+            "title",
+            "message",
+            "type",
+            "is_read"
+        ],
+        "casts": {
+            "id": "int",
+            "is_read": "boolean",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\OtpToken",
+        "table": "otp_tokens",
+        "route_key": "id",
+        "fillable": [
+            "token",
+            "actor_id",
+            "guard",
+            "type",
+            "channel",
+            "expires_at"
+        ],
+        "casts": {
+            "id": "int",
+            "expires_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Payment",
+        "table": "payments",
+        "route_key": "id",
+        "fillable": [
+            "client_slug",
+            "provider_slug",
+            "payment_type",
+            "transaction_id",
+            "payment_method",
+            "network",
+            "phone_number",
+            "name",
+            "client_email",
+            "card_name",
+            "card_number",
+            "card_expiry",
+            "card_cvv",
+            "amount",
+            "currency",
+            "status",
+            "purchase_id",
+            "pickup_id",
+            "calpay_order_code",
+            "payable_reference",
+            "gateway_payload",
+            "callback_payload"
+        ],
+        "casts": {
+            "id": "int",
+            "amount": "float",
+            "gateway_payload": "array",
+            "callback_payload": "array",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Permission",
+        "table": "permissions",
+        "route_key": "id",
+        "fillable": [
+            "permission_slug",
+            "actor",
+            "name",
+            "module"
+        ],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\Pickup",
+        "table": "pickups",
+        "route_key": "code",
+        "fillable": [
+            "code",
+            "bulk_waste_request_code",
+            "client_slug",
+            "title",
+            "category",
+            "description",
+            "status",
+            "location",
+            "images",
+            "pickup_date",
+            "amount",
+            "provider_slug",
+            "scan_status"
+        ],
+        "casts": {
+            "id": "int",
+            "images": "array",
+            "amount": "float",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\PickupScanEvent",
+        "table": "pickup_scan_events",
+        "route_key": "id",
+        "fillable": [
+            "provider_slug",
+            "pickup_code",
+            "idempotency_key",
+            "device_scanned_at"
+        ],
+        "casts": {
+            "id": "int",
+            "device_scanned_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Product",
+        "table": "products",
+        "route_key": "product_slug",
+        "fillable": [
+            "product_slug",
+            "provider_slug",
+            "name",
+            "category",
+            "color",
+            "size",
+            "images",
+            "original_price",
+            "discounted_price",
+            "discount_percentage",
+            "quantity"
+        ],
+        "casts": {
+            "id": "int",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "images": "array",
+            "original_price": "decimal:2",
+            "discounted_price": "decimal:2",
+            "discount_percentage": "decimal:2",
+            "deleted_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Provider",
+        "table": "providers",
+        "route_key": "provider_slug",
+        "fillable": [
+            "provider_slug",
+            "parent_slug",
+            "is_main",
+            "role_slug",
+            "first_name",
+            "last_name",
+            "business_name",
+            "district_assembly",
+            "business_registration_number",
+            "gps_address",
+            "email",
+            "phone_number",
+            "password",
+            "email_verified_at",
+            "business_certificate_image",
+            "district_assembly_contract_image",
+            "tax_certificate_image",
+            "epa_permit_image",
+            "status",
+            "suspension_reason",
+            "corrective_action",
+            "suspended_at",
+            "region",
+            "location",
+            "profile_image"
+        ],
+        "casts": {
+            "id": "int",
+            "email_verified_at": "datetime",
+            "password": "hashed",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "suspended_at": "datetime",
+            "is_main": "boolean",
+            "business_certificate_image": "array",
+            "district_assembly_contract_image": "array",
+            "tax_certificate_image": "array",
+            "epa_permit_image": "array",
+            "profile_image": "array"
+        }
+    },
+    {
+        "model": "App\\Models\\Purchase",
+        "table": "purchases",
+        "route_key": "id",
+        "fillable": [
+            "client_slug",
+            "number_of_items",
+            "total_price",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "number_of_items": "integer",
+            "total_price": "decimal:2",
+            "status": "string",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\PurchaseItem",
+        "table": "purchase_items",
+        "route_key": "id",
+        "fillable": [
+            "purchase_id",
+            "product_slug",
+            "name",
+            "price",
+            "quantity"
+        ],
+        "casts": {
+            "id": "int",
+            "purchase_id": "integer",
+            "price": "decimal:2",
+            "quantity": "integer",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Role",
+        "table": "roles",
+        "route_key": "id",
+        "fillable": [
+            "role_slug",
+            "name",
+            "actor",
+            "actor_slug"
+        ],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\RoutePlanner",
+        "table": "route_planners",
+        "route_key": "id",
+        "fillable": [
+            "provider_slug",
+            "driver_slug",
+            "fleet_slug",
+            "group_slug",
+            "status",
+            "pickup_date",
+            "pickup_type",
+            "route_meta"
+        ],
+        "casts": {
+            "id": "int",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "route_meta": "array",
+            "pickup_date": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\RoutePlannerBinAssignment",
+        "table": "route_planner_bin_assignments",
+        "route_key": "id",
+        "fillable": [
+            "route_planner_id",
+            "provider_slug",
+            "driver_slug",
+            "fleet_slug",
+            "group_slug",
+            "client_slug",
+            "pickup_code",
+            "scan_status",
+            "scanned_at",
+            "unscanned_at"
+        ],
+        "casts": {
+            "id": "int",
+            "scanned_at": "datetime",
+            "unscanned_at": "datetime",
+            "deleted_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\User",
+        "table": "users",
+        "route_key": "id",
+        "fillable": [
+            "name",
+            "email",
+            "password"
+        ],
+        "casts": {
+            "id": "int"
+        }
+    },
+    {
+        "model": "App\\Models\\Violation",
+        "table": "violations",
+        "route_key": "code",
+        "fillable": [
+            "code",
+            "client_slug",
+            "provider_slug",
+            "type",
+            "status",
+            "location",
+            "description",
+            "images"
+        ],
+        "casts": {
+            "id": "int",
+            "images": "array",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\WasteHandoverRequest",
+        "table": "waste_handover_requests",
+        "route_key": "id",
+        "fillable": [
+            "code",
+            "requester_provider_slug",
+            "requester_type",
+            "requester_name",
+            "requester_phone",
+            "requester_email",
+            "submitted_by_slug",
+            "target_provider_slug",
+            "zone_slug",
+            "zone_slugs",
+            "title",
+            "waste_types",
+            "description",
+            "pickup_location",
+            "latitude",
+            "longitude",
+            "selected_driver_slug",
+            "selected_fleet_slug",
+            "images",
+            "fee_amount",
+            "payment_status",
+            "paid_at",
+            "status",
+            "accepted_at",
+            "completed_at"
+        ],
+        "casts": {
+            "id": "int",
+            "waste_types": "array",
+            "zone_slugs": "array",
+            "images": "array",
+            "fee_amount": "float",
+            "latitude": "float",
+            "longitude": "float",
+            "accepted_at": "datetime",
+            "completed_at": "datetime",
+            "paid_at": "datetime",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\WeighbridgeRecord",
+        "table": "weighbridge_records",
+        "route_key": "code",
+        "fillable": [
+            "code",
+            "facility_slug",
+            "provider_slug",
+            "fleet_slug",
+            "fleet_code",
+            "gross_weight",
+            "amount",
+            "zone_slug",
+            "payment_status",
+            "scan_status",
+            "notes"
+        ],
+        "casts": {
+            "id": "int",
+            "amount": "float",
+            "gross_weight": "float",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    },
+    {
+        "model": "App\\Models\\Zone",
+        "table": "zones",
+        "route_key": "zone_slug",
+        "fillable": [
+            "name",
+            "zone_slug",
+            "region",
+            "description",
+            "locations",
+            "status"
+        ],
+        "casts": {
+            "id": "int",
+            "locations": "array",
+            "deleted_at": "datetime",
+            "created_at": "datetime",
+            "updated_at": "datetime"
+        }
+    }
+]

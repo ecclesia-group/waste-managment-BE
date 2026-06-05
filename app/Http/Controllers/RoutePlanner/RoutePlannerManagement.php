@@ -5,25 +5,38 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RoutePlanner\RegisterRoute;
 use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
 use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
-use App\Models\BulkWasteRequest;
-use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
-use App\Models\Group;
-use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
 use App\Models\RoutePlannerBinAssignment;
+use App\Services\RoutePlannerService;
 use App\Traits\TransformsRoutePlannerResponse;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
+use RuntimeException;
 
 class RoutePlannerManagement extends Controller
 {
     use TransformsRoutePlannerResponse;
+
+    public function __construct(
+        private readonly RoutePlannerService $routePlannerService
+    ) {}
+
+    public function planOptions(Request $request)
+    {
+        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Route planner options retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $this->routePlannerService->planOptionsForProvider($providerSlug)
+        );
+    }
 
     public function assignmentLogs(Request $request)
     {
@@ -57,6 +70,9 @@ class RoutePlannerManagement extends Controller
         if ($request->filled('group_slug')) {
             $query->where('group_slug', $request->string('group_slug'));
         }
+        if ($request->filled('pickup_type')) {
+            $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
+        }
 
         if ($request->filled('status')) {
             $status = $request->string('status');
@@ -85,8 +101,8 @@ class RoutePlannerManagement extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Assignment logs retrieved successfully",
+            message: 'Action Successful',
+            reason: 'Assignment logs retrieved successfully',
             status_code: self::API_SUCCESS,
             data: $logs->toArray()
         );
@@ -104,99 +120,46 @@ class RoutePlannerManagement extends Controller
         if (empty($data['provider_slug'])) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "provider_slug is required",
+                message: 'Action Failed',
+                reason: 'provider_slug is required',
                 status_code: self::API_FAIL,
                 data: []
             );
         }
 
-        $pickupType = (string) $data['pickup_type'];
-        $pickupDate = isset($data['pickup_date'])
-            ? Carbon::parse($data['pickup_date'])
-            : Carbon::now();
-        $groupSlugs = collect($data['group_slugs'] ?? [])->filter()->unique()->values();
-        $bulkCodes = collect($data['bulk_request_codes'] ?? [])->filter()->unique()->values();
-
-        DB::beginTransaction();
         try {
-            if (! $this->authorizePlanResources($data, $user, $pickupType, $groupSlugs, $bulkCodes)) {
-                DB::rollBack();
-
-                return self::apiResponse(
-                    in_error: true,
-                    message: "Action Failed",
-                    reason: "Driver, fleet, group, or bulk request is not valid for this provider",
-                    status_code: self::API_FAIL,
-                    data: []
-                );
-            }
-
-            [$clients, $bulkByClient] = $this->resolvePlanClients(
-                $data['provider_slug'],
-                $pickupType,
-                $groupSlugs,
-                $bulkCodes
-            );
-
-            if ($clients->isEmpty()) {
-                DB::rollBack();
-
-                return self::apiResponse(
-                    in_error: true,
-                    message: "Action Failed",
-                    reason: $pickupType === 'bulk_waste_request'
-                        ? 'No approved bulk waste requests found for the selected codes'
-                        : 'No active clients found in the selected groups',
-                    status_code: self::API_NOT_FOUND,
-                    data: []
-                );
-            }
-
-            $routePlanner = RoutePlanner::create([
-                'provider_slug' => $data['provider_slug'],
-                'driver_slug' => $data['driver_slug'],
-                'fleet_slug' => $data['fleet_slug'],
-                'group_slug' => $pickupType === 'normal' ? $groupSlugs->first() : null,
-                'pickup_date' => $pickupDate,
-                'pickup_type' => $pickupType,
-                'status' => $data['status'] ?? 'pending',
-                'route_meta' => [
-                    'pickup_type' => $pickupType,
-                    'pickup_date' => $pickupDate->toISOString(),
-                    'selected_group_slugs' => $groupSlugs->all(),
-                    'selected_bulk_request_codes' => $bulkCodes->all(),
-                ],
-            ]);
-
-            $this->createPlanStops($routePlanner, $clients, $bulkByClient, $pickupType, $pickupDate);
-
-            DB::commit();
-
-            $routePlanner->load([
-                'provider',
-                'driver',
-                'fleet',
-                'assignments.client.group',
-                'assignments.pickup',
-            ]);
+            $routePlanner = $this->routePlannerService->createPlan($data);
 
             return self::apiResponse(
                 in_error: false,
-                message: "Action Successful",
-                reason: "Route created successfully",
+                message: 'Action Successful',
+                reason: 'Route created successfully',
                 status_code: self::API_SUCCESS,
                 data: [
                     'assignment' => self::transformAssignment($routePlanner),
                 ]
             );
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
+        } catch (InvalidArgumentException $e) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Failed to create route: ".$e->getMessage(),
+                message: 'Action Failed',
+                reason: $e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
+        } catch (RuntimeException $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: $e->getMessage(),
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        } catch (\Throwable $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Failed to create route: '.$e->getMessage(),
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -221,8 +184,8 @@ class RoutePlannerManagement extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Routes retrieved successfully",
+            message: 'Action Successful',
+            reason: 'Routes retrieved successfully',
             status_code: self::API_SUCCESS,
             data: [
                 'assignments' => self::transformAssignmentsList($plans),
@@ -236,8 +199,8 @@ class RoutePlannerManagement extends Controller
         if (isset($user->provider_slug) && $plan->provider_slug !== $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Unauthorized to view this plan",
+                message: 'Action Failed',
+                reason: 'Unauthorized to view this plan',
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -252,8 +215,8 @@ class RoutePlannerManagement extends Controller
             if (! $allowed) {
                 return self::apiResponse(
                     in_error: true,
-                    message: "Action Failed",
-                    reason: "Plan not found in your jurisdiction",
+                    message: 'Action Failed',
+                    reason: 'Plan not found in your jurisdiction',
                     status_code: self::API_NOT_FOUND,
                     data: []
                 );
@@ -262,8 +225,8 @@ class RoutePlannerManagement extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Route details retrieved successfully",
+            message: 'Action Successful',
+            reason: 'Route details retrieved successfully',
             status_code: self::API_SUCCESS,
             data: [
                 'assignment' => self::transformAssignment($plan),
@@ -284,8 +247,8 @@ class RoutePlannerManagement extends Controller
         if (! $routePlanner) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Route plan not found",
+                message: 'Action Failed',
+                reason: 'Route plan not found',
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
@@ -296,8 +259,8 @@ class RoutePlannerManagement extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Route planner status updated successfully",
+            message: 'Action Successful',
+            reason: 'Route planner status updated successfully',
             status_code: self::API_SUCCESS,
             data: [
                 'assignment' => self::transformAssignment($routePlanner),
@@ -313,8 +276,8 @@ class RoutePlannerManagement extends Controller
         if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Unauthorized to update this plan",
+                message: 'Action Failed',
+                reason: 'Unauthorized to update this plan',
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -325,23 +288,25 @@ class RoutePlannerManagement extends Controller
                 ->where('driver_slug', $data['driver_slug'])
                 ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                 ->exists()) {
-                return self::apiResponse(true, "Action Failed", "Unauthorized driver for this provider", self::API_FAIL, []);
+                return self::apiResponse(true, 'Action Failed', 'Unauthorized driver for this provider', self::API_FAIL, []);
             }
 
             if (isset($data['fleet_slug']) && ! Fleet::query()
                 ->where('fleet_slug', $data['fleet_slug'])
                 ->where('provider_slug', $this->resolveProviderScopeSlug($user))
                 ->exists()) {
-                return self::apiResponse(true, "Action Failed", "Unauthorized fleet for this provider", self::API_FAIL, []);
+                return self::apiResponse(true, 'Action Failed', 'Unauthorized fleet for this provider', self::API_FAIL, []);
             }
         }
+
+        unset($data['group_slug']);
 
         $plan->update($data);
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Route details updated successfully",
+            message: 'Action Successful',
+            reason: 'Route details updated successfully',
             status_code: self::API_SUCCESS,
             data: [
                 'assignment' => self::transformAssignment($plan),
@@ -355,8 +320,8 @@ class RoutePlannerManagement extends Controller
         if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Unauthorized to delete this plan",
+                message: 'Action Failed',
+                reason: 'Unauthorized to delete this plan',
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -366,157 +331,10 @@ class RoutePlannerManagement extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Route deleted successfully",
+            message: 'Action Successful',
+            reason: 'Route deleted successfully',
             status_code: self::API_SUCCESS,
             data: []
         );
-    }
-
-    private function scheduleBulkRequest(BulkWasteRequest $bulkRequest, Carbon $pickupDate): void
-    {
-        $bulkRequest->pickup_date = $pickupDate;
-        $bulkRequest->status = 'scheduled';
-
-        if ($bulkRequest->payment_status === null) {
-            $bulkRequest->payment_status = ((float) ($bulkRequest->amount ?? 0)) > 0 ? 'unpaid' : 'paid';
-        }
-
-        $bulkRequest->save();
-    }
-
-    /**
-     * @return array{0: \Illuminate\Support\Collection<int, Client>, 1: \Illuminate\Support\Collection<string, BulkWasteRequest>}
-     */
-    private function resolvePlanClients(
-        string $providerSlug,
-        string $pickupType,
-        \Illuminate\Support\Collection $groupSlugs,
-        \Illuminate\Support\Collection $bulkCodes
-    ): array {
-        $bulkByClient = collect();
-
-        if ($pickupType === 'bulk_waste_request') {
-            $bulkByClient = BulkWasteRequest::query()
-                ->where('provider_slug', $providerSlug)
-                ->where('status', 'approved')
-                ->whereIn('request_code', $bulkCodes->all())
-                ->get()
-                ->keyBy('client_slug');
-
-            $clients = Client::query()
-                ->where('provider_slug', $providerSlug)
-                ->where('status', 'active')
-                ->whereIn('client_slug', $bulkByClient->keys()->all())
-                ->get();
-
-            return [$clients, $bulkByClient];
-        }
-
-        $clients = Client::query()
-            ->where('provider_slug', $providerSlug)
-            ->where('status', 'active')
-            ->whereIn('group_slug', $groupSlugs->all())
-            ->get();
-
-        return [$clients, $bulkByClient];
-    }
-
-    private function createPlanStops(
-        RoutePlanner $plan,
-        \Illuminate\Support\Collection $clients,
-        \Illuminate\Support\Collection $bulkByClient,
-        string $pickupType,
-        Carbon $pickupDate
-    ): void {
-        foreach ($clients as $client) {
-            $bulkRequest = $bulkByClient->get($client->client_slug);
-            $pickupCode = self::generateUniquePickupCode();
-
-            Pickup::create([
-                'code' => $pickupCode,
-                'bulk_waste_request_code' => $bulkRequest?->request_code,
-                'client_slug' => $client->client_slug,
-                'title' => $bulkRequest?->title ?? 'Scheduled pickup',
-                'category' => $pickupType === 'bulk_waste_request' ? 'bulk_waste_request' : 'normal_pickup',
-                'description' => $bulkRequest?->description,
-                'amount' => $bulkRequest?->amount,
-                'status' => 'scheduled',
-                'scan_status' => 'unscanned',
-                'location' => $client->pickup_location ?: ($client->gps_address ?: 'Unknown'),
-                'provider_slug' => $plan->provider_slug,
-                'images' => $bulkRequest?->images,
-                'pickup_date' => $pickupDate,
-            ]);
-
-            if ($bulkRequest) {
-                $this->scheduleBulkRequest($bulkRequest, $pickupDate);
-            }
-
-            RoutePlannerBinAssignment::create([
-                'route_planner_id' => $plan->id,
-                'provider_slug' => $plan->provider_slug,
-                'driver_slug' => $plan->driver_slug,
-                'fleet_slug' => $plan->fleet_slug,
-                'group_slug' => $client->group_slug,
-                'client_slug' => $client->client_slug,
-                'pickup_code' => $pickupCode,
-                'scan_status' => 'unscanned',
-            ]);
-        }
-    }
-
-    private function authorizePlanResources(
-        array $data,
-        object $user,
-        string $pickupType,
-        \Illuminate\Support\Collection $groupSlugs,
-        \Illuminate\Support\Collection $bulkCodes
-    ): bool {
-        if (! isset($user->provider_slug)) {
-            return true;
-        }
-
-        $providerSlug = $data['provider_slug'];
-
-        if (! Driver::query()
-            ->where('driver_slug', $data['driver_slug'])
-            ->where('provider_slug', $providerSlug)
-            ->exists()) {
-            return false;
-        }
-
-        if (! Fleet::query()
-            ->where('fleet_slug', $data['fleet_slug'])
-            ->where('provider_slug', $providerSlug)
-            ->exists()) {
-            return false;
-        }
-
-        if ($pickupType === 'normal') {
-            $count = Group::query()
-                ->whereIn('group_slug', $groupSlugs->all())
-                ->where('provider_slug', $providerSlug)
-                ->count();
-
-            return $count === $groupSlugs->count();
-        }
-
-        $bulkCount = BulkWasteRequest::query()
-            ->where('provider_slug', $providerSlug)
-            ->where('status', 'approved')
-            ->whereIn('request_code', $bulkCodes->all())
-            ->count();
-
-        return $bulkCount === $bulkCodes->count();
-    }
-
-    protected static function generateUniquePickupCode(): string
-    {
-        do {
-            $code = Str::upper(Str::random(8));
-        } while (Pickup::where('code', $code)->exists());
-
-        return $code;
     }
 }

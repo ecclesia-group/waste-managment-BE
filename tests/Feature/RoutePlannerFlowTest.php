@@ -10,6 +10,9 @@ use App\Models\RoutePlanner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertDatabaseHas;
+
 uses(RefreshDatabase::class);
 
 it('creates normal pickup plan using multiple groups and filters map by plan', function () {
@@ -66,7 +69,7 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
         'longitude' => -0.2010000,
     ]);
 
-    $create = $this->actingAs($provider, 'provider')->postJson('/api/provider/create_plan', [
+    $create = actingAs($provider, 'provider')->postJson('/api/provider/create_plan', [
         'provider_slug' => $provider->provider_slug,
         'driver_slug' => $driver->driver_slug,
         'fleet_slug' => $fleet->fleet_slug,
@@ -76,25 +79,66 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
     ]);
 
     $create->assertOk();
-    $planId = (int) $create->json('data.assignment.assignment_id');
+    $planId = (int) $create->json('data.data.assignment.assignment_id');
     expect($planId)->toBeGreaterThan(0);
 
-    $this->assertDatabaseHas('route_planners', [
+    assertDatabaseHas('route_planners', [
         'id' => $planId,
         'provider_slug' => $provider->provider_slug,
     ]);
 
-    $list = $this->actingAs($provider, 'provider')->getJson('/api/provider/all_plans');
+    $list = actingAs($provider, 'provider')->getJson('/api/provider/all_plans');
     $list->assertOk();
 
-    $assignments = collect($list->json('data.assignments'));
+    $assignments = collect($list->json('data.data.assignments'));
     expect($assignments)->not->toBeEmpty();
 
     $assignment = $assignments->firstWhere('assignment_id', $planId);
     expect($assignment)->not->toBeNull();
     expect($assignment['pickup_type'])->toBe('normal');
     expect(collect($assignment['pickups']))->not->toBeEmpty();
+    expect($assignment['selected_group_slugs'])->toContain($groupA->group_slug, $groupB->group_slug);
+    expect($assignment['selection']['mode'])->toBe('normal');
     expect(collect($assignment['pickups'])->every(fn ($p) => (int) ($p['assignment_id'] ?? 0) === $planId))->toBeTrue();
+});
+
+it('rejects mixing group_slugs with bulk_waste_request pickup type', function () {
+    $provider = Provider::query()->create([
+        'provider_slug' => 'prov-' . Str::lower(Str::random(8)),
+        'first_name' => 'Provider',
+        'email' => 'provider+' . Str::lower(Str::random(6)) . '@test.local',
+        'password' => 'password',
+    ]);
+
+    $driver = Driver::query()->create([
+        'driver_slug' => 'drv-' . Str::lower(Str::random(8)),
+        'provider_slug' => $provider->provider_slug,
+        'first_name' => 'Driver',
+        'email' => 'driver+' . Str::lower(Str::random(6)) . '@test.local',
+        'password' => 'password',
+    ]);
+
+    $fleet = Fleet::query()->create([
+        'fleet_slug' => 'flt-' . Str::lower(Str::random(8)),
+        'provider_slug' => $provider->provider_slug,
+        'status' => 'active',
+    ]);
+
+    $group = Group::query()->create([
+        'name' => 'Group ' . Str::upper(Str::random(4)),
+        'group_slug' => 'grp-' . Str::lower(Str::random(8)),
+        'provider_slug' => $provider->provider_slug,
+    ]);
+
+    $response = actingAs($provider, 'provider')->postJson('/api/provider/create_plan', [
+        'driver_slug' => $driver->driver_slug,
+        'fleet_slug' => $fleet->fleet_slug,
+        'pickup_type' => 'bulk_waste_request',
+        'group_slugs' => [$group->group_slug],
+        'bulk_request_codes' => ['BWR-INVALID'],
+    ]);
+
+    $response->assertStatus(422);
 });
 
 it('creates bulk waste pickup plan from selected request codes', function () {
@@ -140,7 +184,7 @@ it('creates bulk waste pickup plan from selected request codes', function () {
         'status' => 'approved',
     ]);
 
-    $create = $this->actingAs($provider, 'provider')->postJson('/api/provider/create_plan', [
+    $create = actingAs($provider, 'provider')->postJson('/api/provider/create_plan', [
         'provider_slug' => $provider->provider_slug,
         'driver_slug' => $driver->driver_slug,
         'fleet_slug' => $fleet->fleet_slug,
@@ -152,13 +196,20 @@ it('creates bulk waste pickup plan from selected request codes', function () {
     $create->assertOk();
     $plan = RoutePlanner::query()->latest('id')->first();
     expect($plan)->not->toBeNull();
+    expect($plan->pickup_type)->toBe('bulk_waste_request');
+    expect($plan->selectedBulkRequestCodes())->toBe([$bulkCode]);
 
-    $this->assertDatabaseHas('pickups', [
+    $assignment = $create->json('data.data.assignment');
+    expect($assignment['pickup_type'])->toBe('bulk_waste_request');
+    expect($assignment['selected_bulk_request_codes'])->toBe([$bulkCode]);
+    expect($assignment['selection']['mode'])->toBe('bulk_waste_request');
+
+    assertDatabaseHas('pickups', [
         'provider_slug' => $provider->provider_slug,
         'client_slug' => $client->client_slug,
         'bulk_waste_request_code' => $bulkCode,
     ]);
-    $this->assertDatabaseHas('route_planner_bin_assignments', [
+    assertDatabaseHas('route_planner_bin_assignments', [
         'route_planner_id' => $plan->id,
         'provider_slug' => $provider->provider_slug,
         'client_slug' => $client->client_slug,

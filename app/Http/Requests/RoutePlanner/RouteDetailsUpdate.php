@@ -21,11 +21,10 @@ class RouteDetailsUpdate extends FormRequest
     public function rules(): array
     {
         return [
-            'client_slug' => 'sometimes|string|exists:clients,client_slug',
             'driver_slug' => 'sometimes|string|exists:drivers,driver_slug',
             'fleet_slug'  => 'sometimes|string|exists:fleets,fleet_slug',
-            'group_slug'  => 'sometimes|string|exists:groups,group_slug',
-            'status'      => 'nullable|string|in:pending,completed,cancalled,progress',
+            'pickup_date' => 'sometimes|date',
+            'status'      => 'nullable|string|in:pending,completed,cancelled,progress,in_progress',
         ];
     }
 }

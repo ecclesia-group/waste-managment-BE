@@ -184,6 +184,7 @@ Route::prefix("provider")->group(function () {
         Route::post("update_driver_location", [DriverController::class, "updateLocation"]);
 
         // Route Planner
+        Route::get("plan_options", [RoutePlannerManagement::class, "planOptions"]);
         Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
         Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
@@ -219,6 +220,12 @@ Route::prefix("provider")->group(function () {
         Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
         Route::post("manual_bin_code_scan", [PickupController::class, "manualCodeScan"]);
         Route::post("change_scan_status", [PickupController::class, "setScanStatus"]);
+
+        // Bulk waste requests (provider review + route planner selection)
+        Route::get("bulk_waste_requests", [PickupController::class, "providerBulkWasteRequests"]);
+        Route::get("bulk_waste_requests/{requestCode}", [PickupController::class, "providerBulkWasteRequestShow"]);
+        Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
+        Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
 
         // Waste Handover Requests
         Route::post("handover_requests", [WasteHandoverController::class, "create"]);

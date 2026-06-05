@@ -47,13 +47,47 @@ class RoutePlanner extends Model
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
+    /** @return list<string> */
+    public function selectedGroupSlugs(): array
+    {
+        if (($this->pickup_type ?? null) !== 'normal') {
+            return [];
+        }
+
+        $fromMeta = $this->route_meta['selected_group_slugs'] ?? null;
+
+        if (is_array($fromMeta) && $fromMeta !== []) {
+            return array_values($fromMeta);
+        }
+
+        return $this->group_slug ? [$this->group_slug] : [];
+    }
+
+    /** @return list<string> */
+    public function selectedBulkRequestCodes(): array
+    {
+        if (($this->pickup_type ?? null) !== 'bulk_waste_request') {
+            return [];
+        }
+
+        $fromMeta = $this->route_meta['selected_bulk_request_codes'] ?? null;
+
+        return is_array($fromMeta) ? array_values($fromMeta) : [];
+    }
+
     /**
-     * Active clients in this route’s group (same provider + group as the plan).
+     * Clients on this route (derived from bin assignments).
      */
     public function clients()
     {
-        return $this->hasMany(Client::class, 'group_slug', 'group_slug')
-            ->where('clients.provider_slug', $this->provider_slug);
+        return $this->hasManyThrough(
+            Client::class,
+            RoutePlannerBinAssignment::class,
+            'route_planner_id',
+            'client_slug',
+            'id',
+            'client_slug'
+        )->where('clients.provider_slug', $this->provider_slug);
     }
 
     /**
