@@ -25,14 +25,13 @@ return new class extends Migration
             $table->string('bin_slug')->nullable();
             $table->string('status')->default('active');
             $table->string('group_slug')->nullable();
-            $table->string('zone_slug')->nullable();
             $table->decimal('registration_fee', 10, 2)->nullable();
             $table->boolean('registration_status')->default(false);
             $table->longText('profile_image')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
-            $table->index(['provider_slug', 'zone_slug'], 'clients_provider_zone_idx');
+            $table->index('provider_slug', 'clients_provider_idx');
         });
     }
 

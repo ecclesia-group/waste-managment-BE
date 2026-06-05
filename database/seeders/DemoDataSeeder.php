@@ -55,9 +55,9 @@ class DemoDataSeeder extends Seeder
         $facility = $this->seedFacility($district, $zones);
         $groups = $this->seedGroups($provider);
         $product = $this->seedProduct($provider);
-        $client = $this->seedClient($provider, $groups['residential'], $zones['central'], $product);
-        $commercialClient = $this->seedCommercialClient($provider, $groups['commercial'], $zones['central']);
-        $bulkClient = $this->seedBulkClient($provider, $zones['central']);
+        $client = $this->seedClient($provider, $groups['residential'], $product);
+        $commercialClient = $this->seedCommercialClient($provider, $groups['commercial']);
+        $bulkClient = $this->seedBulkClient($provider);
         $driver = $this->seedDriver($provider);
         $fleet = $this->seedFleet($provider);
         $pickup = $this->seedPickup($client, $provider);
@@ -301,7 +301,7 @@ class DemoDataSeeder extends Seeder
         return ['residential' => $residential, 'commercial' => $commercial];
     }
 
-    private function seedCommercialClient(Provider $provider, Group $group, Zone $zone): Client
+    private function seedCommercialClient(Provider $provider, Group $group): Client
     {
         return Client::firstOrCreate(
             ['email' => 'demo.commercial@waste.test'],
@@ -319,14 +319,13 @@ class DemoDataSeeder extends Seeder
                 'type' => 'commercial',
                 'status' => 'active',
                 'group_slug' => $group->group_slug,
-                'zone_slug' => $zone->zone_slug,
                 'registration_fee' => 0,
                 'registration_status' => true,
             ]
         );
     }
 
-    private function seedBulkClient(Provider $provider, Zone $zone): Client
+    private function seedBulkClient(Provider $provider): Client
     {
         return Client::firstOrCreate(
             ['email' => 'demo.bulk.client@waste.test'],
@@ -343,7 +342,6 @@ class DemoDataSeeder extends Seeder
                 'longitude' => -0.1700,
                 'type' => 'commercial',
                 'status' => 'active',
-                'zone_slug' => $zone->zone_slug,
                 'registration_fee' => 0,
                 'registration_status' => true,
             ]
@@ -368,7 +366,7 @@ class DemoDataSeeder extends Seeder
         );
     }
 
-    private function seedClient(Provider $provider, Group $group, Zone $zone, Product $product): Client
+    private function seedClient(Provider $provider, Group $group, Product $product): Client
     {
         $client = Client::firstOrCreate(
             ['email' => 'demo.client@waste.test'],
@@ -386,7 +384,6 @@ class DemoDataSeeder extends Seeder
                 'type' => 'residential',
                 'status' => 'active',
                 'group_slug' => $group->group_slug,
-                'zone_slug' => $zone->zone_slug,
                 'registration_fee' => 50.00,
                 'registration_status' => true,
             ]

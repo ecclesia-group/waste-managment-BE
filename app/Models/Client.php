@@ -25,7 +25,6 @@ class Client extends Actor
         'status',
         'bin_slug',
         'group_slug',
-        'zone_slug',
         'registration_fee',
         'registration_status',
         'profile_image',

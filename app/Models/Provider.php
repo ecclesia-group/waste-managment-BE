@@ -58,8 +58,7 @@ class Provider extends Actor
     }
 
     /**
-     * Admin can assign multiple zones to a provider.
-     * Operational code can still use `providers.zone_slug` as a primary zone if needed.
+     * Admin can assign multiple zones to a provider via provider_zones.
      */
     public function zones()
     {
