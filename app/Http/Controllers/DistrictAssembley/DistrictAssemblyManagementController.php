@@ -14,11 +14,13 @@ use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\Zone;
 use App\Services\ZoneAssignmentService;
+use App\Traits\RespondsWithZoneAssignments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class DistrictAssemblyManagementController extends Controller
 {
+    use RespondsWithZoneAssignments;
     private function districtSlug(Request $request): string
     {
         /** @var DistrictAssembly $user */
@@ -126,21 +128,72 @@ class DistrictAssemblyManagementController extends Controller
 
     public function listZones(Request $request)
     {
-        $districtSlug = $this->districtSlug($request);
-        $zoneSlugs = app(ZoneAssignmentService::class)->zoneSlugsForDistrict($districtSlug);
-
         $zones = Zone::query()
-            ->whereIn('zone_slug', $zoneSlugs)
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Zones used by providers and facilities in this district assembly',
+            reason: 'Available zones for provider and facility assignment',
             status_code: self::API_SUCCESS,
             data: $zones->toArray()
         );
+    }
+
+    public function listProviderZones(Request $request, Provider $provider)
+    {
+        if (! $this->providerBelongsToDistrict($request, $provider)) {
+            return $this->unauthorizedDistrictActorResponse('Provider');
+        }
+
+        return $this->listProviderZonesResponse($provider);
+    }
+
+    public function assignProviderZones(Request $request, Provider $provider)
+    {
+        if (! $this->providerBelongsToDistrict($request, $provider)) {
+            return $this->unauthorizedDistrictActorResponse('Provider');
+        }
+
+        return $this->assignProviderZonesResponse($request, $provider);
+    }
+
+    public function revokeProviderZone(Request $request, Provider $provider, Zone $zone)
+    {
+        if (! $this->providerBelongsToDistrict($request, $provider)) {
+            return $this->unauthorizedDistrictActorResponse('Provider');
+        }
+
+        return $this->revokeProviderZoneResponse($provider, $zone);
+    }
+
+    public function listFacilityZones(Request $request, Facility $facility)
+    {
+        if (! $this->facilityBelongsToDistrict($request, $facility)) {
+            return $this->unauthorizedDistrictActorResponse('Facility');
+        }
+
+        return $this->listFacilityZonesResponse($facility);
+    }
+
+    public function assignFacilityZones(Request $request, Facility $facility)
+    {
+        if (! $this->facilityBelongsToDistrict($request, $facility)) {
+            return $this->unauthorizedDistrictActorResponse('Facility');
+        }
+
+        return $this->assignFacilityZonesResponse($request, $facility);
+    }
+
+    public function revokeFacilityZone(Request $request, Facility $facility, Zone $zone)
+    {
+        if (! $this->facilityBelongsToDistrict($request, $facility)) {
+            return $this->unauthorizedDistrictActorResponse('Facility');
+        }
+
+        return $this->revokeFacilityZoneResponse($facility, $zone);
     }
 
     public function listComplaints(Request $request)
@@ -249,10 +302,15 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
+        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
         unset($data['zone_slugs']);
 
         $data = static::processImage($image_fields, $data);
         $provider = Provider::create($data);
+
+        if ($zoneSlugs !== []) {
+            app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
+        }
 
         self::sendEmail(
             $provider->email,
@@ -292,10 +350,15 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
+        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
         unset($data['zone_slugs']);
 
         $data = static::processImage($image_fields, $data);
         $facility = Facility::create($data);
+
+        if ($zoneSlugs !== []) {
+            app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
+        }
 
         self::sendEmail(
             $facility->email,
@@ -372,6 +435,27 @@ class DistrictAssemblyManagementController extends Controller
             reason: "Facility status updated successfully",
             status_code: self::API_SUCCESS,
             data: $facility->fresh()->toArray()
+        );
+    }
+
+    private function providerBelongsToDistrict(Request $request, Provider $provider): bool
+    {
+        return (string) $provider->district_assembly === $this->districtSlug($request);
+    }
+
+    private function facilityBelongsToDistrict(Request $request, Facility $facility): bool
+    {
+        return (string) $facility->district_assembly === $this->districtSlug($request);
+    }
+
+    private function unauthorizedDistrictActorResponse(string $actor)
+    {
+        return self::apiResponse(
+            in_error: true,
+            message: 'Action Failed',
+            reason: "{$actor} not found in this district assembly",
+            status_code: self::API_NOT_FOUND,
+            data: []
         );
     }
 }

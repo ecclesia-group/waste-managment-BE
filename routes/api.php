@@ -333,6 +333,12 @@ Route::prefix("district_assembly")->group(function () {
         Route::get("get_single_facility/{facility}", [DistrictAssemblyManagementController::class, "getFacility"]);
 
         Route::get("zones", [DistrictAssemblyManagementController::class, "listZones"]);
+        Route::get("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "listProviderZones"]);
+        Route::post("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "assignProviderZones"]);
+        Route::delete("providers/{provider}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeProviderZone"]);
+        Route::get("facilities/{facility}/zones", [DistrictAssemblyManagementController::class, "listFacilityZones"]);
+        Route::post("facilities/{facility}/zones", [DistrictAssemblyManagementController::class, "assignFacilityZones"]);
+        Route::delete("facilities/{facility}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeFacilityZone"]);
 
         Route::get("complaints", [DistrictAssemblyManagementController::class, "listComplaints"]);
         Route::get("get_single_complaint/{complaint}", [DistrictAssemblyManagementController::class, "getComplaint"]);
@@ -414,6 +420,7 @@ Route::prefix("admin")->group(function () {
         Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
         Route::get('facilities/{facility}/zones', [ZoneManagementController::class, 'listFacilityZones']);
         Route::post('facilities/{facility}/zones', [ZoneManagementController::class, 'assignFacilityZones']);
+        Route::delete('facilities/{facility}/zones/{zone}', [ZoneManagementController::class, 'revokeFacilityZone']);
 
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);

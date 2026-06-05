@@ -6,6 +6,16 @@ use Illuminate\Http\JsonResponse;
 
 trait ApiTransformer
 {
+    protected const API_SUCCESS = 200;
+
+    protected const API_FAIL = 401;
+
+    protected const API_FOUND = 404;
+
+    protected const API_NOT_FOUND = 403;
+
+    protected const API_CREATED = 201;
+
     protected static function apiResponse(bool $in_error, string $message, string $status_code, string $reason, ?array $data = []): JsonResponse
     {
         $code = 200;

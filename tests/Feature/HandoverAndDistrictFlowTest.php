@@ -8,6 +8,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertDatabaseHas;
+
 uses(RefreshDatabase::class);
 
 it('allows zone provider to accept pending handover and blocks out-of-zone provider', function () {
@@ -60,22 +63,22 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
         'fee_amount' => 0,
     ]);
 
-    $this->actingAs($outsider, 'provider')
+    actingAs($outsider, 'provider')
         ->postJson('/api/provider/handover_requests/'.$handover->id.'/accept')
         ->assertStatus(401);
 
-    $this->actingAs($acceptor, 'provider')
+    actingAs($acceptor, 'provider')
         ->postJson('/api/provider/handover_requests/'.$handover->id.'/accept')
         ->assertOk();
 
-    $this->assertDatabaseHas('waste_handover_requests', [
+    assertDatabaseHas('waste_handover_requests', [
         'id' => $handover->id,
         'status' => 'accepted',
         'target_provider_slug' => $acceptor->provider_slug,
     ]);
 });
 
-it('lists district zones from provider and facility zone assignments', function () {
+it('lists available zones for mmda zone management', function () {
     $district = DistrictAssembly::query()->create([
         'district_assembly_slug' => 'mmda-'.Str::lower(Str::random(8)),
         'region' => 'Greater Accra',
@@ -93,22 +96,73 @@ it('lists district zones from provider and facility zone assignments', function 
         'district_assembly' => $district->district_assembly_slug,
     ]);
 
-    $zone = Zone::query()->create([
+    Zone::query()->create([
         'name' => 'Zone '.Str::upper(Str::random(4)),
         'zone_slug' => 'zone-'.Str::lower(Str::random(8)),
         'region' => 'Greater Accra',
-    ]);
-
-    DB::table('provider_zones')->insert([
-        'provider_slug' => $provider->provider_slug,
-        'zone_slug' => $zone->zone_slug,
         'status' => 'active',
-        'assigned_at' => now(),
-        'created_at' => now(),
-        'updated_at' => now(),
     ]);
 
-    $this->actingAs($district, 'district_assembly')
+    actingAs($district, 'district_assembly')
         ->getJson('/api/district_assembly/zones')
+        ->assertOk()
+        ->assertJsonPath('data.0.region', 'Greater Accra');
+});
+
+it('allows mmda to assign and reallocate provider zones', function () {
+    $district = DistrictAssembly::query()->create([
+        'district_assembly_slug' => 'mmda-'.Str::lower(Str::random(8)),
+        'region' => 'Greater Accra',
+        'district' => 'Accra',
+        'email' => 'mmda-zone+'.Str::lower(Str::random(6)).'@test.local',
+        'password' => 'password',
+        'first_name' => 'MMDA',
+    ]);
+
+    $provider = Provider::query()->create([
+        'provider_slug' => 'prov-'.Str::lower(Str::random(8)),
+        'first_name' => 'Provider',
+        'email' => 'provider-zone+'.Str::lower(Str::random(6)).'@test.local',
+        'password' => 'password',
+        'district_assembly' => $district->district_assembly_slug,
+    ]);
+
+    $zoneA = Zone::query()->create([
+        'name' => 'Zone A',
+        'zone_slug' => 'zone-a-'.Str::lower(Str::random(6)),
+        'region' => 'Greater Accra',
+        'status' => 'active',
+    ]);
+
+    $zoneB = Zone::query()->create([
+        'name' => 'Zone B',
+        'zone_slug' => 'zone-b-'.Str::lower(Str::random(6)),
+        'region' => 'Greater Accra',
+        'status' => 'active',
+    ]);
+
+    actingAs($district, 'district_assembly')
+        ->postJson('/api/district_assembly/providers/'.$provider->provider_slug.'/zones', [
+            'zone_slugs' => [$zoneA->zone_slug],
+        ])
         ->assertOk();
+
+    actingAs($district, 'district_assembly')
+        ->postJson('/api/district_assembly/providers/'.$provider->provider_slug.'/zones', [
+            'zone_slugs' => [$zoneB->zone_slug],
+            'replace' => true,
+        ])
+        ->assertOk();
+
+    assertDatabaseHas('provider_zones', [
+        'provider_slug' => $provider->provider_slug,
+        'zone_slug' => $zoneB->zone_slug,
+        'status' => 'active',
+    ]);
+
+    assertDatabaseHas('provider_zones', [
+        'provider_slug' => $provider->provider_slug,
+        'zone_slug' => $zoneA->zone_slug,
+        'status' => 'revoked',
+    ]);
 });
