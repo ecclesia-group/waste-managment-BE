@@ -11,7 +11,6 @@ use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
-use App\Models\RoutePlannerBinAssignment;
 use App\Traits\HasClientMapPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -701,6 +700,10 @@ class PickupController extends Controller
 
         $pickup->scan_status = $canonicalStatus;
 
+        // Keep timestamps mutually exclusive for cleaner map UI / routing analytics.
+        $pickup->scanned_at = $canonicalStatus === 'scanned' ? now() : null;
+        $pickup->unscanned_at = $canonicalStatus === 'unscanned' ? now() : null;
+
         if (! empty($data['comment'])) {
             $pickup->description = $data['comment'];
         }
@@ -712,19 +715,6 @@ class PickupController extends Controller
             $pickup->status = 'scheduled';
         }
         $pickup->save();
-
-        // Keep route planner assignment rows in sync (used for map coloring).
-        $assignment = RoutePlannerBinAssignment::query()
-            ->where('provider_slug', $providerSlug)
-            ->where('pickup_code', $pickup->code)
-            ->first();
-        if ($assignment) {
-            $assignment->scan_status = $canonicalStatus;
-            // Keep timestamps mutually exclusive for cleaner map UI.
-            $assignment->scanned_at = $canonicalStatus === 'scanned' ? now() : null;
-            $assignment->unscanned_at = $canonicalStatus === 'unscanned' ? now() : null;
-            $assignment->save();
-        }
 
         // Support "scan-first" flows: remember the last scanned client for this provider.
         if ($canonicalStatus === 'scanned' && $pickup->provider_slug) {
@@ -782,15 +772,17 @@ class PickupController extends Controller
             );
         }
 
-        // Return pending pickups that are tied to an active route-plan scan assignment.
-        $pendingAssignments = RoutePlannerBinAssignment::query()
+        // Return pending pickups for this bin's client that are tied to an active route plan.
+        $pickups = Pickup::with(['provider', 'client.group'])
+            ->whereNotNull('route_planner_id')
             ->where('client_slug', $bin->client_slug)
             ->where('provider_slug', $bin->provider_slug)
+            ->whereIn('status', ['pending', 'scheduled'])
             ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
             ->orderByDesc('created_at')
-            ->get(['pickup_code']);
+            ->get();
 
-        if ($pendingAssignments->isEmpty()) {
+        if ($pickups->isEmpty()) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -799,14 +791,6 @@ class PickupController extends Controller
                 data: []
             );
         }
-
-        $pickupCodes = $pendingAssignments->pluck('pickup_code')->toArray();
-
-        $pickups = Pickup::with(['provider', 'client.group'])
-            ->whereIn('code', $pickupCodes)
-            ->whereIn('status', ['pending', 'scheduled'])
-            ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
-            ->get();
 
         return self::apiResponse(
             in_error: false,

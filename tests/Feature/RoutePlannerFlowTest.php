@@ -205,13 +205,9 @@ it('creates bulk waste pickup plan from selected request codes', function () {
     expect($assignment['selection']['mode'])->toBe('bulk_waste_request');
 
     assertDatabaseHas('pickups', [
-        'provider_slug' => $provider->provider_slug,
-        'client_slug' => $client->client_slug,
-        'bulk_waste_request_code' => $bulkCode,
-    ]);
-    assertDatabaseHas('route_planner_bin_assignments', [
         'route_planner_id' => $plan->id,
         'provider_slug' => $provider->provider_slug,
         'client_slug' => $client->client_slug,
+        'bulk_waste_request_code' => $bulkCode,
     ]);
 });

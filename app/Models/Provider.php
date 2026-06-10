@@ -73,6 +73,7 @@ class Provider extends Actor
             'zone_slug' // zones related key
         )
             ->withPivot(['assigned_at', 'status'])
+            ->wherePivot('status', 'active')  // Filter by active status
             ->withTimestamps();
     }
 

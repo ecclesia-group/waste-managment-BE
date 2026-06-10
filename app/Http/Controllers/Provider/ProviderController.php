@@ -9,9 +9,11 @@ use App\Http\Requests\Provider\UpdateProviderProfileRequest;
 use App\Models\Notification;
 use App\Models\Provider;
 use App\Services\ZoneAssignmentService;
-use function Symfony\Component\Clock\now;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+use function Symfony\Component\Clock\now;
 
 class ProviderController extends Controller
 {
@@ -248,6 +250,7 @@ class ProviderController extends Controller
     public function deleteProvider(Provider $provider)
     {
         $provider->delete();
+        app(ZoneAssignmentService::class)->syncProviderZones($provider->provider_slug, []);
 
         return self::apiResponse(
             in_error: false,
@@ -256,5 +259,15 @@ class ProviderController extends Controller
             status_code: self::API_SUCCESS,
             data: []
         );
+    }
+
+    public function reassignZones(ReassignZonesRequest $request, Provider $provider)
+    {
+        $data = $request->validated();
+
+        $zones = array_values(array_unique(array_filter($data['zone_slugs'] ?? [])));
+        unset($data['zone_slugs']);
+
+        app(ZoneAssignmentService::class)->setProviderZones($provider->provider_slug, $zones, true);
     }
 }

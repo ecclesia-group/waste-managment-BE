@@ -6,30 +6,17 @@ use App\Models\BulkWasteRequest;
 use App\Models\Driver;
 use App\Models\Fleet;
 use App\Models\Group;
+use App\Models\Pickup;
 use App\Models\RoutePlanner;
-use App\Models\RoutePlannerBinAssignment;
 use App\Services\RoutePlannerService;
 use Illuminate\Support\Collection;
 
 /**
- * Maps route_planners + pickups into frontend "assignments" with nested pickup stops.
+ * Maps route_planners + their pickups into frontend "assignments" with nested pickup stops.
  */
 trait TransformsRoutePlannerResponse
 {
     use HasClientMapPayload;
-
-    protected static function assignmentIsScanned(RoutePlannerBinAssignment $assignment): bool
-    {
-        $assignmentScan = (string) ($assignment->scan_status ?? 'unscanned');
-
-        return $assignmentScan === 'scanned'
-            || ($assignment->pickup?->scan_status === 'scanned');
-    }
-
-    protected static function assignmentUiScanStatus(RoutePlannerBinAssignment $assignment): string
-    {
-        return static::assignmentIsScanned($assignment) ? 'scanned' : 'unscanned';
-    }
 
     /**
      * Frontend shape: assignment (plan) with nested pickups (per client stop).
@@ -40,19 +27,17 @@ trait TransformsRoutePlannerResponse
             'provider',
             'driver',
             'fleet',
-            'assignments.client.group',
-            'assignments.pickup',
+            'pickups.client.group',
         ]);
 
         $pickups = [];
         $scanned = 0;
         $unscanned = 0;
 
-        foreach ($plan->assignments as $row) {
-            $client = $row->client;
-            $pickup = $row->pickup;
+        foreach ($plan->pickups as $pickup) {
+            $client = $pickup->client;
             $coords = static::clientCoordinatesForMap($client);
-            $scanStatus = static::assignmentUiScanStatus($row);
+            $scanStatus = $pickup->scan_status === 'scanned' ? 'scanned' : 'unscanned';
 
             if ($scanStatus === 'scanned') {
                 $scanned++;
@@ -61,15 +46,15 @@ trait TransformsRoutePlannerResponse
             }
 
             $pickups[] = [
-                'pickup_code' => $row->pickup_code,
+                'pickup_code' => $pickup->code,
                 'assignment_id' => $plan->id,
                 'scan_status' => $scanStatus,
-                'pickup_status' => $pickup?->status,
-                'pickup_date' => $pickup?->pickup_date,
-                'amount' => $pickup?->amount,
-                'bulk_waste_request_code' => $pickup?->bulk_waste_request_code,
+                'pickup_status' => $pickup->status,
+                'pickup_date' => $pickup->pickup_date,
+                'amount' => $pickup->amount,
+                'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
                 'client' => [
-                    'client_slug' => $row->client_slug,
+                    'client_slug' => $pickup->client_slug,
                     'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
                     'phone_number' => $client?->phone_number,
                     'email' => $client?->email,
@@ -208,6 +193,63 @@ trait TransformsRoutePlannerResponse
             'vehicle_make' => $fleet->vehicle_make,
             'model' => $fleet->model,
             'display_label' => $fleet->license_plate ? (string) $fleet->license_plate : $fleet->fleet_slug,
+        ];
+    }
+
+    /**
+     * Lean map payload for a plan: just what the frontend needs to plot pickup stops.
+     * Each stop carries the client's coordinates (latitude/longitude/gps_address).
+     */
+    protected static function transformRoutePlannerMap(RoutePlanner $plan): array
+    {
+        $plan->loadMissing(['driver', 'fleet', 'pickups.client']);
+
+        $scanned = 0;
+        $mapReady = 0;
+
+        $stops = $plan->pickups->map(function (Pickup $pickup) use (&$scanned, &$mapReady) {
+            $client = $pickup->client;
+            $coords = static::clientCoordinatesForMap($client);
+
+            if ($pickup->scan_status === 'scanned') {
+                $scanned++;
+            }
+            if ($coords['map_ready']) {
+                $mapReady++;
+            }
+
+            return [
+                'pickup_code' => $pickup->code,
+                'scan_status' => $pickup->scan_status === 'scanned' ? 'scanned' : 'unscanned',
+                'pickup_status' => $pickup->status,
+                'pickup_date' => $pickup->pickup_date,
+                'client' => [
+                    'client_slug' => $pickup->client_slug,
+                    'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+                    'phone_number' => $client?->phone_number,
+                    'gps_address' => $client?->gps_address,
+                    'latitude' => $coords['latitude'],
+                    'longitude' => $coords['longitude'],
+                    'map_ready' => $coords['map_ready'],
+                ],
+            ];
+        })->values()->all();
+
+        return [
+            'route_planner_id' => $plan->id,
+            'provider_slug' => $plan->provider_slug,
+            'pickup_type' => $plan->pickup_type,
+            'status' => $plan->status,
+            'pickup_date' => $plan->pickup_date?->toISOString(),
+            'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
+            'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
+            'summary' => [
+                'total' => count($stops),
+                'scanned' => $scanned,
+                'unscanned' => count($stops) - $scanned,
+                'map_ready' => $mapReady,
+            ],
+            'pickups' => $stops,
         ];
     }
 }

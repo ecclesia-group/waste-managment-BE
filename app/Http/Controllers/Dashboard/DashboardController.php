@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\DistrictAssembly;
 use App\Models\Facility;
+use App\Models\Pickup;
 use App\Models\Provider;
-use App\Models\RoutePlannerBinAssignment;
 use App\Models\WasteHandoverRequest;
 use App\Models\WeighbridgeRecord;
 use App\Models\Zone;
@@ -62,7 +62,8 @@ class DashboardController extends Controller
             ->whereIn('status', ['pending', 'accepted'])
             ->count();
 
-        $scannedBins = RoutePlannerBinAssignment::query()
+        $scannedBins = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->where('provider_slug', $effectiveProviderSlug)
             ->where('scan_status', 'scanned')
             ->count();
@@ -149,12 +150,14 @@ class DashboardController extends Controller
             ->pluck('facility_slug')
             ->toArray();
 
-        $pendingAssignments = RoutePlannerBinAssignment::query()
+        $pendingAssignments = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->whereIn('provider_slug', $providerSlugs)
-            ->whereIn('scan_status', ['pending', 'not_scanned'])
+            ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
             ->count();
 
-        $scannedAssignments = RoutePlannerBinAssignment::query()
+        $scannedAssignments = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->whereIn('provider_slug', $providerSlugs)
             ->where('scan_status', 'scanned')
             ->count();
@@ -186,8 +189,9 @@ class DashboardController extends Controller
         $user = $request->user();
         $groupBy = $request->string('group_by', 'provider')->toString();
 
-        $query = RoutePlannerBinAssignment::query()
-            ->with(['client', 'pickup'])
+        $query = Pickup::query()
+            ->whereNotNull('route_planner_id')
+            ->with(['client'])
             ->orderByDesc('updated_at');
 
         if (isset($user->provider_slug)) {
@@ -205,38 +209,36 @@ class DashboardController extends Controller
             $query->where('group_slug', $request->string('group_slug'));
         }
 
-        $assignments = $query->limit(500)->get();
+        $pickups = $query->limit(500)->get();
 
         $providerDistricts = Provider::query()
-            ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
+            ->whereIn('provider_slug', $pickups->pluck('provider_slug')->unique()->filter())
             ->pluck('district_assembly', 'provider_slug');
         $providerZones = DB::table('provider_zones')
-            ->whereIn('provider_slug', $assignments->pluck('provider_slug')->unique()->filter())
+            ->whereIn('provider_slug', $pickups->pluck('provider_slug')->unique()->filter())
             ->where('status', 'active')
             ->orderByDesc('assigned_at')
             ->get(['provider_slug', 'zone_slug'])
             ->groupBy('provider_slug')
             ->map(fn ($rows) => optional($rows->first())->zone_slug);
 
-        $items = $assignments->map(function (RoutePlannerBinAssignment $a) use ($providerDistricts, $providerZones) {
-            $c = $a->client;
-            $zoneSlug = $providerZones[$a->provider_slug] ?? null;
+        $items = $pickups->map(function (Pickup $p) use ($providerDistricts, $providerZones) {
+            $c = $p->client;
+            $zoneSlug = $providerZones[$p->provider_slug] ?? null;
 
             return [
-                'route_planner_id' => $a->route_planner_id,
-                'pickup_code' => $a->pickup_code,
-                'provider_slug' => $a->provider_slug,
-                'provider_id' => $a->provider_slug,
-                'group_slug' => $a->group_slug,
+                'route_planner_id' => $p->route_planner_id,
+                'pickup_code' => $p->code,
+                'provider_slug' => $p->provider_slug,
+                'provider_id' => $p->provider_slug,
+                'group_slug' => $p->group_slug,
                 'zone_slug' => $zoneSlug,
                 'zone_id' => $zoneSlug,
-                'mmda_slug' => $providerDistricts[$a->provider_slug] ?? null,
+                'mmda_slug' => $providerDistricts[$p->provider_slug] ?? null,
                 'latitude' => $c?->latitude !== null ? (float) $c->latitude : null,
                 'longitude' => $c?->longitude !== null ? (float) $c->longitude : null,
-                'scanned' => $a->scan_status === 'scanned',
-                'scan_status' => $a->scan_status,
-                // 'stop_order' => $a->stop_order,
-                // 'eta_minutes' => $a->eta_minutes,
+                'scanned' => $p->scan_status === 'scanned',
+                'scan_status' => $p->scan_status,
             ];
         });
 

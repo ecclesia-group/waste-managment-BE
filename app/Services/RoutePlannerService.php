@@ -9,7 +9,6 @@ use App\Models\Fleet;
 use App\Models\Group;
 use App\Models\Pickup;
 use App\Models\RoutePlanner;
-use App\Models\RoutePlannerBinAssignment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -149,8 +148,7 @@ class RoutePlannerService
                 'provider',
                 'driver',
                 'fleet',
-                'assignments.client.group',
-                'assignments.pickup',
+                'pickups.client.group',
             ]);
         });
     }
@@ -224,6 +222,9 @@ class RoutePlannerService
         return [$clients, $bulkByClient];
     }
 
+    /**
+     * Create one pickup stop per client, linked directly to the plan via route_planner_id.
+     */
     private function createPlanStops(
         RoutePlanner $plan,
         Collection $clients,
@@ -233,12 +234,14 @@ class RoutePlannerService
     ): void {
         foreach ($clients as $client) {
             $bulkRequest = $bulkByClient->get($client->client_slug);
-            $pickupCode = $this->generateUniquePickupCode();
 
             Pickup::create([
-                'code' => $pickupCode,
-                'bulk_waste_request_code' => $bulkRequest?->request_code,
+                'code' => $this->generateUniquePickupCode(),
+                'route_planner_id' => $plan->id,
+                'provider_slug' => $plan->provider_slug,
                 'client_slug' => $client->client_slug,
+                'group_slug' => $pickupType === self::PICKUP_TYPE_NORMAL ? $client->group_slug : null,
+                'bulk_waste_request_code' => $bulkRequest?->request_code,
                 'title' => $bulkRequest?->title ?? 'Scheduled pickup',
                 'category' => $pickupType === self::PICKUP_TYPE_BULK ? 'bulk_waste_request' : 'normal_pickup',
                 'description' => $bulkRequest?->description,
@@ -246,7 +249,6 @@ class RoutePlannerService
                 'status' => 'scheduled',
                 'scan_status' => 'unscanned',
                 'location' => $client->pickup_location ?: ($client->gps_address ?: 'Unknown'),
-                'provider_slug' => $plan->provider_slug,
                 'images' => $bulkRequest?->images,
                 'pickup_date' => $pickupDate,
             ]);
@@ -254,17 +256,6 @@ class RoutePlannerService
             if ($bulkRequest) {
                 $this->scheduleBulkRequest($bulkRequest, $pickupDate);
             }
-
-            RoutePlannerBinAssignment::create([
-                'route_planner_id' => $plan->id,
-                'provider_slug' => $plan->provider_slug,
-                'driver_slug' => $plan->driver_slug,
-                'fleet_slug' => $plan->fleet_slug,
-                'group_slug' => $pickupType === self::PICKUP_TYPE_NORMAL ? $client->group_slug : null,
-                'client_slug' => $client->client_slug,
-                'pickup_code' => $pickupCode,
-                'scan_status' => 'unscanned',
-            ]);
         }
     }
 

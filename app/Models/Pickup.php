@@ -22,14 +22,21 @@ class Pickup extends Model
         'amount',
         'provider_slug',
         "scan_status",
+        'route_planner_id',
+        'group_slug',
+        'scanned_at',
+        'unscanned_at',
     ];
 
     protected $casts = [
-        'images'     => 'array',
-        'amount'     => 'float',
-        'deleted_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'images'       => 'array',
+        'amount'       => 'float',
+        'pickup_date'  => 'datetime',
+        'scanned_at'   => 'datetime',
+        'unscanned_at' => 'datetime',
+        'deleted_at'   => 'datetime',
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
 
     public function provider()
@@ -50,5 +57,10 @@ class Pickup extends Model
     public function bulkWasteRequest()
     {
         return $this->belongsTo(BulkWasteRequest::class, 'bulk_waste_request_code', 'request_code');
+    }
+
+    public function routePlanner()
+    {
+        return $this->belongsTo(RoutePlanner::class, 'route_planner_id');
     }
 }

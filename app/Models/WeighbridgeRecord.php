@@ -17,7 +17,6 @@ class WeighbridgeRecord extends Model
         'fleet_code',
         'gross_weight',
         'amount',
-        'zone_slug',
         'payment_status',
         'scan_status',
         'notes',
@@ -44,11 +43,6 @@ class WeighbridgeRecord extends Model
     public function fleet()
     {
         return $this->belongsTo(Fleet::class, 'fleet_slug', 'fleet_slug');
-    }
-
-    public function zone()
-    {
-        return $this->belongsTo(Zone::class, 'zone_slug', 'zone_slug');
     }
 
     public function getRouteKeyName(): string

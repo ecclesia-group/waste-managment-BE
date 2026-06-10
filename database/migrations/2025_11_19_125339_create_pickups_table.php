@@ -23,10 +23,20 @@ return new class extends Migration
             $table->string('provider_slug')->nullable();
             $table->longText('images')->nullable();
             $table->timestamp('pickup_date')->nullable();
+
+            // Route planner link: a pickup is the single stop that ties a plan to a client.
+            // Replaces the old route_planner_bin_assignments join table.
+            $table->unsignedBigInteger('route_planner_id')->nullable();
+            $table->string('group_slug')->nullable();
+            $table->timestamp('scanned_at')->nullable();
+            $table->timestamp('unscanned_at')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['provider_slug', 'client_slug', 'bulk_waste_request_code'], 'pickups_provider_client_bulk_idx');
+            $table->index(['route_planner_id', 'scan_status'], 'pickups_plan_scan_idx');
+            $table->index(['provider_slug', 'group_slug', 'scan_status'], 'pickups_provider_group_scan_idx');
         });
     }
 

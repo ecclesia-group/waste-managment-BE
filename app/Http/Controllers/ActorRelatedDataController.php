@@ -89,6 +89,21 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function providerClient(Request $request, Provider $provider, Client $client)
+    {
+        $client = Client::where('client_slug', $client->client_slug)
+            ->where('provider_slug', $provider->provider_slug)
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Client retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $client->load('bin')->toArray()
+        );
+    }
+
     public function providerPickups(Request $request, Provider $provider)
     {
         $query = Pickup::query()
@@ -102,11 +117,38 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function providerViolations(Request $request, Provider $provider)
+    {
+        $query = Violation::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->with(['client', 'provider'])
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider violations retrieved successfully'
+        );
+    }
+
+    public function providerPayments(Request $request, Provider $provider)
+    {
+        $query = Payment::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->with(['client'])
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider payments retrieved successfully'
+        );
+    }
+
     public function providerWeighbridgeRecords(Request $request, Provider $provider)
     {
         $query = WeighbridgeRecord::query()
             ->where('provider_slug', $provider->provider_slug)
-            ->orderByDesc('created_at');
+            ->with(['facility', 'provider', 'fleet'])
+            ->orderBy('created_at', 'desc');
 
         return $this->paginatedApiResponse(
             $query->paginate($this->perPage($request)),
@@ -118,7 +160,8 @@ class ActorRelatedDataController extends Controller
     {
         $query = WeighbridgeRecord::query()
             ->where('facility_slug', $facility->facility_slug)
-            ->orderByDesc('created_at');
+            ->with(['provider', 'fleet'])
+            ->orderBy('created_at', 'desc');
 
         return $this->paginatedApiResponse(
             $query->paginate($this->perPage($request)),

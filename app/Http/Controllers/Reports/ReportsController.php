@@ -8,7 +8,6 @@ use App\Models\Fleet;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Purchase;
-use App\Models\RoutePlannerBinAssignment;
 use App\Models\Violation;
 use App\Models\WasteHandoverRequest;
 use App\Models\WeighbridgeRecord;
@@ -55,15 +54,17 @@ class ReportsController extends Controller
                 ->count(),
         ];
 
-        // Utilization: scanned/unscanned bin assignments + handovers
+        // Utilization: scanned/unscanned route pickups + handovers
         $utilization = [
-            'scanned_bins' => RoutePlannerBinAssignment::query()
+            'scanned_bins' => Pickup::query()
+                ->whereNotNull('route_planner_id')
                 ->where('provider_slug', $providerSlug)
                 ->where('scan_status', 'scanned')
                 ->count(),
-            'unscanned_bins' => RoutePlannerBinAssignment::query()
+            'unscanned_bins' => Pickup::query()
+                ->whereNotNull('route_planner_id')
                 ->where('provider_slug', $providerSlug)
-                ->whereIn('scan_status', ['pending', 'not_scanned'])
+                ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
                 ->count(),
             'handover_requests_total' => WasteHandoverRequest::query()
                 ->where(function ($q) use ($providerSlug) {
@@ -93,7 +94,8 @@ class ReportsController extends Controller
             'by_group' => [],
         ];
 
-        $scannedAssignments = RoutePlannerBinAssignment::query()
+        $scannedAssignments = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->where('provider_slug', $providerSlug)
             ->where('scan_status', 'scanned')
             ->whereNotNull('scanned_at')
@@ -191,10 +193,10 @@ class ReportsController extends Controller
             ->toArray();
 
         $topScannedProviders = DB::table('providers as pr')
-            ->leftJoin('route_planner_bin_assignments as rpa', 'rpa.provider_slug', '=', 'pr.provider_slug')
+            ->leftJoin('pickups as rpa', 'rpa.provider_slug', '=', 'pr.provider_slug')
             ->select(
                 'pr.provider_slug',
-                DB::raw('COALESCE(SUM(CASE WHEN rpa.scan_status = "scanned" THEN 1 ELSE 0 END), 0) as scanned_bins_total')
+                DB::raw('COALESCE(SUM(CASE WHEN rpa.scan_status = "scanned" AND rpa.route_planner_id IS NOT NULL THEN 1 ELSE 0 END), 0) as scanned_bins_total')
             )
             ->groupBy('pr.provider_slug')
             ->orderByDesc('scanned_bins_total')
@@ -361,7 +363,8 @@ class ReportsController extends Controller
             ->get()
             ->toArray();
 
-        $assignmentUtilization = RoutePlannerBinAssignment::query()
+        $assignmentUtilization = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->whereIn('provider_slug', $providerSlugs)
             ->select('scan_status', DB::raw('count(*) as total'))
             ->groupBy('scan_status')
@@ -420,13 +423,15 @@ class ReportsController extends Controller
             ];
 
             $utilization = [
-                'scanned_bins' => RoutePlannerBinAssignment::query()
+                'scanned_bins' => Pickup::query()
+                    ->whereNotNull('route_planner_id')
                     ->where('provider_slug', $providerSlug)
                     ->where('scan_status', 'scanned')
                     ->count(),
-                'unscanned_bins' => RoutePlannerBinAssignment::query()
+                'unscanned_bins' => Pickup::query()
+                    ->whereNotNull('route_planner_id')
                     ->where('provider_slug', $providerSlug)
-                    ->whereIn('scan_status', ['pending', 'not_scanned'])
+                    ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
                     ->count(),
                 'handover_requests_total' => WasteHandoverRequest::query()
                     ->where(function ($q) use ($providerSlug) {
@@ -455,7 +460,8 @@ class ReportsController extends Controller
                 'by_group' => [],
             ];
 
-            $scannedAssignments = RoutePlannerBinAssignment::query()
+            $scannedAssignments = Pickup::query()
+                ->whereNotNull('route_planner_id')
                 ->where('provider_slug', $providerSlug)
                 ->where('scan_status', 'scanned')
                 ->whereNotNull('scanned_at')
@@ -595,7 +601,8 @@ class ReportsController extends Controller
         $customersTotal = Client::count();
         $providersTotal = DB::table('providers')->count();
         $facilitiesTotal = DB::table('facilities')->count();
-        $assignmentsScannedTotal = RoutePlannerBinAssignment::query()
+        $assignmentsScannedTotal = Pickup::query()
+            ->whereNotNull('route_planner_id')
             ->where('scan_status', 'scanned')
             ->count();
         $totalViolations = Violation::query()->count();
@@ -628,8 +635,9 @@ class ReportsController extends Controller
             ->get()
             ->toArray();
 
-        $topProvidersByScannedBins = DB::table('route_planner_bin_assignments')
+        $topProvidersByScannedBins = DB::table('pickups')
             ->select('provider_slug', DB::raw('COUNT(*) as scanned_bins_total'))
+            ->whereNotNull('route_planner_id')
             ->where('scan_status', 'scanned')
             ->groupBy('provider_slug')
             ->orderByDesc('scanned_bins_total')
@@ -637,8 +645,9 @@ class ReportsController extends Controller
             ->get()
             ->toArray();
 
-        $lowProvidersByScannedBins = DB::table('route_planner_bin_assignments')
+        $lowProvidersByScannedBins = DB::table('pickups')
             ->select('provider_slug', DB::raw('COUNT(*) as scanned_bins_total'))
+            ->whereNotNull('route_planner_id')
             ->where('scan_status', 'scanned')
             ->groupBy('provider_slug')
             ->orderBy('scanned_bins_total', 'asc')

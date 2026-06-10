@@ -23,7 +23,6 @@ use App\Models\Provider;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\RoutePlanner;
-use App\Models\RoutePlannerBinAssignment;
 use App\Models\Violation;
 use App\Models\WasteHandoverRequest;
 use App\Models\WeighbridgeRecord;

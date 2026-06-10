@@ -76,25 +76,25 @@ class RoutePlanner extends Model
     }
 
     /**
-     * Clients on this route (derived from bin assignments).
+     * Pickups on this route (one stop per client). Replaces bin assignments.
+     */
+    public function pickups()
+    {
+        return $this->hasMany(Pickup::class, 'route_planner_id');
+    }
+
+    /**
+     * Clients on this route (derived from pickups).
      */
     public function clients()
     {
         return $this->hasManyThrough(
             Client::class,
-            RoutePlannerBinAssignment::class,
+            Pickup::class,
             'route_planner_id',
             'client_slug',
             'id',
             'client_slug'
         )->where('clients.provider_slug', $this->provider_slug);
-    }
-
-    /**
-     * Bin assignment rows for this route (one per client pickup in the plan).
-     */
-    public function assignments()
-    {
-        return $this->hasMany(RoutePlannerBinAssignment::class, 'route_planner_id');
     }
 }

@@ -7,9 +7,9 @@ use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
 use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
 use App\Models\Driver;
 use App\Models\Fleet;
+use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
-use App\Models\RoutePlannerBinAssignment;
 use App\Services\RoutePlannerService;
 use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Http\Request;
@@ -42,15 +42,17 @@ class RoutePlannerManagement extends Controller
     {
         $user = $request->user();
 
-        $query = RoutePlannerBinAssignment::query()
-            ->with(['client', 'pickup', 'routePlanner']);
+        // Pickups tied to a route plan are the assignment "logs" (one stop per client).
+        $query = Pickup::query()
+            ->whereNotNull('route_planner_id')
+            ->with(['client', 'routePlanner']);
 
         if (isset($user->provider_slug)) {
             $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
         }
 
         if (isset($user->driver_slug)) {
-            $query->where('driver_slug', $user->driver_slug);
+            $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $user->driver_slug));
         }
 
         if (isset($user->district_assembly_slug)) {
@@ -65,7 +67,7 @@ class RoutePlannerManagement extends Controller
             $query->where('provider_slug', $request->string('provider_slug'));
         }
         if ($request->filled('driver_slug')) {
-            $query->where('driver_slug', $request->string('driver_slug'));
+            $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $request->string('driver_slug')));
         }
         if ($request->filled('group_slug')) {
             $query->where('group_slug', $request->string('group_slug'));
@@ -175,8 +177,7 @@ class RoutePlannerManagement extends Controller
                 'provider',
                 'driver',
                 'fleet',
-                'assignments.client.group',
-                'assignments.pickup',
+                'pickups.client.group',
             ])
             ->where('provider_slug', $this->resolveProviderScopeSlug($user))
             ->latest()
@@ -335,6 +336,58 @@ class RoutePlannerManagement extends Controller
             reason: 'Route deleted successfully',
             status_code: self::API_SUCCESS,
             data: []
+        );
+    }
+
+    /**
+     * Admin: list all route planner records for a given provider.
+     */
+    public function routerplannerRecords(Provider $provider)
+    {
+        $plans = RoutePlanner::query()
+            ->with([
+                'provider',
+                'driver',
+                'fleet',
+                'pickups.client.group',
+            ])
+            ->where('provider_slug', $provider->provider_slug)
+            ->latest()
+            ->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider route planner records retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: [
+                'assignments' => self::transformAssignmentsList($plans),
+            ]
+        );
+    }
+
+    /**
+     * Admin: map data for a single route planner record — all pickup stops with
+     * client coordinates (latitude/longitude/gps_address) for plotting on a map.
+     */
+    public function routerplannerPickups(Provider $provider, RoutePlanner $routerplanner)
+    {
+        if ((string) $routerplanner->provider_slug !== (string) $provider->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Route plan not found for this provider',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Route planner pickups retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: self::transformRoutePlannerMap($routerplanner)
         );
     }
 }

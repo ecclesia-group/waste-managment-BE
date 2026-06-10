@@ -78,12 +78,15 @@ it('allows provider sub-account to see map data for main-provider assignments', 
         'longitude' => -0.1870,
     ]);
 
-    DB::table('route_planner_bin_assignments')->insert([
+    DB::table('pickups')->insert([
+        'code' => 'PK-' . Str::upper(Str::random(6)),
         'route_planner_id' => 1,
         'provider_slug' => $mainProvider->provider_slug,
         'client_slug' => $client->client_slug,
-        'pickup_code' => 'PK-' . Str::upper(Str::random(6)),
-        'scan_status' => 'pending',
+        'title' => 'Scheduled pickup',
+        'category' => 'normal_pickup',
+        'status' => 'scheduled',
+        'scan_status' => 'unscanned',
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -93,6 +96,7 @@ it('allows provider sub-account to see map data for main-provider assignments', 
         ->getJson('/api/provider/map_pickup_overview');
 
     $response->assertOk();
+    dump(['count' => DB::table('pickups')->count(), 'rows' => DB::table('pickups')->get()->toArray(), 'resp' => $response->json('data')]);
     $items = collect($response->json('data.items'));
     expect($items)->not->toBeEmpty();
     expect($items->pluck('provider_slug')->contains($mainProvider->provider_slug))->toBeTrue();
