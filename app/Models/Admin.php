@@ -39,4 +39,9 @@ class Admin extends Actor
         "corrective_action" => "string",
         "suspended_at"      => "datetime",
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return "admin_slug";
+    }
 }

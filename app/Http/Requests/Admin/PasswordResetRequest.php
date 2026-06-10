@@ -24,7 +24,6 @@ class PasswordResetRequest extends FormRequest
         return [
             "password"   => ["required", Password::defaults(), "bail"],
             "admin_slug" => ["required", "string", "exists:admins,admin_slug"],
-            // "admin_slug" => ["required", "alpha_dash"],
             "otp"        => ["required"],
         ];
     }

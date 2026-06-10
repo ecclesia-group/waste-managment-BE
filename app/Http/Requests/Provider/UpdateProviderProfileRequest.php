@@ -50,7 +50,8 @@ class UpdateProviderProfileRequest extends FormRequest
             ],
             'business_name'                    => 'nullable|string|max:255',
             'gps_address'                      => 'required|string|max:255',
-            'district_assembly'                => 'nullable|string|max:255',
+            'district_assembly'                => 'nullable|exists:district_assemblies,district_assembly_slug',
+            'facility_slug'                    => 'nullable|exists:facilities,facility_slug',
 
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
@@ -60,7 +61,9 @@ class UpdateProviderProfileRequest extends FormRequest
             'region'                           => 'required|string|max:100',
             'location'                         => 'required|string|max:255',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
+
+            'zone_slugs'                            => 'nullable|array',
+            'zone_slugs.*'                          => 'required|string|distinct|exists:zones,zone_slug',
         ];
     }
-
 }

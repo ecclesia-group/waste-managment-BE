@@ -38,6 +38,7 @@ class StoreProviderRegisterRequest extends FormRequest
             'region'                           => 'required|string',
             'location'                         => 'required|string',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
+            'facility_slug'                    => 'nullable|string|exists:facilities,facility_slug',
         ];
     }
 }

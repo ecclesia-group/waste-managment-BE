@@ -59,4 +59,9 @@ class Facility extends Actor
     {
         return "facility_slug";
     }
+
+    public function providers()
+    {
+        return $this->hasMany(Provider::class, 'facility_slug', 'facility_slug');
+    }
 }

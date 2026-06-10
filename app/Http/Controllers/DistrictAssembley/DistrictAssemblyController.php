@@ -5,16 +5,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DistrictAssembley\AccountStatusRequest;
 use App\Http\Requests\DistrictAssembley\OnboardingRequest;
 use App\Http\Requests\DistrictAssembley\ProfileUpdateRequest;
-use App\Models\Client;
 use App\Models\DistrictAssembly;
 use App\Models\Facility;
 use App\Models\Notification;
-use App\Models\Payment;
-use App\Models\Pickup;
 use App\Models\Provider;
-use App\Models\Violation;
-use App\Models\WeighbridgeRecord;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class DistrictAssemblyController extends Controller
@@ -77,96 +71,23 @@ class DistrictAssemblyController extends Controller
 
     public function show(DistrictAssembly $district_assembly)
     {
-        if (Auth::guard('admin')->check()) {
-            $districtSlug = $district_assembly->district_assembly_slug;
+        $providersCount = Provider::query()
+            ->where('district_assembly', $district_assembly->district_assembly_slug)
+            ->count();
 
-            $providers = Provider::query()
-                ->where('district_assembly', $districtSlug)
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(function (Provider $provider) {
-                    $providerSlug = $provider->provider_slug;
-
-                    $customers = Client::query()
-                        ->where('provider_slug', $providerSlug)
-                        ->orderByDesc('created_at')
-                        ->get()
-                        ->map(function (Client $client) use ($providerSlug) {
-                            return array_merge($client->toArray(), [
-                                'pickups' => Pickup::query()
-                                    ->where('provider_slug', $providerSlug)
-                                    ->where('client_slug', $client->client_slug)
-                                    ->orderByDesc('created_at')
-                                    ->get()
-                                    ->toArray(),
-                                'violations' => Violation::query()
-                                    ->where('provider_slug', $providerSlug)
-                                    ->where('client_slug', $client->client_slug)
-                                    ->orderByDesc('created_at')
-                                    ->get()
-                                    ->toArray(),
-                                'payments' => Payment::query()
-                                    ->where('provider_slug', $providerSlug)
-                                    ->where('client_slug', $client->client_slug)
-                                    ->orderByDesc('created_at')
-                                    ->get()
-                                    ->toArray(),
-                            ]);
-                        })
-                        ->values()
-                        ->toArray();
-
-                    return array_merge($provider->toArray(), [
-                        'pickups' => Pickup::query()
-                            ->where('provider_slug', $providerSlug)
-                            ->orderByDesc('created_at')
-                            ->get()
-                            ->toArray(),
-                        'weighbridge_records' => WeighbridgeRecord::query()
-                            ->where('provider_slug', $providerSlug)
-                            ->orderByDesc('created_at')
-                            ->get()
-                            ->toArray(),
-                        'customers' => $customers,
-                    ]);
-                })
-                ->values()
-                ->toArray();
-
-            $facilities = Facility::query()
-                ->where('district_assembly', $districtSlug)
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(function (Facility $facility) {
-                    return array_merge($facility->toArray(), [
-                        'weighbridge_records' => WeighbridgeRecord::query()
-                            ->where('facility_slug', $facility->facility_slug)
-                            ->orderByDesc('created_at')
-                            ->get()
-                            ->toArray(),
-                    ]);
-                })
-                ->values()
-                ->toArray();
-
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "District Assembly details retrieved successfully",
-                status_code: self::API_SUCCESS,
-                data: array_merge($district_assembly->toArray(), [
-                    'providers' => $providers,
-                    'facilities' => $facilities,
-                ])
-            );
-        }
+        $facilitiesCount = Facility::query()
+            ->where('district_assembly', $district_assembly->district_assembly_slug)
+            ->count();
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "District Assembly details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $district_assembly->toArray()
+            data: array_merge($district_assembly->toArray(), [
+                'providers_count' => $providersCount,
+                'facilities_count' => $facilitiesCount,
+            ])
         );
     }
 

@@ -6,7 +6,7 @@ class Client extends Actor
     protected $with = [
         'group',
         'bin',
-        'provider'
+        // 'provider'
     ];
 
     protected $fillable = [

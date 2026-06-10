@@ -7,11 +7,9 @@ use App\Http\Requests\Facility\FacilityOnboardingRequest;
 use App\Http\Requests\Facility\UpdateFacilityProfileRequest;
 use App\Models\Facility;
 use App\Models\Notification;
-use App\Models\WeighbridgeRecord;
 use App\Services\ZoneAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class FacilityController extends Controller
@@ -95,42 +93,27 @@ class FacilityController extends Controller
             $query->where('district_assembly', (string) $request->string('district_assembly'));
         }
 
-        $facilities = $query->get();
+        $facilities = $query->orderByDesc('created_at')->paginate(20);
 
-        if (! $facilities) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No facilities found", status_code: self::API_FAIL);
-        }
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Facilities retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $facilities->toArray()
+            data: [
+                'items' => $facilities->items(),
+                'pagination' => [
+                    'total' => $facilities->total(),
+                    'per_page' => $facilities->perPage(),
+                    'current_page' => $facilities->currentPage(),
+                    'last_page' => $facilities->lastPage(),
+                ],
+            ]
         );
     }
 
     public function show(Facility $facility)
     {
-        if (Auth::guard('admin')->check()) {
-            $facilitySlug = $facility->facility_slug;
-
-            $payload = array_merge($facility->toArray(), [
-                'weighbridge_records' => WeighbridgeRecord::query()
-                    ->where('facility_slug', $facilitySlug)
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->toArray(),
-            ]);
-
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Facility details retrieved successfully",
-                status_code: self::API_SUCCESS,
-                data: $payload
-            );
-        }
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

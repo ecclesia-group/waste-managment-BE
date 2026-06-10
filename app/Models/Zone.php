@@ -18,6 +18,10 @@ class Zone extends Model
         'status',
     ];
 
+    protected $hidden = [
+        'pivot',
+    ];
+
     protected $casts = [
         'locations'  => 'array',
         'deleted_at' => 'datetime',

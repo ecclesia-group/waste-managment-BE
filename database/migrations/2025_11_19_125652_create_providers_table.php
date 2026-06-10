@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('providers', function (Blueprint $table) {
             $table->id();
             $table->string('parent_slug')->nullable();
+            $table->string('facility_slug')->nullable();
             $table->boolean('is_main')->default(true);
             $table->uuid('role_slug')->nullable();
             $table->string('provider_slug')->unique();

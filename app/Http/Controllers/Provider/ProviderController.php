@@ -1,21 +1,16 @@
 <?php
+
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Provider\ProviderStatusRequest;
 use App\Http\Requests\Provider\StoreProviderRegisterRequest;
 use App\Http\Requests\Provider\UpdateProviderProfileRequest;
-use App\Models\Client;
 use App\Models\Notification;
-use App\Models\Payment;
-use App\Models\Pickup;
 use App\Models\Provider;
-use App\Models\Violation;
 use App\Services\ZoneAssignmentService;
-use App\Models\WeighbridgeRecord;
 use function Symfony\Component\Clock\now;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ProviderController extends Controller
@@ -95,26 +90,40 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider registered successfully",
             status_code: self::API_SUCCESS,
-            data: array_merge($provider->load('zones')->toArray(), $provider->rbacForFrontend())
+            data: array_merge($provider->load('zones', 'facility', 'mmda')->toArray())
         );
     }
 
     public function index()
     {
-        $providers = Provider::with('zones')->withCount('customers')->orderByDesc('created_at')->get();
+        $providers = Provider::query()
+            ->orderByDesc('created_at')
+            ->with('zones', 'facility', 'mmda')
+            ->paginate(10);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Providers retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $providers->toArray()
+            data: [
+                'items' => $providers->items(),
+                'pagination' => [
+                    'total' => $providers->total(),
+                    'per_page' => $providers->perPage(),
+                    'current_page' => $providers->currentPage(),
+                    'last_page' => $providers->lastPage(),
+                ],
+            ]
         );
     }
 
     public function show(Provider $provider)
     {
-        $provider = Provider::where('provider_slug', $provider->provider_slug)->first();
+        $provider = Provider::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->with('zones', 'facility', 'mmda')
+            ->first();
 
         if (! $provider) {
             return self::apiResponse(
@@ -126,85 +135,12 @@ class ProviderController extends Controller
             );
         }
 
-        // Super Admin profile composition:
-        // include pickups, customers, weighbridge logs, and customer-level violations/payments.
-        if (Auth::guard('admin')->check()) {
-            $providerSlug = $provider->provider_slug;
-
-            $customers = Client::query()
-                ->where('provider_slug', $providerSlug)
-                ->orderByDesc('created_at')
-                ->get();
-
-            $customerPayload = $customers->map(function (Client $client) use ($providerSlug) {
-                return array_merge($client->toArray(), [
-                    'pickups' => Pickup::query()
-                        ->where('provider_slug', $providerSlug)
-                        ->where('client_slug', $client->client_slug)
-                        ->orderByDesc('created_at')
-                        ->get()
-                        ->toArray(),
-                    'violations' => Violation::query()
-                        ->where('provider_slug', $providerSlug)
-                        ->where('client_slug', $client->client_slug)
-                        ->orderByDesc('created_at')
-                        ->get()
-                        ->toArray(),
-                    'payments' => Payment::query()
-                        ->where('provider_slug', $providerSlug)
-                        ->where('client_slug', $client->client_slug)
-                        ->orderByDesc('created_at')
-                        ->get()
-                        ->toArray(),
-                ]);
-            })->values();
-
-            $zoneAssignments = DB::table('provider_zones')
-                ->join('zones', 'zones.zone_slug', '=', 'provider_zones.zone_slug')
-                ->where('provider_zones.provider_slug', $providerSlug)
-                ->select(
-                    'provider_zones.zone_slug',
-                    'provider_zones.assigned_at',
-                    'provider_zones.status',
-                    'zones.name as zone_name',
-                    'zones.region as zone_region',
-                    'zones.description as zone_description',
-                    'zones.locations as zone_locations'
-                )
-                ->orderByDesc('provider_zones.assigned_at')
-                ->get()
-                ->toArray();
-
-            $payload = array_merge($provider->toArray(), [
-                'zone_assignments' => $zoneAssignments,
-                'pickups' => Pickup::query()
-                    ->where('provider_slug', $providerSlug)
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->toArray(),
-                'weighbridge_records' => WeighbridgeRecord::query()
-                    ->where('provider_slug', $providerSlug)
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->toArray(),
-                'customers' => $customerPayload->toArray(),
-            ]);
-
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Provider details retrieved successfully",
-                status_code: self::API_SUCCESS,
-                data: $payload
-            );
-        }
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Provider details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->load('zones')->toArray()
+            data: $provider->toArray()
         );
     }
 
@@ -226,8 +162,8 @@ class ProviderController extends Controller
                 'title' => 'Account suspended',
                 'message' => trim(
                     'Your account has been suspended.'
-                    . ($provider->suspension_reason ? ' Reason: ' . $provider->suspension_reason . '.' : '')
-                    . ($provider->corrective_action ? ' Corrective action: ' . $provider->corrective_action . '.' : '')
+                        . ($provider->suspension_reason ? ' Reason: ' . $provider->suspension_reason . '.' : '')
+                        . ($provider->corrective_action ? ' Corrective action: ' . $provider->corrective_action . '.' : '')
                 ),
                 'type' => 'account_suspension',
             ]);
@@ -252,7 +188,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->load('zones')->toArray()
+            data: $provider->load('zones', 'facility', 'mmda')->toArray()
         );
     }
 
@@ -276,13 +212,19 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: request()->user()->load('zones')->toArray()
+            data: request()->user()->load('zones', 'facility', 'mmda')->toArray()
         );
     }
 
     public function updateProviderProfile(UpdateProviderProfileRequest $request, Provider $provider)
     {
-        $data         = $request->validated();
+        $data = $request->validated();
+
+        $zones = array_values(array_unique(array_filter($data['zone_slugs'] ?? [])));
+        unset($data['zone_slugs']);
+
+        app(ZoneAssignmentService::class)->setProviderZones($provider->provider_slug, $zones, true);
+
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',
@@ -293,12 +235,13 @@ class ProviderController extends Controller
 
         $data = static::processImage($image_fields, $data);
         $provider->update($data);
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->load('zones')->toArray()
+            data: $provider->fresh()->load('zones', 'facility', 'mmda')->toArray()
         );
     }
 

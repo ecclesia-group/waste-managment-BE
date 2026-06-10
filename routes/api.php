@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActorRelatedDataController;
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminPasswordController;
@@ -162,6 +163,9 @@ Route::prefix("provider")->group(function () {
         Route::post("register_client", [ClientController::class, "register"]);
         Route::get("all_clients", [ClientController::class, "allClients"]);
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
+        Route::get("clients/{client}/pickups", [ActorRelatedDataController::class, "clientPickups"]);
+        Route::get("clients/{client}/violations", [ActorRelatedDataController::class, "clientViolations"]);
+        Route::get("clients/{client}/payments", [ActorRelatedDataController::class, "clientPayments"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
         Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
@@ -395,12 +399,16 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_provider/{provider}", [ProviderController::class, "show"]);
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
         Route::put("update_provider_details/{provider}", [ProviderController::class, "updateProviderProfile"]);
+        Route::get("providers/{provider}/clients", [ActorRelatedDataController::class, "providerClients"]);
+        Route::get("providers/{provider}/pickups", [ActorRelatedDataController::class, "providerPickups"]);
+        Route::get("providers/{provider}/weighbridge_records", [ActorRelatedDataController::class, "providerWeighbridgeRecords"]);
         Route::delete("delete_provider/{provider}", [ProviderController::class, "deleteProvider"]);
 
         // Facility Management
         Route::post("register_facility", [FacilityController::class, "register"]);
         Route::get("all_facilities", [FacilityController::class, "index"]);
         Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
+        Route::get("facilities/{facility}/weighbridge_records", [ActorRelatedDataController::class, "facilityWeighbridgeRecords"]);
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
         Route::put("update_facility_details/{facility}", [FacilityController::class, "updateFacilityProfile"]);
         Route::delete("delete_facility/{facility}", [FacilityController::class, "deleteFacility"]);
@@ -409,6 +417,8 @@ Route::prefix("admin")->group(function () {
         Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
         Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
         Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
+        Route::get("district_assemblies/{district_assembly}/providers", [ActorRelatedDataController::class, "districtAssemblyProviders"]);
+        Route::get("district_assemblies/{district_assembly}/facilities", [ActorRelatedDataController::class, "districtAssemblyFacilities"]);
         Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
         Route::put("update_district_assembly_details/{district_assembly}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
         Route::delete("delete_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "deleteDistrictAssembly"]);
@@ -416,6 +426,10 @@ Route::prefix("admin")->group(function () {
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
         Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'zoneOverview']);
+        Route::get('zones/{zone}/providers', [ActorRelatedDataController::class, 'zoneProviders']);
+        Route::get('zones/{zone}/facilities', [ActorRelatedDataController::class, 'zoneFacilities']);
+        Route::get('zones/{zone}/clients', [ActorRelatedDataController::class, 'zoneClients']);
+        Route::get('zones/{zone}/pickups', [ActorRelatedDataController::class, 'zonePickups']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
         Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);

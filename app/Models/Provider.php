@@ -29,12 +29,14 @@ class Provider extends Actor
         'region',
         'location',
         'profile_image',
+        'facility_slug',
     ];
 
     protected $hidden = [
-        "password",
-        "created_at",
-        "updated_at",
+        'password',
+        'created_at',
+        'updated_at',
+        'pivot',
     ];
 
     protected $casts = [
@@ -72,6 +74,11 @@ class Provider extends Actor
         )
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();
+    }
+
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class, 'facility_slug', 'facility_slug');
     }
 
     public function groups()
@@ -112,5 +119,10 @@ class Provider extends Actor
     public function payments()
     {
         return $this->hasMany(Payment::class, 'provider_slug', 'provider_slug');
+    }
+
+    public function mmda()
+    {
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
     }
 }

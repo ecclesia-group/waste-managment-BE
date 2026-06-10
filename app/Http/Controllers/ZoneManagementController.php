@@ -9,18 +9,16 @@ use App\Models\Facility;
 use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
-use App\Models\RoutePlannerBinAssignment;
 use App\Models\Zone;
 use App\Services\ZoneAssignmentService;
 use App\Traits\RespondsWithZoneAssignments;
-use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /** Admin zone CRUD and zone assignment for providers and facilities. */
 class ZoneManagementController extends Controller
 {
-    use RespondsWithZoneAssignments, TransformsRoutePlannerResponse;
+    use RespondsWithZoneAssignments;
     public function listZones()
     {
         $zones = Zone::query()->orderBy('name')->get();
@@ -39,48 +37,12 @@ class ZoneManagementController extends Controller
         return $this->zoneOverview($zone);
     }
 
-    /**
-     * Zone hub: providers, facilities, clients, plans, assignment logs in this zone.
-     */
+    /** Zone profile with counts only — use paginated zone/* endpoints for lists. */
     public function zoneOverview(Zone $zone)
     {
         $zones = app(ZoneAssignmentService::class);
         $providerSlugs = $zones->providerSlugsInZone($zone->zone_slug);
         $facilitySlugs = $zones->facilitySlugsInZone($zone->zone_slug);
-
-        $providers = Provider::query()
-            ->whereIn('provider_slug', $providerSlugs)
-            ->get();
-
-        $facilities = Facility::query()
-            ->whereIn('facility_slug', $facilitySlugs)
-            ->get();
-
-        $clients = Client::query()
-            ->whereIn('provider_slug', $providerSlugs)
-            ->where('status', 'active')
-            ->with('group')
-            ->get();
-
-        $plans = RoutePlanner::query()
-            ->whereIn('provider_slug', $providerSlugs)
-            ->with(['provider', 'driver', 'fleet', 'assignments.client.group', 'assignments.pickup'])
-            ->latest()
-            ->limit(50)
-            ->get();
-
-        $assignmentLogs = RoutePlannerBinAssignment::query()
-            ->where('provider_slug', $providerSlugs)
-            ->with(['client', 'pickup', 'routePlanner'])
-            ->latest()
-            ->limit(100)
-            ->get();
-
-        $pickups = Pickup::query()
-            ->whereIn('provider_slug', $providerSlugs)
-            ->latest()
-            ->limit(100)
-            ->get();
 
         return self::apiResponse(
             in_error: false,
@@ -89,13 +51,18 @@ class ZoneManagementController extends Controller
             status_code: self::API_SUCCESS,
             data: [
                 'zone' => $zone->toArray(),
-                'providers' => $providers->toArray(),
-                'facilities' => $facilities->toArray(),
-                'clients_count' => $clients->count(),
-                'clients' => $clients->toArray(),
-                'assignments' => self::transformAssignmentsList($plans),
-                'assignment_logs' => $assignmentLogs->toArray(),
-                'pickups' => $pickups->toArray(),
+                'providers_count' => count($providerSlugs),
+                'facilities_count' => count($facilitySlugs),
+                'clients_count' => Client::query()
+                    ->whereIn('provider_slug', $providerSlugs)
+                    ->where('status', 'active')
+                    ->count(),
+                'pickups_count' => Pickup::query()
+                    ->whereIn('provider_slug', $providerSlugs)
+                    ->count(),
+                'route_plans_count' => RoutePlanner::query()
+                    ->whereIn('provider_slug', $providerSlugs)
+                    ->count(),
             ]
         );
     }

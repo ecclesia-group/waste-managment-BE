@@ -7,15 +7,14 @@ use App\Http\Requests\Client\StatusRequest;
 use App\Http\Requests\Client\UpdateClientProfileRequest;
 use App\Models\Bin;
 use App\Models\Client;
-use App\Models\Payment;
-use App\Models\Pickup;
-use App\Models\Violation;
 use App\Services\ClientLocationGeocodingService;
+use App\Traits\PaginatesApiResults;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
+    use PaginatesApiResults;
     public function register(RegisterRequest $request)
     {
         $user                      = Auth::user();
@@ -61,17 +60,14 @@ class ClientController extends Controller
 
     public function allClients()
     {
-        $user    = Auth::user();
-        $clients = Client::where('provider_slug', $user->provider_slug)
+        $user = Auth::user();
+        $clients = Client::query()
+            ->where('provider_slug', $user->provider_slug)
             ->with('bin')
-            ->get();
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Clients retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $clients->toArray()
-        );
+            ->orderByDesc('created_at')
+            ->paginate($this->perPage(request()));
+
+        return $this->paginatedApiResponse($clients, 'Clients retrieved successfully');
     }
 
     public function show(Client $client)
@@ -95,30 +91,6 @@ class ClientController extends Controller
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
-        }
-
-        // Provider-facing composition: when accessed via provider auth, append pickups/violations/payments.
-        if ($providerUser) {
-            $client->setAttribute('pickups', Pickup::query()
-                ->where('provider_slug', $providerUser->provider_slug)
-                ->where('client_slug', $client->client_slug)
-                ->orderByDesc('created_at')
-                ->get()
-                ->toArray());
-
-            $client->setAttribute('violations', Violation::query()
-                ->where('provider_slug', $providerUser->provider_slug)
-                ->where('client_slug', $client->client_slug)
-                ->orderByDesc('created_at')
-                ->get()
-                ->toArray());
-
-            $client->setAttribute('payments', Payment::query()
-                ->where('provider_slug', $providerUser->provider_slug)
-                ->where('client_slug', $client->client_slug)
-                ->orderByDesc('created_at')
-                ->get()
-                ->toArray());
         }
 
         return self::apiResponse(

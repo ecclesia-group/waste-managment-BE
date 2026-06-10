@@ -23,8 +23,8 @@ class ProviderStatusRequest extends FormRequest
         return [
             "status"        => ["required", "string", "in:pending,deactivate,active", "bail"],
             "provider_slug" => ["required", "string", "exists:providers,provider_slug", "bail"],
-            "suspension_reason" => ["nullable", "string", "max:1000"],
-            "corrective_action" => ["nullable", "string", "max:1000"],
+            "suspension_reason" => ["nullable", "string"],
+            "corrective_action" => ["nullable", "string"],
         ];
     }
 }
