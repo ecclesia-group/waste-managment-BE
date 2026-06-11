@@ -93,10 +93,11 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
 
     $pickups = actingAs($provider, 'provider')->getJson("/api/provider/get_single_plan/{$planId}/pickups");
     $pickups->assertOk();
-    expect(collect($pickups->json('data.data.data')))->toHaveCount(2);
-    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => (int) ($p['route_planner_id'] ?? 0) === $planId))->toBeTrue();
-    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => isset($p['client']['latitude'], $p['client']['longitude'])))->toBeTrue();
-    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => ! array_key_exists('map_ready', $p['client'] ?? [])))->toBeTrue();
+    expect(collect($pickups->json('data.data.items')))->toHaveCount(2);
+    expect($pickups->json('data.data.pagination.total'))->toBe(2);
+    expect(collect($pickups->json('data.data.items'))->every(fn ($p) => (int) ($p['route_planner_id'] ?? 0) === $planId))->toBeTrue();
+    expect(collect($pickups->json('data.data.items'))->every(fn ($p) => isset($p['client']['latitude'], $p['client']['longitude'])))->toBeTrue();
+    expect(collect($pickups->json('data.data.items'))->every(fn ($p) => ! array_key_exists('map_ready', $p['client'] ?? [])))->toBeTrue();
 
     $list = actingAs($provider, 'provider')->getJson('/api/provider/all_plans');
     $list->assertOk();

@@ -12,14 +12,17 @@ use App\Models\Provider;
 use App\Models\RoutePlanner;
 use App\Models\Pickup;
 use App\Services\RoutePlannerService;
+use App\Traits\PaginatesApiResults;
 use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use RuntimeException;
 
 class RoutePlannerManagement extends Controller
 {
+    use PaginatesApiResults;
     use TransformsRoutePlannerResponse;
 
     public function __construct(
@@ -215,21 +218,9 @@ class RoutePlannerManagement extends Controller
             return $denied;
         }
 
-        $perPage = max(1, min(100, $request->integer('limit', 20)));
-
-        $pickups = Pickup::query()
-            ->where('route_planner_id', $plan->id)
-            ->with(['client.group'])
-            ->latest()
-            ->paginate($perPage)
-            ->through(fn (Pickup $pickup) => self::transformPickupStop($pickup, $plan->id));
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Route planner pickups retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
+        return $this->paginatedApiResponse(
+            $this->pickupsPaginatorForPlan($request, $plan),
+            'Route planner pickups retrieved successfully'
         );
     }
 
@@ -414,23 +405,22 @@ class RoutePlannerManagement extends Controller
                 data: []
             );
         }
+        return $this->paginatedApiResponse(
+            $this->pickupsPaginatorForPlan($request, $routerplanner),
+            'Route planner pickups retrieved successfully'
+        );
+    }
 
-        $perPage = max(1, min(100, $request->integer('limit', 20)));
+    private function pickupsPaginatorForPlan(Request $request, RoutePlanner $plan): LengthAwarePaginator
+    {
+        $plan->refresh();
 
-        $pickups = Pickup::query()
-            ->where('route_planner_id', $routerplanner->id)
+        return Pickup::query()
+            ->where('route_planner_id', $plan->id)
             ->with(['client.group'])
             ->latest()
-            ->paginate($perPage)
-            ->through(fn (Pickup $pickup) => self::transformPickupStop($pickup, $routerplanner->id));
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Route planner pickups retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $pickups->toArray()
-        );
+            ->paginate($this->perPage($request))
+            ->through(fn (Pickup $pickup) => self::transformPickupStop($pickup, $plan->id));
     }
 
     private function denyIfCannotAccessPlan(RoutePlanner $plan)

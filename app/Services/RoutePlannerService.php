@@ -365,6 +365,77 @@ class RoutePlannerService
         return $bulkCount === $bulkCodes->count();
     }
 
+    /**
+     * Link legacy pickups that were created before route_planner_id was stored on pickups.
+     */
+    // public function ensurePickupsLinked(RoutePlanner $plan): void
+    // {
+    //     if (Pickup::query()->where('route_planner_id', $plan->id)->exists()) {
+    //         return;
+    //     }
+
+    //     if ($plan->created_at === null) {
+    //         return;
+    //     }
+
+    //     $windowStart = $plan->created_at->copy()->subSeconds(5);
+    //     $windowEnd = $plan->created_at->copy()->addSeconds(30);
+
+    //     $query = Pickup::query()
+    //         ->where('provider_slug', $plan->provider_slug)
+    //         ->whereNull('route_planner_id')
+    //         ->whereBetween('created_at', [$windowStart, $windowEnd]);
+
+    //     $pickupType = $plan->pickup_type
+    //         ?? ($plan->route_meta['pickup_type'] ?? self::PICKUP_TYPE_NORMAL);
+
+    //     if ($pickupType === self::PICKUP_TYPE_BULK) {
+    //         $bulkCodes = $plan->selectedBulkRequestCodes();
+    //         if ($bulkCodes === []) {
+    //             return;
+    //         }
+
+    //         $query->whereIn('bulk_waste_request_code', $bulkCodes);
+    //     } else {
+    //         $clientSlugs = $this->clientSlugsForPlan($plan);
+    //         if ($clientSlugs === []) {
+    //             return;
+    //         }
+
+    //         $query
+    //             ->whereNull('bulk_waste_request_code')
+    //             ->whereIn('client_slug', $clientSlugs);
+    //     }
+
+    //     $query->update(['route_planner_id' => $plan->id]);
+    // }
+
+    // /** @return list<string> */
+    // private function clientSlugsForPlan(RoutePlanner $plan): array
+    // {
+    //     if (($plan->pickup_type ?? null) === self::PICKUP_TYPE_BULK) {
+    //         return BulkWasteRequest::query()
+    //             ->where('provider_slug', $plan->provider_slug)
+    //             ->whereIn('request_code', $plan->selectedBulkRequestCodes())
+    //             ->pluck('client_slug')
+    //             ->filter()
+    //             ->unique()
+    //             ->values()
+    //             ->all();
+    //     }
+
+    //     $groupSlugs = $plan->selectedGroupSlugs();
+    //     if ($groupSlugs === []) {
+    //         return [];
+    //     }
+
+    //     return Client::query()
+    //         ->where('provider_slug', $plan->provider_slug)
+    //         ->whereIn('group_slug', $groupSlugs)
+    //         ->pluck('client_slug')
+    //         ->all();
+    // }
+
     private function generateUniquePickupCode(): string
     {
         do {

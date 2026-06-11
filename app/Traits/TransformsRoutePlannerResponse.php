@@ -65,15 +65,16 @@ trait TransformsRoutePlannerResponse
     {
         $client = $pickup->client;
         $coords = static::clientCoordinatesForMap($client);
+        $routePlanner = $pickup->routePlanner;
 
         return [
-            'code' => $pickup->code,
-            'route_planner_id' => $routePlannerId,
+            'id' => $pickup->id,
+            'pickup_type' => $routePlanner?->pickup_type,
+            'pickup_code' => $pickup->code,
             'scan_status' => $pickup->scan_status ?? 'unscanned',
             'status' => $pickup->status,
             'pickup_date' => $pickup->pickup_date,
             'amount' => $pickup->amount,
-            'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
             'client' => [
                 'client_slug' => $pickup->client_slug,
                 'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
