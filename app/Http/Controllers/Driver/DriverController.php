@@ -56,13 +56,13 @@ class DriverController extends Controller
     {
         $user = Auth::guard('provider')->user();
         $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
-        $drivers = Driver::where('provider_slug', $effectiveProviderSlug)->get();
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Drivers retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $drivers->toArray()
+
+        return $this->paginatedApiResponse(
+            Driver::query()
+                ->where('provider_slug', $effectiveProviderSlug)
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Drivers retrieved successfully'
         );
     }
 

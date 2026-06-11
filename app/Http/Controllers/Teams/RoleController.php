@@ -21,15 +21,9 @@ class RoleController extends Controller
             ->where('actor', $actor)
             ->where('actor_slug', $ownerSlug)
             ->latest()
-            ->get();
+            ->paginate($this->perPage($request));
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Roles retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $roles->toArray()
-        );
+        return $this->paginatedApiResponse($roles, 'Roles retrieved successfully');
     }
 
     public function store(Request $request)

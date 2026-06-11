@@ -3,7 +3,6 @@
 namespace App\Traits;
 
 use App\Models\BulkWasteRequest;
-use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
 use App\Models\Group;
@@ -79,6 +78,8 @@ trait TransformsRoutePlannerResponse
                 'client_slug' => $pickup->client_slug,
                 'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
                 'gps_address' => $client?->gps_address,
+                'phone_number' => $client?->phone_number,
+                'email' => $client?->email,
                 'pickup_location' => $client?->pickup_location,
                 'category' => $client?->type,
                 'latitude' => $coords['latitude'],
@@ -87,33 +88,6 @@ trait TransformsRoutePlannerResponse
                 'group_slug' => $client?->group_slug,
                 'group_name' => $client?->group?->name,
             ],
-        ];
-    }
-
-    protected static function transformClientPickupDetails(Client $client): array
-    {
-        $client->loadMissing(['group', 'bin']);
-        $coords = static::clientCoordinatesForMap($client);
-        $bin = $client->primaryBin();
-
-        return [
-            'client_slug' => $client->client_slug,
-            'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
-            'phone_number' => $client->phone_number,
-            'email' => $client->email,
-            'gps_address' => $client->gps_address,
-            'pickup_location' => $client->pickup_location,
-            'latitude' => $coords['latitude'],
-            'longitude' => $coords['longitude'],
-            'group' => $client->group ? [
-                'group_slug' => $client->group->group_slug,
-                'name' => $client->group->name,
-            ] : null,
-            'bin' => $bin ? [
-                'bin_slug' => $bin->bin_slug,
-                'bin_code' => $bin->bin_code,
-                'status' => $bin->status,
-            ] : null,
         ];
     }
 

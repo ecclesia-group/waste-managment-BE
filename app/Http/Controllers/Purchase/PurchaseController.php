@@ -19,25 +19,14 @@ class PurchaseController extends Controller
     public function listPurchases()
     {
         $user = request()->user();
-        $purchases = Purchase::where('client_slug', $user->client_slug)
-            ->with('items')
-            ->get();
 
-        if ($purchases->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No purchases found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Purchases retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $purchases->toArray()
+        return $this->paginatedApiResponse(
+            Purchase::query()
+                ->where('client_slug', $user->client_slug)
+                ->with('items')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Purchases retrieved successfully'
         );
     }
 
@@ -273,16 +262,12 @@ class PurchaseController extends Controller
     {
         $user = request()->user();
 
-        $payments = Payment::where('client_slug', $user->client_slug)
-            ->latest()
-            ->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Payment history retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $payments->toArray()
+        return $this->paginatedApiResponse(
+            Payment::query()
+                ->where('client_slug', $user->client_slug)
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Payment history retrieved successfully'
         );
     }
 

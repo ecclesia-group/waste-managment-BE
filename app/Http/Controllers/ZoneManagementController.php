@@ -21,14 +21,9 @@ class ZoneManagementController extends Controller
     use RespondsWithZoneAssignments;
     public function listZones()
     {
-        $zones = Zone::query()->orderBy('name')->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'All zones retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $zones->toArray()
+        return $this->paginatedApiResponse(
+            Zone::query()->orderBy('name')->paginate($this->perPage(request())),
+            'All zones retrieved successfully'
         );
     }
 

@@ -45,22 +45,9 @@ class ProductController extends Controller
             $query->where('name', 'like', '%' . $q . '%');
         }
 
-        $products = $query->get();
-        if ($products->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No products found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Products retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $products->toArray()
+        return $this->paginatedApiResponse(
+            $query->latest()->paginate($this->perPage($request)),
+            'Products retrieved successfully'
         );
     }
 

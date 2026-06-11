@@ -16,18 +16,12 @@ class FacilityController extends Controller
 {
     public function allFacilities()
     {
-        $facilities = Facility::query()
-            ->where('status', 'active')
-            ->get();
-        if (! $facilities) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No facilities found", status_code: self::API_FAIL);
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "All facilities retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $facilities->toArray()
+        return $this->paginatedApiResponse(
+            Facility::query()
+                ->where('status', 'active')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'All facilities retrieved successfully'
         );
     }
 
@@ -93,22 +87,9 @@ class FacilityController extends Controller
             $query->where('district_assembly', (string) $request->string('district_assembly'));
         }
 
-        $facilities = $query->orderByDesc('created_at')->paginate(20);
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Facilities retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: [
-                'items' => $facilities->items(),
-                'pagination' => [
-                    'total' => $facilities->total(),
-                    'per_page' => $facilities->perPage(),
-                    'current_page' => $facilities->currentPage(),
-                    'last_page' => $facilities->lastPage(),
-                ],
-            ]
+        return $this->paginatedApiResponse(
+            $query->orderByDesc('created_at')->paginate($this->perPage($request)),
+            'Facilities retrieved successfully'
         );
     }
 

@@ -16,45 +16,30 @@ class ViolationManagementController extends Controller
     // Lists all violations
     public function listClientViolations()
     {
-        $user       = request()->user();
-        $violations = Violation::where('provider_slug', $user->provider_slug)->get();
-        if ($violations->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No violations found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Violations retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $violations?->load('client', 'provider')->toArray()
+        $user = request()->user();
+
+        return $this->paginatedApiResponse(
+            Violation::query()
+                ->where('provider_slug', $user->provider_slug)
+                ->with(['client', 'provider'])
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Violations retrieved successfully'
         );
     }
 
     public function listViolations()
     {
-        $user       = request()->user();
-        $violations = Violation::where(['client_slug' => $user->client_slug, 'provider_slug' => $user->provider_slug])->get();
-        if ($violations->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No violations found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Violations retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $violations?->load('client')->toArray()
+        $user = request()->user();
+
+        return $this->paginatedApiResponse(
+            Violation::query()
+                ->where('client_slug', $user->client_slug)
+                ->where('provider_slug', $user->provider_slug)
+                ->with('client')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Violations retrieved successfully'
         );
     }
 

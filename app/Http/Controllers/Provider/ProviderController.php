@@ -19,18 +19,12 @@ class ProviderController extends Controller
 {
     public function allProviders()
     {
-        $providers = Provider::query()
-            ->where('status', 'active')
-            ->get();
-        if (! $providers) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No providers found", status_code: self::API_FAIL);
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "All providers retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $providers->toArray()
+        return $this->paginatedApiResponse(
+            Provider::query()
+                ->where('status', 'active')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'All providers retrieved successfully'
         );
     }
 
@@ -96,27 +90,14 @@ class ProviderController extends Controller
         );
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $providers = Provider::query()
-            ->orderByDesc('created_at')
-            ->with('zones', 'mmda')
-            ->paginate(20);
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Providers retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: [
-                'items' => $providers->items(),
-                'pagination' => [
-                    'total' => $providers->total(),
-                    'per_page' => $providers->perPage(),
-                    'current_page' => $providers->currentPage(),
-                    'last_page' => $providers->lastPage(),
-                ],
-            ]
+        return $this->paginatedApiResponse(
+            Provider::query()
+                ->orderByDesc('created_at')
+                ->with('zones', 'mmda')
+                ->paginate($this->perPage($request)),
+            'Providers retrieved successfully'
         );
     }
 

@@ -32,26 +32,12 @@ class DistrictAssemblyManagementController extends Controller
     {
         $districtSlug = $this->districtSlug($request);
 
-        $providers = Provider::query()
-            ->where('district_assembly', $districtSlug)
-            ->get();
-
-        if ($providers->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No providers found for this district assembly",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Providers retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $providers->toArray()
+        return $this->paginatedApiResponse(
+            Provider::query()
+                ->where('district_assembly', $districtSlug)
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Providers retrieved successfully'
         );
     }
 
@@ -81,26 +67,12 @@ class DistrictAssemblyManagementController extends Controller
     {
         $districtSlug = $this->districtSlug($request);
 
-        $facilities = Facility::query()
-            ->where('district_assembly', $districtSlug)
-            ->get();
-
-        if ($facilities->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No facilities found for this district assembly",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Facilities retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $facilities->toArray()
+        return $this->paginatedApiResponse(
+            Facility::query()
+                ->where('district_assembly', $districtSlug)
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Facilities retrieved successfully'
         );
     }
 
@@ -128,17 +100,12 @@ class DistrictAssemblyManagementController extends Controller
 
     public function listZones(Request $request)
     {
-        $zones = Zone::query()
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Available zones for provider and facility assignment',
-            status_code: self::API_SUCCESS,
-            data: $zones->toArray()
+        return $this->paginatedApiResponse(
+            Zone::query()
+                ->where('status', 'active')
+                ->orderBy('name')
+                ->paginate($this->perPage($request)),
+            'Available zones for provider and facility assignment'
         );
     }
 
@@ -206,26 +173,18 @@ class DistrictAssemblyManagementController extends Controller
             ->toArray();
 
         if (empty($providerSlugs)) {
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "No complaints found for this district assembly",
-                status_code: self::API_SUCCESS,
-                data: []
+            return $this->paginatedApiResponse(
+                Complaint::query()->whereRaw('1 = 0')->paginate($this->perPage($request)),
+                'No complaints found for this district assembly'
             );
         }
 
-        $complaints = Complaint::query()
-            ->whereIn('provider_slug', $providerSlugs)
-            ->orderByDesc('created_at')
-            ->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Complaints retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $complaints->toArray()
+        return $this->paginatedApiResponse(
+            Complaint::query()
+                ->whereIn('provider_slug', $providerSlugs)
+                ->orderByDesc('created_at')
+                ->paginate($this->perPage($request)),
+            'Complaints retrieved successfully'
         );
     }
 

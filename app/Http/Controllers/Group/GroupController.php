@@ -14,23 +14,15 @@ class GroupController extends Controller
     // Lists all groups
     public function allGroups()
     {
-        $user   = Auth::guard('provider')->user();
-        $groups = Group::where('provider_slug', $user->provider_slug)->get();
-        if ($groups->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "No Groups Found",
-                reason: "No groups are registered in the system",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Groups retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $groups->load('clients')->toArray()
+        $user = Auth::guard('provider')->user();
+
+        return $this->paginatedApiResponse(
+            Group::query()
+                ->where('provider_slug', $user->provider_slug)
+                ->with('clients')
+                ->orderByDesc('created_at')
+                ->paginate($this->perPage(request())),
+            'Groups retrieved successfully'
         );
     }
 

@@ -84,12 +84,9 @@ class WeighBridgeController extends Controller
             $query->where('scan_status', $request->string('scan_status'));
         }
 
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Weighbridge records retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $query->get()->toArray()
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Weighbridge records retrieved successfully'
         );
     }
 
@@ -248,14 +245,9 @@ class WeighBridgeController extends Controller
             $query->whereDate('created_at', '<=', $request->date('to'));
         }
 
-        $entries = $query->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Weighbridge entries retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $entries->toArray()
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Weighbridge entries retrieved successfully'
         );
     }
 

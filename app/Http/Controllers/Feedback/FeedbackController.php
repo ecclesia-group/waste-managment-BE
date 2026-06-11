@@ -35,24 +35,15 @@ class FeedbackController extends Controller
     //list all feedbacks
     public function listFeedbacks()
     {
-        $user      = Auth::user();
-        // Feedback table does not include provider_slug; feedback is scoped by client.
-        $feedbacks = Feedback::where('client_slug', $user->client_slug)->get();
-        if ($feedbacks->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "No Feedbacks Found",
-                reason: "There are no feedbacks available",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Feedbacks retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $feedbacks->load('client')->toArray()
+        $user = Auth::user();
+
+        return $this->paginatedApiResponse(
+            Feedback::query()
+                ->where('client_slug', $user->client_slug)
+                ->with('client')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Feedbacks retrieved successfully'
         );
     }
 

@@ -125,23 +125,20 @@ class WasteHandoverController extends Controller
         $zoneSlugs = $this->zoneSlugsForProvider($providerSlug);
 
         if ($zoneSlugs === []) {
-            return self::apiResponse(false, 'Action Successful', 'No zone assignments', self::API_SUCCESS, ['requests' => []]);
+            return $this->paginatedApiResponse(
+                WasteHandoverRequest::query()->whereRaw('1 = 0')->paginate($this->perPage($request)),
+                'No zone assignments'
+            );
         }
 
-        $requests = WasteHandoverRequest::query()
-            ->with(['requester', 'driver', 'fleet'])
-            ->visibleInProviderZones($zoneSlugs, $providerSlug)
-            ->latest()
-            ->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Available handover requests in your zone',
-            status_code: self::API_SUCCESS,
-            data: [
-                'requests' => $requests->map(fn ($h) => $this->transformHandover($h))->values()->all(),
-            ]
+        return $this->paginatedApiResponseMapped(
+            WasteHandoverRequest::query()
+                ->with(['requester', 'driver', 'fleet'])
+                ->visibleInProviderZones($zoneSlugs, $providerSlug)
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Available handover requests in your zone',
+            fn ($h) => $this->transformHandover($h)
         );
     }
 
@@ -160,21 +157,13 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'Driver is outside your zone', self::API_FAIL, []);
         }
 
-        $fleets = Fleet::query()
-            ->where('provider_slug', $driver->provider_slug)
-            ->where('status', 'active')
-            ->get();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Fleets for driver retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: [
-                'driver_slug' => $driver->driver_slug,
-                'provider_slug' => $driver->provider_slug,
-                'fleets' => $fleets->toArray(),
-            ]
+        return $this->paginatedApiResponse(
+            Fleet::query()
+                ->where('provider_slug', $driver->provider_slug)
+                ->where('status', 'active')
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Fleets for driver retrieved successfully'
         );
     }
 
@@ -204,14 +193,10 @@ class WasteHandoverController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Waste handover requests retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: [
-                'requests' => $query->get()->map(fn ($h) => $this->transformHandover($h))->values()->all(),
-            ]
+        return $this->paginatedApiResponseMapped(
+            $query->paginate($this->perPage($request)),
+            'Waste handover requests retrieved successfully',
+            fn ($h) => $this->transformHandover($h)
         );
     }
 

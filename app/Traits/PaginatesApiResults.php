@@ -30,4 +30,16 @@ trait PaginatesApiResults
             ]
         );
     }
+
+    /**
+     * @param  callable(mixed): mixed  $mapper
+     */
+    protected function paginatedApiResponseMapped(LengthAwarePaginator $paginator, string $reason, callable $mapper)
+    {
+        $paginator->setCollection(
+            $paginator->getCollection()->map($mapper)->values()
+        );
+
+        return $this->paginatedApiResponse($paginator, $reason);
+    }
 }

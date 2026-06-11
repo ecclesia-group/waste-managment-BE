@@ -5,9 +5,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RoutePlanner\RegisterRoute;
 use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
 use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
-use App\Models\Client;
-use App\Models\Driver;
-use App\Models\Fleet;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
 use App\Models\Pickup;
@@ -42,79 +39,79 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function assignmentLogs(Request $request)
-    {
-        $user = $request->user();
+    // public function assignmentLogs(Request $request)
+    // {
+    //     $user = $request->user();
 
-        $query = Pickup::query()
-            ->whereNotNull('route_planner_id')
-            ->with(['client', 'routePlanner']);
+    //     $query = Pickup::query()
+    //         ->whereNotNull('route_planner_id')
+    //         ->with(['client', 'routePlanner']);
 
-        if (isset($user->provider_slug)) {
-            $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
-        }
+    //     if (isset($user->provider_slug)) {
+    //         $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
+    //     }
 
-        if (isset($user->driver_slug)) {
-            $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $user->driver_slug));
-        }
+    //     if (isset($user->driver_slug)) {
+    //         $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $user->driver_slug));
+    //     }
 
-        if (isset($user->district_assembly_slug)) {
-            $query->whereIn('provider_slug', function ($q) use ($user) {
-                $q->select('provider_slug')
-                    ->from('providers')
-                    ->where('district_assembly', $user->district_assembly_slug);
-            });
-        }
+    //     if (isset($user->district_assembly_slug)) {
+    //         $query->whereIn('provider_slug', function ($q) use ($user) {
+    //             $q->select('provider_slug')
+    //                 ->from('providers')
+    //                 ->where('district_assembly', $user->district_assembly);
+    //         });
+    //     }
 
-        if ($request->filled('provider_slug')) {
-            $query->where('provider_slug', $request->string('provider_slug'));
-        }
-        if ($request->filled('driver_slug')) {
-            $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $request->string('driver_slug')));
-        }
-        if ($request->filled('group_slug')) {
-            $query->where('group_slug', $request->string('group_slug'));
-        }
-        if ($request->filled('route_planner_id')) {
-            $query->where('route_planner_id', $request->integer('route_planner_id'));
-        }
-        if ($request->filled('pickup_type')) {
-            $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
-        }
+    //     if ($request->filled('provider_slug')) {
+    //         $query->where('provider_slug', $request->string('provider_slug'));
+    //     }
+    //     if ($request->filled('driver_slug')) {
+    //         $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $request->string('driver_slug')));
+    //     }
+    //     if ($request->filled('group_slug')) {
+    //         $query->where('group_slug', $request->string('group_slug'));
+    //     }
+    //     if ($request->filled('route_planner_id')) {
+    //         $query->where('route_planner_id', $request->integer('route_planner_id'));
+    //     }
+    //     if ($request->filled('pickup_type')) {
+    //         $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
+    //     }
 
-        if ($request->filled('status')) {
-            $status = $request->string('status');
-            if ($status === 'scanned') {
-                $query->where('scan_status', 'scanned');
-            } elseif ($status === 'unscanned') {
-                $query->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned']);
-            }
-        }
+    //     if ($request->filled('status')) {
+    //         $status = $request->string('status');
+    //         if ($status === 'scanned') {
+    //             $query->where('scan_status', 'scanned');
+    //         } elseif ($status === 'unscanned') {
+    //             $query->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned']);
+    //         }
+    //     }
 
-        if ($request->filled('from') || $request->filled('to')) {
-            $from = $request->filled('from') ? $request->date('from') : null;
-            $to = $request->filled('to') ? $request->date('to') : null;
-            $timestampColumn = $request->string('status') === 'scanned' ? 'scanned_at' : 'created_at';
+    //     if ($request->filled('from') || $request->filled('to')) {
+    //         $from = $request->filled('from') ? $request->date('from') : null;
+    //         $to = $request->filled('to') ? $request->date('to') : null;
+    //         $timestampColumn = $request->string('status') === 'scanned' ? 'scanned_at' : 'created_at';
 
-            if ($from) {
-                $query->whereDate($timestampColumn, '>=', $from);
-            }
-            if ($to) {
-                $query->whereDate($timestampColumn, '<=', $to);
-            }
-        }
+    //         if ($from) {
+    //             $query->whereDate($timestampColumn, '>=', $from);
+    //         }
+    //         if ($to) {
+    //             $query->whereDate($timestampColumn, '<=', $to);
+    //         }
+    //     }
 
-        $perPage = max(1, min(100, $request->integer('limit', 20)));
-        $logs = $query->latest()->paginate($perPage);
+    //     $perPage = max(1, min(100, $request->integer('limit', 20)));
+    //     $logs = $query->latest()->paginate($perPage);
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Assignment logs retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: $logs->toArray()
-        );
-    }
+    //     return self::apiResponse(
+    //         in_error: false,
+    //         message: 'Action Successful',
+    //         reason: 'Assignment logs retrieved successfully',
+    //         status_code: self::API_SUCCESS,
+    //         data: $logs->toArray()
+    //     );
+    // }
 
     public function register(RegisterRoute $request)
     {
@@ -176,7 +173,7 @@ class RoutePlannerManagement extends Controller
     {
         $user = Auth::user();
 
-        $plans = RoutePlanner::query()
+        $paginator = RoutePlanner::query()
             ->with(['driver', 'fleet'])
             ->withCount([
                 'pickups as total_pickups',
@@ -184,17 +181,13 @@ class RoutePlannerManagement extends Controller
             ])
             ->where('provider_slug', $this->resolveProviderScopeSlug($user))
             ->latest()
-            ->get();
+            ->paginate($this->perPage(request()));
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Routes retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: [
-                'assignments' => self::transformRoutePlannersList($plans),
-            ]
+        $paginator->setCollection(
+            collect(self::transformRoutePlannersList($paginator->getCollection()))
         );
+
+        return $this->paginatedApiResponse($paginator, 'Routes retrieved successfully');
     }
 
     public function show(RoutePlanner $plan)
@@ -239,66 +232,37 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function clientPickupDetails(Client $client)
-    {
-        $user = request()->user();
-        $providerSlug = $this->resolveProviderScopeSlug($user);
+    // public function updateStatus(RouteStatusUpdate $request)
+    // {
+    //     $data = $request->validated();
+    //     $user = $request->user();
 
-        $client = Client::query()
-            ->where('client_slug', $client->client_slug)
-            ->when($providerSlug, fn ($query) => $query->where('provider_slug', $providerSlug))
-            ->first();
+    //     $routePlanner = RoutePlanner::query()
+    //         ->where('id', $data['id'])
+    //         ->when(isset($user->provider_slug), fn ($q) => $q->where('provider_slug', $this->resolveProviderScopeSlug($user)))
+    //         ->first();
 
-        if (! $client) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Client not found',
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
+    //     if (! $routePlanner) {
+    //         return self::apiResponse(
+    //             in_error: true,
+    //             message: 'Action Failed',
+    //             reason: 'Route plan not found',
+    //             status_code: self::API_NOT_FOUND,
+    //             data: []
+    //         );
+    //     }
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Client pickup details retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: self::transformClientPickupDetails($client)
-        );
-    }
+    //     $routePlanner->status = $data['status'];
+    //     $routePlanner->save();
 
-    public function updateStatus(RouteStatusUpdate $request)
-    {
-        $data = $request->validated();
-        $user = $request->user();
-
-        $routePlanner = RoutePlanner::query()
-            ->where('id', $data['id'])
-            ->when(isset($user->provider_slug), fn ($q) => $q->where('provider_slug', $this->resolveProviderScopeSlug($user)))
-            ->first();
-
-        if (! $routePlanner) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Route plan not found',
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-
-        $routePlanner->status = $data['status'];
-        $routePlanner->save();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Route planner status updated successfully',
-            status_code: self::API_SUCCESS,
-            data: self::transformRoutePlannerSummary($routePlanner)
-        );
-    }
+    //     return self::apiResponse(
+    //         in_error: false,
+    //         message: 'Action Successful',
+    //         reason: 'Route planner status updated successfully',
+    //         status_code: self::API_SUCCESS,
+    //         data: self::transformRoutePlannerSummary($routePlanner)
+    //     );
+    // }
 
     public function updatePlan(RouteDetailsUpdate $request, RoutePlanner $plan)
     {
@@ -315,33 +279,41 @@ class RoutePlannerManagement extends Controller
             );
         }
 
-        if (isset($user->provider_slug)) {
-            if (isset($data['driver_slug']) && ! Driver::query()
-                ->where('driver_slug', $data['driver_slug'])
-                ->where('provider_slug', $this->resolveProviderScopeSlug($user))
-                ->exists()) {
-                return self::apiResponse(true, 'Action Failed', 'Unauthorized driver for this provider', self::API_FAIL, []);
-            }
+        try {
+            $plan = $this->routePlannerService->updatePlan($plan, $data);
 
-            if (isset($data['fleet_slug']) && ! Fleet::query()
-                ->where('fleet_slug', $data['fleet_slug'])
-                ->where('provider_slug', $this->resolveProviderScopeSlug($user))
-                ->exists()) {
-                return self::apiResponse(true, 'Action Failed', 'Unauthorized fleet for this provider', self::API_FAIL, []);
-            }
+            return self::apiResponse(
+                in_error: false,
+                message: 'Action Successful',
+                reason: 'Route details updated successfully',
+                status_code: self::API_SUCCESS,
+                data: self::transformRoutePlannerSummary($plan)
+            );
+        } catch (InvalidArgumentException $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: $e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
+        } catch (RuntimeException $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: $e->getMessage(),
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        } catch (\Throwable $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Failed to update route: '.$e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
         }
-
-        unset($data['group_slug']);
-
-        $plan->update($data);
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Route details updated successfully',
-            status_code: self::API_SUCCESS,
-            data: self::transformRoutePlannerSummary($plan)
-        );
     }
 
     public function deletePlan(RoutePlanner $plan)
@@ -357,7 +329,7 @@ class RoutePlannerManagement extends Controller
             );
         }
 
-        $plan->delete();
+        $this->routePlannerService->deletePlan($plan);
 
         return self::apiResponse(
             in_error: false,
@@ -368,9 +340,9 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    public function routerplannerRecords(Provider $provider)
+    public function routerplannerRecords(Request $request, Provider $provider)
     {
-        $plans = RoutePlanner::query()
+        $paginator = RoutePlanner::query()
             ->where('provider_slug', $provider->provider_slug)
             ->with(['driver', 'fleet'])
             ->withCount([
@@ -378,15 +350,13 @@ class RoutePlannerManagement extends Controller
                 'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
             ])
             ->latest()
-            ->get();
+            ->paginate($this->perPage($request));
 
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Route planner records retrieved successfully',
-            status_code: self::API_SUCCESS,
-            data: self::transformRoutePlannersList($plans)
+        $paginator->setCollection(
+            collect(self::transformRoutePlannersList($paginator->getCollection()))
         );
+
+        return $this->paginatedApiResponse($paginator, 'Route planner records retrieved successfully');
     }
 
     public function routerplannerRecord(Request $request, Provider $provider, RoutePlanner $routerplanner)

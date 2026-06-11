@@ -39,31 +39,26 @@ class FleetManagementController extends Controller
 
     public function getAllFleets()
     {
-        $fleets = Fleet::query()
-            ->where('status', 'active')
-            ->get();
-        if (! $fleets) {
-            return self::apiResponse(in_error: true, message: "Action Failed", reason: "No fleets found", status_code: self::API_FAIL);
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "All fleets retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $fleets->toArray()
+        return $this->paginatedApiResponse(
+            Fleet::query()
+                ->where('status', 'active')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'All fleets retrieved successfully'
         );
     }
 
     public function allFleets()
     {
-        $user   = Auth::guard('provider')->user();
-        $fleets = Fleet::where('provider_slug', $user->provider_slug)->get();
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Fleets retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $fleets->load('provider')->toArray()
+        $user = Auth::guard('provider')->user();
+
+        return $this->paginatedApiResponse(
+            Fleet::query()
+                ->where('provider_slug', $user->provider_slug)
+                ->with('provider')
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Fleets retrieved successfully'
         );
     }
 

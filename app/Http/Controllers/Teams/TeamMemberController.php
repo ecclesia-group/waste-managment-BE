@@ -25,19 +25,22 @@ class TeamMemberController extends Controller
         }
 
         $context = $this->resolveContext($owner);
-        $members = $context['modelClass']::query()
+        $paginator = $context['modelClass']::query()
             ->where('parent_slug', $context['owner_slug'])
             ->where('is_main', false)
             ->latest()
-            ->get();
+            ->paginate($this->perPage($request));
 
-        $data = $members->map(function ($member) {
-            $payload = $member->toArray();
-            $payload['rbac'] = $member->rbacForFrontend();
-            return $payload;
-        })->values()->toArray();
+        return $this->paginatedApiResponseMapped(
+            $paginator,
+            'Team members retrieved successfully',
+            function ($member) {
+                $payload = $member->toArray();
+                $payload['rbac'] = $member->rbacForFrontend();
 
-        return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Team members retrieved successfully', status_code: self::API_SUCCESS, data: $data);
+                return $payload;
+            }
+        );
     }
 
     public function show(Request $request, string $memberSlug)

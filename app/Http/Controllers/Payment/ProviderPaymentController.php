@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\Payment;
-use Illuminate\Http\Request;
 use App\Models\WeighbridgeRecord;
+use Illuminate\Http\Request;
 
 class ProviderPaymentController extends Controller
 {
@@ -18,8 +19,7 @@ class ProviderPaymentController extends Controller
 
     public function listPayments(Request $request)
     {
-        $user = $request->user();
-        $providerSlug = $this->providerSlugFromUser($user);
+        $providerSlug = $this->providerSlugFromUser($request->user());
 
         $status = $request->query('status');
         $query = Payment::query()
@@ -31,22 +31,9 @@ class ProviderPaymentController extends Controller
             $query->where('status', (string) $status);
         }
 
-        $payments = $query->paginate(20);
-
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Provider payments retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: [
-                'items' => $payments->items(),
-                'pagination' => [
-                    'total' => $payments->total(),
-                    'per_page' => $payments->perPage(),
-                    'current_page' => $payments->currentPage(),
-                    'last_page' => $payments->lastPage(),
-                ],
-            ]
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider payments retrieved successfully'
         );
     }
 
@@ -81,37 +68,67 @@ class ProviderPaymentController extends Controller
     public function binsPayments(Request $request)
     {
         $providerSlug = $this->providerSlugFromUser($request->user());
-        $items = Payment::query()
-            ->where('provider_slug', $providerSlug)
-            // ->where('purchase_id', '!=', '0')
-            ->where('payment_type', 'pickup')
-            ->latest()
-            ->get();
 
-        return self::apiResponse(false, "Action Successful", "Bin payments retrieved successfully", self::API_SUCCESS, $items->toArray());
+        return $this->paginatedApiResponse(
+            Payment::query()
+                ->where('provider_slug', $providerSlug)
+                ->where('payment_type', 'pickup')
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Bin payments retrieved successfully'
+        );
     }
 
     public function wasteHandoverRequestPayments(Request $request)
     {
         $providerSlug = $this->providerSlugFromUser($request->user());
-        $items = Payment::query()
-            ->where('provider_slug', $providerSlug)
-            ->where('pickup_id', 'like', 'handover:%')
-            ->latest()
-            ->get();
 
-        return self::apiResponse(false, "Action Successful", "Waste handover payments retrieved successfully", self::API_SUCCESS, $items->toArray());
+        return $this->paginatedApiResponse(
+            Payment::query()
+                ->where('provider_slug', $providerSlug)
+                ->where('pickup_id', 'like', 'handover:%')
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Waste handover payments retrieved successfully'
+        );
     }
 
     public function weighbridgeRecords(Request $request)
     {
         $providerSlug = $this->providerSlugFromUser($request->user());
-        $records = WeighbridgeRecord::query()
-            ->where('provider_slug', $providerSlug)
-            ->latest()
-            ->get();
 
-        return self::apiResponse(false, "Action Successful", "Weighbridge records retrieved successfully", self::API_SUCCESS, $records->toArray());
+        return $this->paginatedApiResponse(
+            WeighbridgeRecord::query()
+                ->where('provider_slug', $providerSlug)
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Weighbridge records retrieved successfully'
+        );
+    }
+
+    public function clientPayments(Request $request, Client $client)
+    {
+        $providerSlug = $this->providerSlugFromUser($request->user());
+
+        return $this->paginatedApiResponse(
+            Payment::query()
+                ->where('client_slug', $client->client_slug)
+                ->where('provider_slug', $providerSlug)
+                ->latest()
+                ->paginate($this->perPage($request)),
+            'Client payments retrieved successfully'
+        );
+    }
+
+    public function getClientPayment(Request $request, Client $client, Payment $payment)
+    {
+        $providerSlug = $this->providerSlugFromUser($request->user());
+        $payment = Payment::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('provider_slug', $providerSlug)
+            ->where('id', $payment->id)
+            ->first();
+
+        return self::apiResponse(false, "Action Successful", "Client payment retrieved successfully", self::API_SUCCESS, $payment->toArray());
     }
 }
-

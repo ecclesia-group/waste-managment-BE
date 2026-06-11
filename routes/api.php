@@ -151,6 +151,9 @@ Route::prefix("provider")->group(function () {
         Route::get("payments/weighbridge_records", [ProviderPaymentController::class, "weighbridgeRecords"]);
         Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
         Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
+        // Get client payments
+        Route::get("payments/client/{client}", [ProviderPaymentController::class, "clientPayments"]);
+        Route::get("payments/client/{client}/{payment}", [ProviderPaymentController::class, "getClientPayment"]);
 
         // Store/Product Management (provider-owned)
         Route::post('create_product', [ProductController::class, 'createProduct']);
@@ -194,10 +197,9 @@ Route::prefix("provider")->group(function () {
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
         Route::get("get_single_plan/{plan}/pickups", [RoutePlannerManagement::class, "planPickups"]);
         Route::get("get_single_plan/{plan}/pickups/{pickup}", [RoutePlannerManagement::class, "pickupDetails"]);
-        Route::get("clients/{client}/pickup_details", [RoutePlannerManagement::class, "clientPickupDetails"]);
-        Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
-        Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
+        // Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
         Route::put("update_plan_details/{plan}", [RoutePlannerManagement::class, "updatePlan"]);
+        // Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
         Route::delete("delete_plan/{plan}", [RoutePlannerManagement::class, "deletePlan"]);
 
         // Fleet Management
@@ -224,7 +226,7 @@ Route::prefix("provider")->group(function () {
         Route::put("update_violation_status/{violation}", [ViolationManagementController::class, "updateViolationStatus"]);
 
         // QR Code Scanner (Scan bin QR code to get client details)
-        Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
+        // Route::post("scan_qrcode", [ClientController::class, "scanQRCode"]);
         Route::post("manual_bin_code_scan", [PickupController::class, "manualCodeScan"]);
         Route::post("change_scan_status", [PickupController::class, "setScanStatus"]);
 

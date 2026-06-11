@@ -13,33 +13,28 @@ class ComplaintmanagementController extends Controller
     // Lists all complaints
     public function listClientComplaints()
     {
-        $user       = request()->user();
-        $complaints = Complaint::where('provider_slug', $user->provider_slug)->get();
-        if ($complaints->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No complaints found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Complaints retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $complaints?->load('client', 'provider')->toArray()
+        $user = request()->user();
+
+        return $this->paginatedApiResponse(
+            Complaint::query()
+                ->where('provider_slug', $user->provider_slug)
+                ->with(['client', 'provider'])
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Complaints retrieved successfully'
         );
     }
 
     public function listComplaints()
     {
-        $user       = request()->user();
+        $user = request()->user();
 
         // Platform-wide listing for Super Admin.
         if (isset($user->admin_slug)) {
-            $complaints = Complaint::latest()->get();
+            $complaints = Complaint::query()
+                ->with(['client', 'provider'])
+                ->latest()
+                ->paginate($this->perPage(request()));
             $stats = Complaint::query()
                 ->select('status', DB::raw('count(*) as total'))
                 ->groupBy('status')
@@ -53,33 +48,26 @@ class ComplaintmanagementController extends Controller
                 reason: "Complaints retrieved successfully",
                 status_code: self::API_SUCCESS,
                 data: [
-                    'complaints' => $complaints->load('client', 'provider')->toArray(),
+                    'items' => $complaints->items(),
                     'stats' => $stats,
+                    'pagination' => [
+                        'total' => $complaints->total(),
+                        'per_page' => $complaints->perPage(),
+                        'current_page' => $complaints->currentPage(),
+                        'last_page' => $complaints->lastPage(),
+                    ],
                 ]
             );
         }
 
-        // Client listing.
-        $complaints = Complaint::where([
-            'client_slug' => $user->client_slug,
-            'provider_slug' => $user->provider_slug,
-        ])->get();
-
-        if ($complaints->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "No complaints found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "Complaints retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $complaints?->load('client')->toArray()
+        return $this->paginatedApiResponse(
+            Complaint::query()
+                ->where('client_slug', $user->client_slug)
+                ->where('provider_slug', $user->provider_slug)
+                ->with(['client', 'provider'])
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'Complaints retrieved successfully'
         );
     }
 
