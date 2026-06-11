@@ -224,6 +224,21 @@ class RoutePlannerManagement extends Controller
         );
     }
 
+    public function pickupDetails(RoutePlanner $plan, Pickup $pickup)
+    {
+        if ($denied = $this->denyIfCannotAccessPlan($plan)) {
+            return $denied;
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Pickup details retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: self::transformPickupStop($pickup)
+        );
+    }
+
     public function clientPickupDetails(Client $client)
     {
         $user = request()->user();

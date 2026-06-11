@@ -193,6 +193,7 @@ Route::prefix("provider")->group(function () {
         Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
         Route::get("get_single_plan/{plan}/pickups", [RoutePlannerManagement::class, "planPickups"]);
+        Route::get("get_single_plan/{plan}/pickups/{pickup}", [RoutePlannerManagement::class, "pickupDetails"]);
         Route::get("clients/{client}/pickup_details", [RoutePlannerManagement::class, "clientPickupDetails"]);
         Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
         Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);

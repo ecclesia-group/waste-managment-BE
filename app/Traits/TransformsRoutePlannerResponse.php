@@ -61,7 +61,7 @@ trait TransformsRoutePlannerResponse
         return $payload;
     }
 
-    protected static function transformPickupStop(Pickup $pickup, int $routePlannerId): array
+    protected static function transformPickupStop(Pickup $pickup, ?int $routePlannerId = null): array
     {
         $client = $pickup->client;
         $coords = static::clientCoordinatesForMap($client);
