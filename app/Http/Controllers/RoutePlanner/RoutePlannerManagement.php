@@ -437,10 +437,10 @@ class RoutePlannerManagement extends Controller
             );
         }
 
-        if (isset($user->district_assembly_slug)) {
+        if (isset($user->district_assembly)) {
             $allowed = Provider::query()
                 ->where('provider_slug', $plan->provider_slug)
-                ->where('district_assembly', $user->district_assembly_slug)
+                ->where('district_assembly', $user->district_assembly)
                 ->exists();
 
             if (! $allowed) {

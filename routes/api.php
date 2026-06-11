@@ -416,7 +416,6 @@ Route::prefix("admin")->group(function () {
         // Get provider groups and single group
         Route::get("providers/{provider}/groups", [ActorRelatedDataController::class, "providerGroups"]);
         Route::get("providers/{provider}/groups/{group}", [ActorRelatedDataController::class, "providerGroup"]);
-
         Route::get("providers/{provider}/violations", [ActorRelatedDataController::class, "providerViolations"]);
         Route::get("providers/{provider}/violations/{violation}", [ActorRelatedDataController::class, "providerViolation"]);
         Route::get("providers/{provider}/payments", [ActorRelatedDataController::class, "providerPayments"]);
