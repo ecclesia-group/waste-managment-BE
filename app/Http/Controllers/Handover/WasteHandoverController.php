@@ -127,7 +127,8 @@ class WasteHandoverController extends Controller
         if ($zoneSlugs === []) {
             return $this->paginatedApiResponse(
                 WasteHandoverRequest::query()->whereRaw('1 = 0')->paginate($this->perPage($request)),
-                'No zone assignments'
+                'No zone assignments',
+                'requests'
             );
         }
 
@@ -138,7 +139,8 @@ class WasteHandoverController extends Controller
                 ->latest()
                 ->paginate($this->perPage($request)),
             'Available handover requests in your zone',
-            fn ($h) => $this->transformHandover($h)
+            fn ($h) => $this->transformHandover($h),
+            'requests'
         );
     }
 
@@ -196,7 +198,8 @@ class WasteHandoverController extends Controller
         return $this->paginatedApiResponseMapped(
             $query->paginate($this->perPage($request)),
             'Waste handover requests retrieved successfully',
-            fn ($h) => $this->transformHandover($h)
+            fn ($h) => $this->transformHandover($h),
+            'requests'
         );
     }
 

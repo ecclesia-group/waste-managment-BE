@@ -42,21 +42,11 @@ class ComplaintmanagementController extends Controller
                 ->keyBy('status')
                 ->toArray();
 
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Complaints retrieved successfully",
-                status_code: self::API_SUCCESS,
-                data: [
-                    'items' => $complaints->items(),
-                    'stats' => $stats,
-                    'pagination' => [
-                        'total' => $complaints->total(),
-                        'per_page' => $complaints->perPage(),
-                        'current_page' => $complaints->currentPage(),
-                        'last_page' => $complaints->lastPage(),
-                    ],
-                ]
+            return $this->paginatedApiResponse(
+                $complaints,
+                'Complaints retrieved successfully',
+                'complaints',
+                ['stats' => $stats]
             );
         }
 

@@ -187,7 +187,7 @@ class RoutePlannerManagement extends Controller
             collect(self::transformRoutePlannersList($paginator->getCollection()))
         );
 
-        return $this->paginatedApiResponse($paginator, 'Routes retrieved successfully');
+        return $this->paginatedApiResponse($paginator, 'Routes retrieved successfully', 'assignments');
     }
 
     public function show(RoutePlanner $plan)
