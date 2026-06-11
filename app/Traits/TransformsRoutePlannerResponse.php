@@ -80,6 +80,7 @@ trait TransformsRoutePlannerResponse
                 'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
                 'gps_address' => $client?->gps_address,
                 'pickup_location' => $client?->pickup_location,
+                'category' => $client?->type,
                 'latitude' => $coords['latitude'],
                 'longitude' => $coords['longitude'],
                 'bin_code' => $client?->bin_code,
