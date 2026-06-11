@@ -1,27 +1,23 @@
 <?php
 namespace App\Http\Requests\DistrictAssembley;
 
+use App\Models\DistrictAssembly;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        $district_assembly_slug = $this->route('district_assembly');
+        $districtAssemblyId = $this->resolveDistrictAssemblyId();
 
         return [
             'region'        => 'required|string|max:100',
@@ -31,14 +27,14 @@ class ProfileUpdateRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('district_assemblies', 'email')->ignore($district_assembly_slug, 'district_assembly_slug'),
+                Rule::unique('district_assemblies', 'email')->ignore($districtAssemblyId),
             ],
 
             'phone_number'  => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('district_assemblies', 'phone_number')->ignore($district_assembly_slug, 'district_assembly_slug'),
+                Rule::unique('district_assemblies', 'phone_number')->ignore($districtAssemblyId),
             ],
 
             'gps_address'   => 'required|string|max:255',
@@ -47,5 +43,24 @@ class ProfileUpdateRequest extends FormRequest
 
             'profile_image' => 'nullable|starts_with:data:,http://,https://',
         ];
+    }
+
+    private function resolveDistrictAssemblyId(): ?int
+    {
+        $districtAssembly = $this->route('district_assembly');
+
+        if ($districtAssembly instanceof DistrictAssembly) {
+            return (int) $districtAssembly->getKey();
+        }
+
+        if (is_string($districtAssembly) && $districtAssembly !== '') {
+            $id = DistrictAssembly::query()
+                ->where('district_assembly_slug', $districtAssembly)
+                ->value('id');
+
+            return $id ? (int) $id : null;
+        }
+
+        return null;
     }
 }

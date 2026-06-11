@@ -379,9 +379,27 @@ class RoutePlannerManagement extends Controller
             message: 'Action Successful',
             reason: 'Route planner records retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'assignments' => self::transformRoutePlannersList($plans),
-            ]
+            data: self::transformRoutePlannersList($plans)
+        );
+    }
+
+    public function routerplannerRecord(Request $request, Provider $provider, RoutePlanner $routerplanner)
+    {
+        if ($routerplanner->provider_slug !== $provider->provider_slug) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Route planner not found for this provider',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Route planner record retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: self::transformRoutePlannerSummary($routerplanner)
         );
     }
 

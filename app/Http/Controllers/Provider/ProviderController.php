@@ -92,7 +92,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider registered successfully",
             status_code: self::API_SUCCESS,
-            data: array_merge($provider->load('zones', 'facility', 'mmda')->toArray())
+            data: array_merge($provider->load('zones', 'mmda')->toArray())
         );
     }
 
@@ -100,8 +100,8 @@ class ProviderController extends Controller
     {
         $providers = Provider::query()
             ->orderByDesc('created_at')
-            ->with('zones', 'facility', 'mmda')
-            ->paginate(10);
+            ->with('zones', 'mmda')
+            ->paginate(20);
 
         return self::apiResponse(
             in_error: false,
@@ -124,7 +124,7 @@ class ProviderController extends Controller
     {
         $provider = Provider::query()
             ->where('provider_slug', $provider->provider_slug)
-            ->with('zones', 'facility', 'mmda')
+            ->with('zones', 'mmda')
             ->first();
 
         if (! $provider) {
@@ -190,7 +190,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->load('zones', 'facility', 'mmda')->toArray()
+            data: $provider->load('zones', 'mmda')->toArray()
         );
     }
 
@@ -214,7 +214,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: request()->user()->load('zones', 'facility', 'mmda')->toArray()
+            data: request()->user()->load('zones', 'mmda')->toArray()
         );
     }
 
@@ -243,7 +243,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->fresh()->load('zones', 'facility', 'mmda')->toArray()
+            data: $provider->fresh()->load('zones', 'mmda')->toArray()
         );
     }
 
@@ -282,7 +282,7 @@ class ProviderController extends Controller
             message: 'Action Successful',
             reason: 'Provider zones reassigned successfully',
             status_code: self::API_SUCCESS,
-            data: ['provider_slug' => $provider->provider_slug, 'zone_slugs' => $zones]
+            data: $provider->fresh()->load('zones', 'mmda')->toArray()
         );
     }
 
@@ -300,25 +300,7 @@ class ProviderController extends Controller
             message: 'Action Successful',
             reason: 'Provider MMDA reassigned successfully',
             status_code: self::API_SUCCESS,
-            data: $provider->fresh()->toArray()
-        );
-    }
-
-    public function reassignFacility(Request $request, Provider $provider)
-    {
-        $data = $request->validate([
-            'facility_slug' => 'required|string|exists:facilities,facility_slug',
-        ]);
-
-        $provider->facility_slug = $data['facility_slug'];
-        $provider->save();
-
-        return self::apiResponse(
-            in_error: false,
-            message: 'Action Successful',
-            reason: 'Provider facility reassigned successfully',
-            status_code: self::API_SUCCESS,
-            data: $provider->fresh()->toArray()
+            data: $provider->fresh()->load('zones', 'mmda')->toArray()
         );
     }
 }

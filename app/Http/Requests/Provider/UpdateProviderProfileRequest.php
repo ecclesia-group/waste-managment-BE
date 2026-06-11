@@ -1,28 +1,24 @@
 <?php
 namespace App\Http\Requests\Provider;
 
+use App\Models\Provider;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateProviderProfileRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-
     public function rules(): array
     {
-        $provider_slug = $this->route('provider');
+        $providerId = $this->resolveProviderId();
+
         return [
             'first_name'                       => 'required|string|max:255',
             'last_name'                        => 'nullable|string|max:255',
@@ -32,26 +28,27 @@ class UpdateProviderProfileRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('providers', 'email')->ignore($provider_slug, 'provider_slug'),
+                Rule::unique('providers', 'email')->ignore($providerId),
             ],
 
             'phone_number'                     => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('providers', 'phone_number')->ignore($provider_slug, 'provider_slug'),
+                Rule::unique('providers', 'phone_number')->ignore($providerId),
             ],
 
             'business_registration_number'     => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('providers', 'business_registration_number')->ignore($provider_slug, 'provider_slug'),
+                Rule::unique('providers', 'business_registration_number')
+                    ->ignore($providerId)
+                    ->whereNull('deleted_at'),
             ],
             'business_name'                    => 'nullable|string|max:255',
             'gps_address'                      => 'required|string|max:255',
             'district_assembly'                => 'nullable|exists:district_assemblies,district_assembly_slug',
-            'facility_slug'                    => 'nullable|exists:facilities,facility_slug',
 
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',
@@ -62,8 +59,36 @@ class UpdateProviderProfileRequest extends FormRequest
             'location'                         => 'required|string|max:255',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
 
-            'zone_slugs'                            => 'nullable|array',
-            'zone_slugs.*'                          => 'required|string|distinct|exists:zones,zone_slug',
+            'zone_slugs'                       => 'nullable|array',
+            'zone_slugs.*'                     => 'required|string|distinct|exists:zones,zone_slug',
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'business_registration_number.unique' => 'This business registration number is already assigned to another provider.',
+        ];
+    }
+
+    private function resolveProviderId(): ?int
+    {
+        $provider = $this->route('provider');
+
+        if ($provider instanceof Provider) {
+            return (int) $provider->getKey();
+        }
+
+        if (is_string($provider) && $provider !== '') {
+            $id = Provider::query()->where('provider_slug', $provider)->value('id');
+
+            if ($id) {
+                return (int) $id;
+            }
+        }
+
+        $user = $this->user();
+
+        return $user instanceof Provider ? (int) $user->getKey() : null;
     }
 }

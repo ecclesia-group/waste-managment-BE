@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\DistrictAssembly;
+use App\Models\Driver;
 use App\Models\Facility;
+use App\Models\Fleet;
+use App\Models\Group;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\Provider;
@@ -121,7 +124,7 @@ class ActorRelatedDataController extends Controller
     {
         $query = Violation::query()
             ->where('provider_slug', $provider->provider_slug)
-            ->with(['client', 'provider'])
+            ->with(['client'])
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -130,16 +133,48 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function providerViolation(Request $request, Provider $provider, Violation $violation)
+    {
+        $violation = Violation::where('code', $violation->code)
+            ->where('provider_slug', $provider->provider_slug)
+            ->with(['client'])
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Violation retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $violation->toArray()
+        );
+    }
+
     public function providerPayments(Request $request, Provider $provider)
     {
         $query = Payment::query()
             ->where('provider_slug', $provider->provider_slug)
-            ->with(['client'])
+            ->with(['client', 'purchase', 'pickup'])
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
             $query->paginate($this->perPage($request)),
             'Provider payments retrieved successfully'
+        );
+    }
+
+    public function providerPayment(Request $request, Provider $provider, string $transaction_id)
+    {
+        $payment = Payment::where('transaction_id', $transaction_id)
+            ->where('provider_slug', $provider->provider_slug)
+            ->with(['client', 'purchase', 'pickup'])
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Payment retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $payment->toArray()
         );
     }
 
@@ -169,6 +204,49 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function providerWeighbridgeRecord(Request $request, Provider $provider, WeighbridgeRecord $weighbridge)
+    {
+        $weighbridge = WeighbridgeRecord::where('code', $weighbridge->code)
+            ->where('provider_slug', $provider->provider_slug)
+            ->with(['facility', 'provider', 'fleet'])
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Weighbridge record retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $weighbridge->toArray()
+        );
+    }
+
+    public function providerFleets(Request $request, Provider $provider)
+    {
+        $query = Fleet::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider fleets retrieved successfully'
+        );
+    }
+
+    public function providerFleet(Request $request, Provider $provider, Fleet $fleet)
+    {
+        $fleet = Fleet::where('fleet_slug', $fleet->fleet_slug)
+            ->where('provider_slug', $provider->provider_slug)
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Fleet retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $fleet->toArray()
+        );
+    }
+
     public function districtAssemblyProviders(Request $request, DistrictAssembly $district_assembly)
     {
         $query = Provider::query()
@@ -193,6 +271,33 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function providerGroups(Request $request, Provider $provider)
+    {
+        $query = Group::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider groups retrieved successfully'
+        );
+    }
+
+    public function providerGroup(Request $request, Provider $provider, Group $group)
+    {
+        $group = Group::where('group_slug', $group->group_slug)
+            ->where('provider_slug', $provider->provider_slug)
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Group retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $group->toArray()
+        );
+    }
+
     public function districtAssemblyZones(Request $request, DistrictAssembly $district_assembly)
     {
         $query = Zone::query()
@@ -202,6 +307,33 @@ class ActorRelatedDataController extends Controller
         return $this->paginatedApiResponse(
             $query->paginate($this->perPage($request)),
             'District assembly zones retrieved successfully'
+        );
+    }
+
+    public function providerDrivers(Request $request, Provider $provider)
+    {
+        $query = Driver::query()
+            ->where('provider_slug', $provider->provider_slug)
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Provider drivers retrieved successfully'
+        );
+    }
+
+    public function providerDriver(Request $request, Provider $provider, Driver $driver)
+    {
+        $driver = Driver::where('driver_slug', $driver->driver_slug)
+            ->where('provider_slug', $provider->provider_slug)
+            ->firstOrFail();
+
+        return $this->apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Driver retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $driver->toArray()
         );
     }
 

@@ -80,8 +80,8 @@ class Payment extends Model
         return $this->belongsTo(Pickup::class, 'pickup_id', 'id');
     }
 
-    // public function getRouteKeyName(): string
-    // {
-    //     return 'payment_id';
-    // }
+    public function getRouteKeyName(): string
+    {
+        return 'transaction_id';
+    }
 }

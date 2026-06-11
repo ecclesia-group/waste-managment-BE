@@ -216,6 +216,9 @@ it('creates bulk waste pickup plan from selected request codes', function () {
     $summary = $create->json('data.data');
     expect($summary['pickup_type'])->toBe('bulk_waste_request');
     expect($summary['bulk_request_codes'])->toBe([$bulkCode]);
+    expect($summary['bulk_waste_requests'])->toHaveCount(1);
+    expect($summary['bulk_waste_requests'][0]['request_code'])->toBe($bulkCode);
+    expect($summary['bulk_waste_requests'][0]['client']['client_slug'])->toBe($client->client_slug);
     expect($summary['groups'])->toBe([]);
 
     assertDatabaseHas('pickups', [

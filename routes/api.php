@@ -404,17 +404,30 @@ Route::prefix("admin")->group(function () {
         Route::delete("delete_provider/{provider}", [ProviderController::class, "deleteProvider"]);
         Route::get("providers/{provider}/clients", [ActorRelatedDataController::class, "providerClients"]);
         Route::get("providers/{provider}/clients/{client}", [ActorRelatedDataController::class, "providerClient"]);
+        // get provider drivers and single driver
+        Route::get("providers/{provider}/drivers", [ActorRelatedDataController::class, "providerDrivers"]);
+        Route::get("providers/{provider}/drivers/{driver}", [ActorRelatedDataController::class, "providerDriver"]);
+        // get provider fleets and single fleet
+        Route::get("providers/{provider}/fleets", [ActorRelatedDataController::class, "providerFleets"]);
+        Route::get("providers/{provider}/fleets/{fleet}", [ActorRelatedDataController::class, "providerFleet"]);
+        // get provider weighbridge records and single weighbridge record
         Route::get("providers/{provider}/weighbridge_records", [ActorRelatedDataController::class, "providerWeighbridgeRecords"]);
+        Route::get("providers/{provider}/weighbridge_records/{weighbridge}", [ActorRelatedDataController::class, "providerWeighbridgeRecord"]);
+        // Get provider groups and single group
+        Route::get("providers/{provider}/groups", [ActorRelatedDataController::class, "providerGroups"]);
+        Route::get("providers/{provider}/groups/{group}", [ActorRelatedDataController::class, "providerGroup"]);
+
         Route::get("providers/{provider}/violations", [ActorRelatedDataController::class, "providerViolations"]);
+        Route::get("providers/{provider}/violations/{violation}", [ActorRelatedDataController::class, "providerViolation"]);
         Route::get("providers/{provider}/payments", [ActorRelatedDataController::class, "providerPayments"]);
+        Route::get("providers/{provider}/payments/{transaction_id}", [ActorRelatedDataController::class, "providerPayment"]);
         // reassing zones to a provider
         Route::post("providers/{provider}/reassign_zones", [ProviderController::class, "reassignZones"]);
         // reassign mmda to a provider
         Route::post("providers/{provider}/reassign_mmda", [ProviderController::class, "reassignMmda"]);
-        // reassign facility to a provider
-        Route::post("providers/{provider}/reassign_facility", [ProviderController::class, "reassignFacility"]);
         // get all routerplanner records for a provider
         Route::get("providers/{provider}/routerplanner_records", [RoutePlannerManagement::class, "routerplannerRecords"]);
+        Route::get("providers/{provider}/routerplanner_records/{routerplanner}", [RoutePlannerManagement::class, "routerplannerRecord"]);
         // get all pickup for a single routeplanner record
         Route::get("providers/{provider}/routerplanner_records/{routerplanner}/pickups", [RoutePlannerManagement::class, "routerplannerPickups"]);
 

@@ -77,11 +77,6 @@ class Provider extends Actor
             ->withTimestamps();
     }
 
-    public function facility()
-    {
-        return $this->belongsTo(Facility::class, 'facility_slug', 'facility_slug');
-    }
-
     public function groups()
     {
         return $this->hasMany(Group::class, 'provider_slug', 'provider_slug');

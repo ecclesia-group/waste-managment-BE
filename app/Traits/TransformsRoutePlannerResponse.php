@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
@@ -50,7 +51,11 @@ trait TransformsRoutePlannerResponse
         ];
 
         if ($pickupType === RoutePlannerService::PICKUP_TYPE_BULK) {
-            $payload['bulk_request_codes'] = $plan->selectedBulkRequestCodes();
+            $bulkRequests = static::bulkWasteRequestsBrief(
+                $plan->provider_slug,
+                $plan->selectedBulkRequestCodes()
+            );
+            $payload['bulk_waste_requests'] = $bulkRequests;
         }
 
         return $payload;
@@ -108,6 +113,47 @@ trait TransformsRoutePlannerResponse
                 'status' => $bin->status,
             ] : null,
         ];
+    }
+
+    /**
+     * @param  list<string>  $requestCodes
+     * @return list<array<string, mixed>>
+     */
+    protected static function bulkWasteRequestsBrief(string $providerSlug, array $requestCodes): array
+    {
+        if ($requestCodes === []) {
+            return [];
+        }
+
+        return BulkWasteRequest::query()
+            ->with('client')
+            ->where('provider_slug', $providerSlug)
+            ->whereIn('request_code', $requestCodes)
+            ->get()
+            ->sortBy(fn (BulkWasteRequest $bulk) => array_search($bulk->request_code, $requestCodes, true))
+            ->values()
+            ->map(function (BulkWasteRequest $bulk) {
+                $client = $bulk->client;
+                $coords = static::clientCoordinatesForMap($client);
+
+                return [
+                    'request_code' => $bulk->request_code,
+                    'title' => $bulk->title,
+                    'status' => $bulk->status,
+                    'amount' => $bulk->amount,
+                    'pickup_date' => $bulk->pickup_date,
+                    'client' => $client ? [
+                        'client_slug' => $client->client_slug,
+                        'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+                        'phone_number' => $client->phone_number,
+                        'gps_address' => $client->gps_address,
+                        'pickup_location' => $client->pickup_location,
+                        'latitude' => $coords['latitude'],
+                        'longitude' => $coords['longitude'],
+                    ] : null,
+                ];
+            })
+            ->all();
     }
 
     /**

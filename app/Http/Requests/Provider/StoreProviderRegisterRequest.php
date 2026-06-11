@@ -26,7 +26,7 @@ class StoreProviderRegisterRequest extends FormRequest
             'email'                            => 'required|string|email|unique:providers,email',
             'phone_number'                     => 'required|string|unique:providers,phone_number',
             'business_name'                    => 'required|string',
-            'district_assembly'                => 'nullable|string',
+            'district_assembly'                => 'nullable|string|exists:district_assemblies,district_assembly_slug',
             'business_registration_number'     => 'required|string|unique:providers,business_registration_number',
             'gps_address'                      => 'required|string',
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
@@ -38,7 +38,6 @@ class StoreProviderRegisterRequest extends FormRequest
             'region'                           => 'required|string',
             'location'                         => 'required|string',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
-            'facility_slug'                    => 'nullable|string|exists:facilities,facility_slug',
         ];
     }
 }
