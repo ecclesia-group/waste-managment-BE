@@ -193,6 +193,18 @@ class ActorRelatedDataController extends Controller
         );
     }
 
+    public function districtAssemblyZones(Request $request, DistrictAssembly $district_assembly)
+    {
+        $query = Zone::query()
+            ->where('district_assembly', $district_assembly->district_assembly_slug)
+            ->orderByDesc('created_at');
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'District assembly zones retrieved successfully'
+        );
+    }
+
     public function zoneProviders(Request $request, Zone $zone)
     {
         $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone($zone->zone_slug);

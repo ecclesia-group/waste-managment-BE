@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->longText('locations')->nullable();
             $table->string('status')->default('active');
+            $table->string('district_assembly')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

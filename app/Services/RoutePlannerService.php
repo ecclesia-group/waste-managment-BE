@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
 use App\Models\Group;
+use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\RoutePlanner;
 use Carbon\Carbon;
@@ -21,6 +22,10 @@ class RoutePlannerService
     public const PICKUP_TYPE_NORMAL = 'normal';
 
     public const PICKUP_TYPE_BULK = 'bulk_waste_request';
+
+    public const PLAN_STATUS_SCHEDULED = 'scheduled';
+
+    public const PLAN_STATUS_COMPLETED = 'completed';
 
     /** @return array{pickup_types: list<string>, normal: array<string, mixed>, bulk_waste_request: array<string, mixed>} */
     public function planOptionsForProvider(string $providerSlug): array
@@ -49,16 +54,7 @@ class RoutePlannerService
                 'groups' => $groups->map(fn (Group $group) => [
                     'group_slug' => $group->group_slug,
                     'name' => $group->name,
-                    'description' => $group->description,
                     'clients_count' => $group->clients->count(),
-                    'clients' => $group->clients->map(fn (Client $client) => [
-                        'client_slug' => $client->client_slug,
-                        'first_name' => $client->first_name,
-                        'last_name' => $client->last_name,
-                        'phone_number' => $client->phone_number,
-                        'gps_address' => $client->gps_address,
-                        'pickup_location' => $client->pickup_location,
-                    ])->values()->all(),
                 ])->values()->all(),
             ],
             'bulk_waste_request' => [
@@ -70,13 +66,7 @@ class RoutePlannerService
                     'status' => $bulk->status,
                     'amount' => $bulk->amount,
                     'pickup_date' => $bulk->pickup_date,
-                    'client' => $bulk->client ? [
-                        'client_slug' => $bulk->client->client_slug,
-                        'first_name' => $bulk->client->first_name,
-                        'last_name' => $bulk->client->last_name,
-                        'phone_number' => $bulk->client->phone_number,
-                        'gps_address' => $bulk->client->gps_address,
-                    ] : null,
+                    'client_slug' => $bulk->client_slug,
                 ])->values()->all(),
             ],
         ];
@@ -133,7 +123,7 @@ class RoutePlannerService
                 'group_slug' => $pickupType === self::PICKUP_TYPE_NORMAL ? $groupSlugs->first() : null,
                 'pickup_date' => $pickupDate,
                 'pickup_type' => $pickupType,
-                'status' => $data['status'] ?? 'pending',
+                'status' => $data['status'] ?? self::PLAN_STATUS_SCHEDULED,
                 'route_meta' => [
                     'pickup_type' => $pickupType,
                     'pickup_date' => $pickupDate->toISOString(),
@@ -142,14 +132,25 @@ class RoutePlannerService
                 ],
             ]);
 
-            $this->createPlanStops($routePlanner, $clients, $bulkByClient, $pickupType, $pickupDate);
+            $this->createPickupsForPlan($routePlanner, $clients, $bulkByClient, $pickupType, $pickupDate);
 
             return $routePlanner->load([
-                'provider',
                 'driver',
                 'fleet',
                 'pickups.client.group',
             ]);
+        });
+    }
+
+    public function afterPickupScanned(Pickup $pickup): void
+    {
+        if ($pickup->scan_status !== 'scanned' || ! $pickup->route_planner_id) {
+            return;
+        }
+
+        DB::transaction(function () use ($pickup) {
+            $this->maybeCreatePickupPayment($pickup);
+            $this->syncRoutePlannerCompletion((int) $pickup->route_planner_id);
         });
     }
 
@@ -163,20 +164,12 @@ class RoutePlannerService
                 throw new InvalidArgumentException('Select at least one group for a normal pickup plan');
             }
 
-            if ($bulkCodes->isNotEmpty()) {
-                throw new InvalidArgumentException('bulk_request_codes are not used for normal pickup plans');
-            }
-
             return;
         }
 
         if ($pickupType === self::PICKUP_TYPE_BULK) {
             if ($bulkCodes->isEmpty()) {
                 throw new InvalidArgumentException('Select at least one bulk waste request code for a bulk pickup plan');
-            }
-
-            if ($groupSlugs->isNotEmpty()) {
-                throw new InvalidArgumentException('group_slugs are not used for bulk waste pickup plans');
             }
 
             return;
@@ -194,8 +187,6 @@ class RoutePlannerService
         Collection $groupSlugs,
         Collection $bulkCodes
     ): array {
-        $bulkByClient = collect();
-
         if ($pickupType === self::PICKUP_TYPE_BULK) {
             $bulkByClient = BulkWasteRequest::query()
                 ->where('provider_slug', $providerSlug)
@@ -219,13 +210,10 @@ class RoutePlannerService
             ->whereIn('group_slug', $groupSlugs->all())
             ->get();
 
-        return [$clients, $bulkByClient];
+        return [$clients, collect()];
     }
 
-    /**
-     * Create one pickup stop per client, linked directly to the plan via route_planner_id.
-     */
-    private function createPlanStops(
+    private function createPickupsForPlan(
         RoutePlanner $plan,
         Collection $clients,
         Collection $bulkByClient,
@@ -235,13 +223,12 @@ class RoutePlannerService
         foreach ($clients as $client) {
             $bulkRequest = $bulkByClient->get($client->client_slug);
 
-            Pickup::create([
+            $pickup = Pickup::create([
                 'code' => $this->generateUniquePickupCode(),
                 'route_planner_id' => $plan->id,
-                'provider_slug' => $plan->provider_slug,
+                'bulk_waste_request_code' => $bulkRequest?->request_code,
                 'client_slug' => $client->client_slug,
                 'group_slug' => $pickupType === self::PICKUP_TYPE_NORMAL ? $client->group_slug : null,
-                'bulk_waste_request_code' => $bulkRequest?->request_code,
                 'title' => $bulkRequest?->title ?? 'Scheduled pickup',
                 'category' => $pickupType === self::PICKUP_TYPE_BULK ? 'bulk_waste_request' : 'normal_pickup',
                 'description' => $bulkRequest?->description,
@@ -249,6 +236,7 @@ class RoutePlannerService
                 'status' => 'scheduled',
                 'scan_status' => 'unscanned',
                 'location' => $client->pickup_location ?: ($client->gps_address ?: 'Unknown'),
+                'provider_slug' => $plan->provider_slug,
                 'images' => $bulkRequest?->images,
                 'pickup_date' => $pickupDate,
             ]);
@@ -256,6 +244,8 @@ class RoutePlannerService
             if ($bulkRequest) {
                 $this->scheduleBulkRequest($bulkRequest, $pickupDate);
             }
+
+            unset($pickup);
         }
     }
 
@@ -269,6 +259,70 @@ class RoutePlannerService
         }
 
         $bulkRequest->save();
+    }
+
+    private function maybeCreatePickupPayment(Pickup $pickup): void
+    {
+        $amount = round((float) ($pickup->amount ?? 0), 2);
+        if ($amount <= 0) {
+            return;
+        }
+
+        $exists = Payment::query()
+            ->where('pickup_id', (string) $pickup->id)
+            ->where('payment_type', Payment::PAYMENT_TYPE_PICKUP)
+            ->whereIn('status', [
+                Payment::STATUS_PENDING,
+                Payment::STATUS_PAID,
+                Payment::STATUS_SUCCESSFUL,
+            ])
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $client = $pickup->relationLoaded('client')
+            ? $pickup->client
+            : Client::query()->where('client_slug', $pickup->client_slug)->first();
+
+        $name = $client
+            ? trim(($client->first_name ?? '').' '.($client->last_name ?? ''))
+            : 'Client';
+
+        Payment::create([
+            'client_slug' => $pickup->client_slug,
+            'provider_slug' => $pickup->provider_slug,
+            'payment_type' => Payment::PAYMENT_TYPE_PICKUP,
+            'payable_reference' => $pickup->code,
+            'transaction_id' => 'PUP-'.Str::upper(Str::random(12)),
+            'payment_method' => 'pending',
+            'network' => 'unknown',
+            'name' => $name !== '' ? $name : 'Client',
+            'client_email' => $client?->email,
+            'amount' => $amount,
+            'currency' => 'GHS',
+            'status' => Payment::STATUS_PENDING,
+            'pickup_id' => (string) $pickup->id,
+            'purchase_id' => null,
+        ]);
+    }
+
+    private function syncRoutePlannerCompletion(int $routePlannerId): void
+    {
+        $hasUnscanned = Pickup::query()
+            ->where('route_planner_id', $routePlannerId)
+            ->where(function ($query) {
+                $query->whereNull('scan_status')
+                    ->orWhere('scan_status', '!=', 'scanned');
+            })
+            ->exists();
+
+        if (! $hasUnscanned) {
+            RoutePlanner::query()
+                ->where('id', $routePlannerId)
+                ->update(['status' => self::PLAN_STATUS_COMPLETED]);
+        }
     }
 
     private function authorizePlanResources(

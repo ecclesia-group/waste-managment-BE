@@ -22,7 +22,7 @@ class RouteStatusUpdate extends FormRequest
     {
         return [
             'id'     => 'required|string|exists:route_planners,id',
-            'status' => 'nullable|string|in:pending,completed,cancelled,progress,in_progress',
+            'status' => 'nullable|string|in:scheduled,pending,completed,cancelled,progress,in_progress',
         ];
     }
 }

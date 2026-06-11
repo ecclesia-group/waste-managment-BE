@@ -522,7 +522,7 @@ class DemoDataSeeder extends Seeder
                 $groups['residential']->group_slug,
                 $groups['commercial']->group_slug,
             ],
-            'status' => 'pending',
+            'status' => RoutePlannerService::PLAN_STATUS_SCHEDULED,
         ]);
 
         $bulk = $service->createPlan([
@@ -532,7 +532,7 @@ class DemoDataSeeder extends Seeder
             'pickup_type' => RoutePlannerService::PICKUP_TYPE_BULK,
             'pickup_date' => $pickupDate,
             'bulk_request_codes' => [$bulkRequest->request_code],
-            'status' => 'pending',
+            'status' => RoutePlannerService::PLAN_STATUS_SCHEDULED,
         ]);
 
         return ['normal' => $normal, 'bulk' => $bulk];

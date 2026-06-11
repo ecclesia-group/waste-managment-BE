@@ -16,6 +16,7 @@ class Zone extends Model
         'description',
         'locations',
         'status',
+        'district_assembly',
     ];
 
     protected $hidden = [
@@ -60,5 +61,10 @@ class Zone extends Model
         )
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();
+    }
+
+    public function districtAssembly()
+    {
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
     }
 }

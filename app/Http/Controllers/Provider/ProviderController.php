@@ -261,13 +261,64 @@ class ProviderController extends Controller
         );
     }
 
-    public function reassignZones(ReassignZonesRequest $request, Provider $provider)
+    public function reassignZones(Request $request, Provider $provider)
     {
-        $data = $request->validated();
+        $data = $request->validate([
+            'zone_slugs' => 'required|array|min:1',
+            'zone_slugs.*' => 'required|string|exists:zones,zone_slug',
+            'replace' => 'sometimes|boolean',
+        ]);
 
-        $zones = array_values(array_unique(array_filter($data['zone_slugs'] ?? [])));
-        unset($data['zone_slugs']);
+        $zones = array_values(array_unique($data['zone_slugs']));
 
-        app(ZoneAssignmentService::class)->setProviderZones($provider->provider_slug, $zones, true);
+        app(ZoneAssignmentService::class)->setProviderZones(
+            $provider->provider_slug,
+            $zones,
+            (bool) ($data['replace'] ?? true)
+        );
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider zones reassigned successfully',
+            status_code: self::API_SUCCESS,
+            data: ['provider_slug' => $provider->provider_slug, 'zone_slugs' => $zones]
+        );
+    }
+
+    public function reassignMmda(Request $request, Provider $provider)
+    {
+        $data = $request->validate([
+            'district_assembly_slug' => 'required|string|exists:district_assemblies,district_assembly_slug',
+        ]);
+
+        $provider->district_assembly = $data['district_assembly_slug'];
+        $provider->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider MMDA reassigned successfully',
+            status_code: self::API_SUCCESS,
+            data: $provider->fresh()->toArray()
+        );
+    }
+
+    public function reassignFacility(Request $request, Provider $provider)
+    {
+        $data = $request->validate([
+            'facility_slug' => 'required|string|exists:facilities,facility_slug',
+        ]);
+
+        $provider->facility_slug = $data['facility_slug'];
+        $provider->save();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider facility reassigned successfully',
+            status_code: self::API_SUCCESS,
+            data: $provider->fresh()->toArray()
+        );
     }
 }

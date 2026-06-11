@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\BulkWasteRequest;
+use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
 use App\Models\Group;
@@ -11,157 +11,131 @@ use App\Models\RoutePlanner;
 use App\Services\RoutePlannerService;
 use Illuminate\Support\Collection;
 
-/**
- * Maps route_planners + their pickups into frontend "assignments" with nested pickup stops.
- */
 trait TransformsRoutePlannerResponse
 {
     use HasClientMapPayload;
 
-    /**
-     * Frontend shape: assignment (plan) with nested pickups (per client stop).
-     */
-    protected static function transformAssignment(RoutePlanner $plan): array
+    protected static function transformRoutePlannerSummary(RoutePlanner $plan): array
     {
-        $plan->loadMissing([
-            'provider',
-            'driver',
-            'fleet',
-            'pickups.client.group',
+        $plan->loadMissing(['driver', 'fleet']);
+        $plan->loadCount([
+            'pickups as total_pickups',
+            'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
         ]);
 
-        $pickups = [];
-        $scanned = 0;
-        $unscanned = 0;
+        $pickupType = $plan->pickup_type
+            ?? ($plan->route_meta['pickup_type'] ?? RoutePlannerService::PICKUP_TYPE_NORMAL);
 
-        foreach ($plan->pickups as $pickup) {
-            $client = $pickup->client;
-            $coords = static::clientCoordinatesForMap($client);
-            $scanStatus = $pickup->scan_status === 'scanned' ? 'scanned' : 'unscanned';
+        $total = (int) ($plan->total_pickups ?? 0);
+        $scanned = (int) ($plan->scanned_pickups ?? 0);
 
-            if ($scanStatus === 'scanned') {
-                $scanned++;
-            } else {
-                $unscanned++;
-            }
-
-            $pickups[] = [
-                'pickup_code' => $pickup->code,
-                'assignment_id' => $plan->id,
-                'scan_status' => $scanStatus,
-                'pickup_status' => $pickup->status,
-                'pickup_date' => $pickup->pickup_date,
-                'amount' => $pickup->amount,
-                'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
-                'client' => [
-                    'client_slug' => $pickup->client_slug,
-                    'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
-                    'phone_number' => $client?->phone_number,
-                    'email' => $client?->email,
-                    'gps_address' => $client?->gps_address,
-                    'pickup_location' => $client?->pickup_location,
-                    'bin_code' => $client?->bin_code,
-                    'group_slug' => $client?->group_slug,
-                    'group_name' => $client?->group?->name,
-                    'latitude' => $coords['latitude'],
-                    'longitude' => $coords['longitude'],
-                    'map_ready' => $coords['map_ready'],
-                ],
-            ];
-        }
-
-        $pickupType = $plan->pickup_type ?? ($plan->route_meta['pickup_type'] ?? RoutePlannerService::PICKUP_TYPE_NORMAL);
-        $selectedGroupSlugs = $plan->selectedGroupSlugs();
-        $selectedBulkCodes = $plan->selectedBulkRequestCodes();
-
-        return [
-            'assignment_id' => $plan->id,
+        $payload = [
             'id' => $plan->id,
-            'pickup_type' => $pickupType,
-            'type' => $pickupType,
-            'pickup_date' => $plan->pickup_date?->toISOString(),
             'status' => $plan->status,
+            'pickup_type' => $pickupType,
+            'pickup_date' => $plan->pickup_date?->toISOString(),
             'provider_slug' => $plan->provider_slug,
-            'driver_slug' => $plan->driver_slug,
-            'fleet_slug' => $plan->fleet_slug,
-            'selected_group_slugs' => $selectedGroupSlugs,
-            'selected_bulk_request_codes' => $selectedBulkCodes,
-            'selection' => static::transformPlanSelection($plan, $pickupType, $selectedGroupSlugs, $selectedBulkCodes),
             'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
             'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
             'summary' => [
-                'total' => count($pickups),
+                'total' => $total,
                 'scanned' => $scanned,
-                'unscanned' => $unscanned,
+                'unscanned' => max(0, $total - $scanned),
             ],
-            'pickups' => $pickups,
+            'groups' => $pickupType === RoutePlannerService::PICKUP_TYPE_NORMAL
+                ? static::groupsBrief($plan->provider_slug, $plan->selectedGroupSlugs())
+                : [],
             'created_at' => $plan->created_at,
             'updated_at' => $plan->updated_at,
+        ];
+
+        if ($pickupType === RoutePlannerService::PICKUP_TYPE_BULK) {
+            $payload['bulk_request_codes'] = $plan->selectedBulkRequestCodes();
+        }
+
+        return $payload;
+    }
+
+    protected static function transformPickupStop(Pickup $pickup, int $routePlannerId): array
+    {
+        $client = $pickup->client;
+        $coords = static::clientCoordinatesForMap($client);
+
+        return [
+            'code' => $pickup->code,
+            'route_planner_id' => $routePlannerId,
+            'scan_status' => $pickup->scan_status ?? 'unscanned',
+            'status' => $pickup->status,
+            'pickup_date' => $pickup->pickup_date,
+            'amount' => $pickup->amount,
+            'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
+            'client' => [
+                'client_slug' => $pickup->client_slug,
+                'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+                'gps_address' => $client?->gps_address,
+                'pickup_location' => $client?->pickup_location,
+                'latitude' => $coords['latitude'],
+                'longitude' => $coords['longitude'],
+                'bin_code' => $client?->bin_code,
+                'group_slug' => $client?->group_slug,
+                'group_name' => $client?->group?->name,
+            ],
+        ];
+    }
+
+    protected static function transformClientPickupDetails(Client $client): array
+    {
+        $client->loadMissing(['group', 'bin']);
+        $coords = static::clientCoordinatesForMap($client);
+        $bin = $client->primaryBin();
+
+        return [
+            'client_slug' => $client->client_slug,
+            'name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
+            'phone_number' => $client->phone_number,
+            'email' => $client->email,
+            'gps_address' => $client->gps_address,
+            'pickup_location' => $client->pickup_location,
+            'latitude' => $coords['latitude'],
+            'longitude' => $coords['longitude'],
+            'group' => $client->group ? [
+                'group_slug' => $client->group->group_slug,
+                'name' => $client->group->name,
+            ] : null,
+            'bin' => $bin ? [
+                'bin_slug' => $bin->bin_slug,
+                'bin_code' => $bin->bin_code,
+                'status' => $bin->status,
+            ] : null,
         ];
     }
 
     /**
-     * @param  list<string>  $selectedGroupSlugs
-     * @param  list<string>  $selectedBulkCodes
-     * @return array<string, mixed>
+     * @param  list<string>  $groupSlugs
+     * @return list<array{group_slug: string, name: string}>
      */
-    protected static function transformPlanSelection(
-        RoutePlanner $plan,
-        string $pickupType,
-        array $selectedGroupSlugs,
-        array $selectedBulkCodes
-    ): array {
-        if ($pickupType === RoutePlannerService::PICKUP_TYPE_BULK) {
-            $bulkRequests = BulkWasteRequest::query()
-                ->with('client')
-                ->where('provider_slug', $plan->provider_slug)
-                ->whereIn('request_code', $selectedBulkCodes)
-                ->get();
-
-            return [
-                'mode' => RoutePlannerService::PICKUP_TYPE_BULK,
-                'bulk_waste_requests' => $bulkRequests->map(fn (BulkWasteRequest $bulk) => [
-                    'request_code' => $bulk->request_code,
-                    'title' => $bulk->title,
-                    'status' => $bulk->status,
-                    'client_slug' => $bulk->client_slug,
-                    'client_name' => trim(($bulk->client?->first_name ?? '').' '.($bulk->client?->last_name ?? '')),
-                ])->values()->all(),
-            ];
+    protected static function groupsBrief(string $providerSlug, array $groupSlugs): array
+    {
+        if ($groupSlugs === []) {
+            return [];
         }
 
-        $groups = Group::query()
-            ->with(['clients' => fn ($query) => $query
-                ->where('provider_slug', $plan->provider_slug)
-                ->where('status', 'active')])
-            ->where('provider_slug', $plan->provider_slug)
-            ->whereIn('group_slug', $selectedGroupSlugs)
-            ->get();
-
-        return [
-            'mode' => RoutePlannerService::PICKUP_TYPE_NORMAL,
-            'groups' => $groups->map(fn (Group $group) => [
+        return Group::query()
+            ->where('provider_slug', $providerSlug)
+            ->whereIn('group_slug', $groupSlugs)
+            ->orderBy('name')
+            ->get(['group_slug', 'name'])
+            ->map(fn (Group $group) => [
                 'group_slug' => $group->group_slug,
                 'name' => $group->name,
-                'clients_count' => $group->clients->count(),
-                'clients' => $group->clients->map(fn ($client) => [
-                    'client_slug' => $client->client_slug,
-                    'first_name' => $client->first_name,
-                    'last_name' => $client->last_name,
-                    'phone_number' => $client->phone_number,
-                ])->values()->all(),
-            ])->values()->all(),
-        ];
+            ])
+            ->values()
+            ->all();
     }
 
-    protected static function transformAssignmentsList(Collection $plans): array
+    protected static function transformRoutePlannersList(Collection $plans): array
     {
-        return $plans->map(fn (RoutePlanner $plan) => static::transformAssignment($plan))->values()->all();
-    }
-
-    protected static function transformRoutePlannerForFrontend(RoutePlanner $plan): array
-    {
-        return static::transformAssignment($plan);
+        return $plans->map(fn (RoutePlanner $plan) => static::transformRoutePlannerSummary($plan))->values()->all();
     }
 
     protected static function transformRoutePlannerDriverBrief(Driver $driver): array
@@ -193,63 +167,6 @@ trait TransformsRoutePlannerResponse
             'vehicle_make' => $fleet->vehicle_make,
             'model' => $fleet->model,
             'display_label' => $fleet->license_plate ? (string) $fleet->license_plate : $fleet->fleet_slug,
-        ];
-    }
-
-    /**
-     * Lean map payload for a plan: just what the frontend needs to plot pickup stops.
-     * Each stop carries the client's coordinates (latitude/longitude/gps_address).
-     */
-    protected static function transformRoutePlannerMap(RoutePlanner $plan): array
-    {
-        $plan->loadMissing(['driver', 'fleet', 'pickups.client']);
-
-        $scanned = 0;
-        $mapReady = 0;
-
-        $stops = $plan->pickups->map(function (Pickup $pickup) use (&$scanned, &$mapReady) {
-            $client = $pickup->client;
-            $coords = static::clientCoordinatesForMap($client);
-
-            if ($pickup->scan_status === 'scanned') {
-                $scanned++;
-            }
-            if ($coords['map_ready']) {
-                $mapReady++;
-            }
-
-            return [
-                'pickup_code' => $pickup->code,
-                'scan_status' => $pickup->scan_status === 'scanned' ? 'scanned' : 'unscanned',
-                'pickup_status' => $pickup->status,
-                'pickup_date' => $pickup->pickup_date,
-                'client' => [
-                    'client_slug' => $pickup->client_slug,
-                    'full_name' => trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
-                    'phone_number' => $client?->phone_number,
-                    'gps_address' => $client?->gps_address,
-                    'latitude' => $coords['latitude'],
-                    'longitude' => $coords['longitude'],
-                    'map_ready' => $coords['map_ready'],
-                ],
-            ];
-        })->values()->all();
-
-        return [
-            'route_planner_id' => $plan->id,
-            'provider_slug' => $plan->provider_slug,
-            'pickup_type' => $plan->pickup_type,
-            'status' => $plan->status,
-            'pickup_date' => $plan->pickup_date?->toISOString(),
-            'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
-            'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
-            'summary' => [
-                'total' => count($stops),
-                'scanned' => $scanned,
-                'unscanned' => count($stops) - $scanned,
-                'map_ready' => $mapReady,
-            ],
-            'pickups' => $stops,
         ];
     }
 }

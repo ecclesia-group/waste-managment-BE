@@ -47,6 +47,11 @@ class RoutePlanner extends Model
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
+    public function pickups()
+    {
+        return $this->hasMany(Pickup::class, 'route_planner_id');
+    }
+
     /** @return list<string> */
     public function selectedGroupSlugs(): array
     {
@@ -73,28 +78,5 @@ class RoutePlanner extends Model
         $fromMeta = $this->route_meta['selected_bulk_request_codes'] ?? null;
 
         return is_array($fromMeta) ? array_values($fromMeta) : [];
-    }
-
-    /**
-     * Pickups on this route (one stop per client). Replaces bin assignments.
-     */
-    public function pickups()
-    {
-        return $this->hasMany(Pickup::class, 'route_planner_id');
-    }
-
-    /**
-     * Clients on this route (derived from pickups).
-     */
-    public function clients()
-    {
-        return $this->hasManyThrough(
-            Client::class,
-            Pickup::class,
-            'route_planner_id',
-            'client_slug',
-            'id',
-            'client_slug'
-        )->where('clients.provider_slug', $this->provider_slug);
     }
 }

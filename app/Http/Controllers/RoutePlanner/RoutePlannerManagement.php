@@ -5,11 +5,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RoutePlanner\RegisterRoute;
 use App\Http\Requests\RoutePlanner\RouteDetailsUpdate;
 use App\Http\Requests\RoutePlanner\RouteStatusUpdate;
+use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
-use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
+use App\Models\Pickup;
 use App\Services\RoutePlannerService;
 use App\Traits\TransformsRoutePlannerResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,6 @@ class RoutePlannerManagement extends Controller
     {
         $user = $request->user();
 
-        // Pickups tied to a route plan are the assignment "logs" (one stop per client).
         $query = Pickup::query()
             ->whereNotNull('route_planner_id')
             ->with(['client', 'routePlanner']);
@@ -71,6 +71,9 @@ class RoutePlannerManagement extends Controller
         }
         if ($request->filled('group_slug')) {
             $query->where('group_slug', $request->string('group_slug'));
+        }
+        if ($request->filled('route_planner_id')) {
+            $query->where('route_planner_id', $request->integer('route_planner_id'));
         }
         if ($request->filled('pickup_type')) {
             $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
@@ -137,9 +140,7 @@ class RoutePlannerManagement extends Controller
                 message: 'Action Successful',
                 reason: 'Route created successfully',
                 status_code: self::API_SUCCESS,
-                data: [
-                    'assignment' => self::transformAssignment($routePlanner),
-                ]
+                data: self::transformRoutePlannerSummary($routePlanner)
             );
         } catch (InvalidArgumentException $e) {
             return self::apiResponse(
@@ -173,11 +174,10 @@ class RoutePlannerManagement extends Controller
         $user = Auth::user();
 
         $plans = RoutePlanner::query()
-            ->with([
-                'provider',
-                'driver',
-                'fleet',
-                'pickups.client.group',
+            ->with(['driver', 'fleet'])
+            ->withCount([
+                'pickups as total_pickups',
+                'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
             ])
             ->where('provider_slug', $this->resolveProviderScopeSlug($user))
             ->latest()
@@ -189,39 +189,15 @@ class RoutePlannerManagement extends Controller
             reason: 'Routes retrieved successfully',
             status_code: self::API_SUCCESS,
             data: [
-                'assignments' => self::transformAssignmentsList($plans),
+                'assignments' => self::transformRoutePlannersList($plans),
             ]
         );
     }
 
     public function show(RoutePlanner $plan)
     {
-        $user = request()->user();
-        if (isset($user->provider_slug) && $plan->provider_slug !== $this->resolveProviderScopeSlug($user)) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Unauthorized to view this plan',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        if (isset($user->district_assembly_slug)) {
-            $allowed = Provider::query()
-                ->where('provider_slug', $plan->provider_slug)
-                ->where('district_assembly', $user->district_assembly_slug)
-                ->exists();
-
-            if (! $allowed) {
-                return self::apiResponse(
-                    in_error: true,
-                    message: 'Action Failed',
-                    reason: 'Plan not found in your jurisdiction',
-                    status_code: self::API_NOT_FOUND,
-                    data: []
-                );
-            }
+        if ($denied = $this->denyIfCannotAccessPlan($plan)) {
+            return $denied;
         }
 
         return self::apiResponse(
@@ -229,9 +205,60 @@ class RoutePlannerManagement extends Controller
             message: 'Action Successful',
             reason: 'Route details retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'assignment' => self::transformAssignment($plan),
-            ]
+            data: self::transformRoutePlannerSummary($plan)
+        );
+    }
+
+    public function planPickups(Request $request, RoutePlanner $plan)
+    {
+        if ($denied = $this->denyIfCannotAccessPlan($plan)) {
+            return $denied;
+        }
+
+        $perPage = max(1, min(100, $request->integer('limit', 20)));
+
+        $pickups = Pickup::query()
+            ->where('route_planner_id', $plan->id)
+            ->with(['client.group'])
+            ->latest()
+            ->paginate($perPage)
+            ->through(fn (Pickup $pickup) => self::transformPickupStop($pickup, $plan->id));
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Route planner pickups retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $pickups->toArray()
+        );
+    }
+
+    public function clientPickupDetails(Client $client)
+    {
+        $user = request()->user();
+        $providerSlug = $this->resolveProviderScopeSlug($user);
+
+        $client = Client::query()
+            ->where('client_slug', $client->client_slug)
+            ->when($providerSlug, fn ($query) => $query->where('provider_slug', $providerSlug))
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Client not found',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Client pickup details retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: self::transformClientPickupDetails($client)
         );
     }
 
@@ -263,9 +290,7 @@ class RoutePlannerManagement extends Controller
             message: 'Action Successful',
             reason: 'Route planner status updated successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'assignment' => self::transformAssignment($routePlanner),
-            ]
+            data: self::transformRoutePlannerSummary($routePlanner)
         );
     }
 
@@ -309,9 +334,7 @@ class RoutePlannerManagement extends Controller
             message: 'Action Successful',
             reason: 'Route details updated successfully',
             status_code: self::API_SUCCESS,
-            data: [
-                'assignment' => self::transformAssignment($plan),
-            ]
+            data: self::transformRoutePlannerSummary($plan)
         );
     }
 
@@ -339,55 +362,90 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    /**
-     * Admin: list all route planner records for a given provider.
-     */
     public function routerplannerRecords(Provider $provider)
     {
         $plans = RoutePlanner::query()
-            ->with([
-                'provider',
-                'driver',
-                'fleet',
-                'pickups.client.group',
-            ])
             ->where('provider_slug', $provider->provider_slug)
+            ->with(['driver', 'fleet'])
+            ->withCount([
+                'pickups as total_pickups',
+                'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
+            ])
             ->latest()
             ->get();
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Provider route planner records retrieved successfully',
+            reason: 'Route planner records retrieved successfully',
             status_code: self::API_SUCCESS,
             data: [
-                'assignments' => self::transformAssignmentsList($plans),
+                'assignments' => self::transformRoutePlannersList($plans),
             ]
         );
     }
 
-    /**
-     * Admin: map data for a single route planner record — all pickup stops with
-     * client coordinates (latitude/longitude/gps_address) for plotting on a map.
-     */
-    public function routerplannerPickups(Provider $provider, RoutePlanner $routerplanner)
+    public function routerplannerPickups(Request $request, Provider $provider, RoutePlanner $routerplanner)
     {
-        if ((string) $routerplanner->provider_slug !== (string) $provider->provider_slug) {
+        if ($routerplanner->provider_slug !== $provider->provider_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
-                reason: 'Route plan not found for this provider',
+                reason: 'Route planner not found for this provider',
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
         }
+
+        $perPage = max(1, min(100, $request->integer('limit', 20)));
+
+        $pickups = Pickup::query()
+            ->where('route_planner_id', $routerplanner->id)
+            ->with(['client.group'])
+            ->latest()
+            ->paginate($perPage)
+            ->through(fn (Pickup $pickup) => self::transformPickupStop($pickup, $routerplanner->id));
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
             reason: 'Route planner pickups retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: self::transformRoutePlannerMap($routerplanner)
+            data: $pickups->toArray()
         );
+    }
+
+    private function denyIfCannotAccessPlan(RoutePlanner $plan)
+    {
+        $user = request()->user();
+
+        if (isset($user->provider_slug) && $plan->provider_slug !== $this->resolveProviderScopeSlug($user)) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Unauthorized to view this plan',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        if (isset($user->district_assembly_slug)) {
+            $allowed = Provider::query()
+                ->where('provider_slug', $plan->provider_slug)
+                ->where('district_assembly', $user->district_assembly_slug)
+                ->exists();
+
+            if (! $allowed) {
+                return self::apiResponse(
+                    in_error: true,
+                    message: 'Action Failed',
+                    reason: 'Plan not found in your jurisdiction',
+                    status_code: self::API_NOT_FOUND,
+                    data: []
+                );
+            }
+        }
+
+        return null;
     }
 }

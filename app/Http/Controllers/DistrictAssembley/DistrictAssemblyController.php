@@ -71,23 +71,12 @@ class DistrictAssemblyController extends Controller
 
     public function show(DistrictAssembly $district_assembly)
     {
-        $providersCount = Provider::query()
-            ->where('district_assembly', $district_assembly->district_assembly_slug)
-            ->count();
-
-        $facilitiesCount = Facility::query()
-            ->where('district_assembly', $district_assembly->district_assembly_slug)
-            ->count();
-
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "District Assembly details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: array_merge($district_assembly->toArray(), [
-                'providers_count' => $providersCount,
-                'facilities_count' => $facilitiesCount,
-            ])
+            data: array_merge($district_assembly->toArray())
         );
     }
 
@@ -196,7 +185,7 @@ class DistrictAssemblyController extends Controller
             message: "Action Successful",
             reason: "District Assembly deleted successfully",
             status_code: self::API_SUCCESS,
-            data: null
+            data: []
         );
     }
 }

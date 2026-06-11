@@ -25,7 +25,7 @@ class ProfileUpdateRequest extends FormRequest
 
         return [
             'region'        => 'required|string|max:100',
-            'district'      => 'required|string|max:255',
+            'district'      => 'required|string',
             'email'         => [
                 'required',
                 'string',

@@ -18,21 +18,19 @@ class RegisterRoute extends FormRequest
             'fleet_slug' => 'required|string|exists:fleets,fleet_slug',
             'pickup_type' => 'required|string|in:bulk_waste_request,normal',
             'pickup_date' => 'nullable|date',
-            'group_slugs' => 'required_if:pickup_type,normal|prohibited_if:pickup_type,bulk_waste_request|array|min:1',
+            'group_slugs' => 'nullable|array',
             'group_slugs.*' => 'required|string|distinct|exists:groups,group_slug',
-            'bulk_request_codes' => 'required_if:pickup_type,bulk_waste_request|prohibited_if:pickup_type,normal|array|min:1',
+            'bulk_request_codes' => 'nullable|array',
             'bulk_request_codes.*' => 'required|string|distinct|exists:bulk_waste_requests,request_code',
-            'status' => 'nullable|string|in:pending,completed,cancelled,progress,in_progress',
+            'status' => 'nullable|string|in:scheduled,pending,completed,cancelled,progress,in_progress',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'group_slugs.required_if' => 'For normal pickup plans, select at least one group.',
-            'group_slugs.prohibited_if' => 'group_slugs are only used when pickup_type is normal.',
-            'bulk_request_codes.required_if' => 'For bulk pickup plans, select at least one bulk waste request code.',
-            'bulk_request_codes.prohibited_if' => 'bulk_request_codes are only used when pickup_type is bulk_waste_request.',
+            'group_slugs.*.exists' => 'One or more selected groups were not found.',
+            'bulk_request_codes.*.exists' => 'One or more bulk waste request codes were not found.',
         ];
     }
 }

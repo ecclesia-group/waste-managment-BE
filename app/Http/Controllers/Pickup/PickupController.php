@@ -11,6 +11,7 @@ use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Pickup;
+use App\Services\RoutePlannerService;
 use App\Traits\HasClientMapPayload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -715,6 +716,10 @@ class PickupController extends Controller
             $pickup->status = 'scheduled';
         }
         $pickup->save();
+
+        if ($canonicalStatus === 'scanned') {
+            app(RoutePlannerService::class)->afterPickupScanned($pickup);
+        }
 
         // Support "scan-first" flows: remember the last scanned client for this provider.
         if ($canonicalStatus === 'scanned' && $pickup->provider_slug) {

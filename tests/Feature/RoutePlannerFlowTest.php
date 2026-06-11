@@ -79,13 +79,24 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
     ]);
 
     $create->assertOk();
-    $planId = (int) $create->json('data.data.assignment.assignment_id');
+    $planId = (int) $create->json('data.data.id');
     expect($planId)->toBeGreaterThan(0);
+    expect($create->json('data.data'))->not->toHaveKey('pickups');
+    expect($create->json('data.data.summary.total'))->toBe(2);
+    expect($create->json('data.data.groups'))->not->toBeEmpty();
 
     assertDatabaseHas('route_planners', [
         'id' => $planId,
         'provider_slug' => $provider->provider_slug,
+        'status' => 'scheduled',
     ]);
+
+    $pickups = actingAs($provider, 'provider')->getJson("/api/provider/get_single_plan/{$planId}/pickups");
+    $pickups->assertOk();
+    expect(collect($pickups->json('data.data.data')))->toHaveCount(2);
+    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => (int) ($p['route_planner_id'] ?? 0) === $planId))->toBeTrue();
+    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => isset($p['client']['latitude'], $p['client']['longitude'])))->toBeTrue();
+    expect(collect($pickups->json('data.data.data'))->every(fn ($p) => ! array_key_exists('map_ready', $p['client'] ?? [])))->toBeTrue();
 
     $list = actingAs($provider, 'provider')->getJson('/api/provider/all_plans');
     $list->assertOk();
@@ -93,13 +104,16 @@ it('creates normal pickup plan using multiple groups and filters map by plan', f
     $assignments = collect($list->json('data.data.assignments'));
     expect($assignments)->not->toBeEmpty();
 
-    $assignment = $assignments->firstWhere('assignment_id', $planId);
+    $assignment = $assignments->firstWhere('id', $planId);
     expect($assignment)->not->toBeNull();
     expect($assignment['pickup_type'])->toBe('normal');
-    expect(collect($assignment['pickups']))->not->toBeEmpty();
-    expect($assignment['selected_group_slugs'])->toContain($groupA->group_slug, $groupB->group_slug);
-    expect($assignment['selection']['mode'])->toBe('normal');
-    expect(collect($assignment['pickups'])->every(fn ($p) => (int) ($p['assignment_id'] ?? 0) === $planId))->toBeTrue();
+    expect($assignment['groups'])->not->toBeEmpty();
+    expect($assignment)->not->toHaveKey('pickups');
+
+    assertDatabaseHas('pickups', [
+        'route_planner_id' => $planId,
+        'scan_status' => 'unscanned',
+    ]);
 });
 
 it('rejects mixing group_slugs with bulk_waste_request pickup type', function () {
@@ -199,15 +213,20 @@ it('creates bulk waste pickup plan from selected request codes', function () {
     expect($plan->pickup_type)->toBe('bulk_waste_request');
     expect($plan->selectedBulkRequestCodes())->toBe([$bulkCode]);
 
-    $assignment = $create->json('data.data.assignment');
-    expect($assignment['pickup_type'])->toBe('bulk_waste_request');
-    expect($assignment['selected_bulk_request_codes'])->toBe([$bulkCode]);
-    expect($assignment['selection']['mode'])->toBe('bulk_waste_request');
+    $summary = $create->json('data.data');
+    expect($summary['pickup_type'])->toBe('bulk_waste_request');
+    expect($summary['bulk_request_codes'])->toBe([$bulkCode]);
+    expect($summary['groups'])->toBe([]);
 
     assertDatabaseHas('pickups', [
-        'route_planner_id' => $plan->id,
         'provider_slug' => $provider->provider_slug,
         'client_slug' => $client->client_slug,
         'bulk_waste_request_code' => $bulkCode,
+        'route_planner_id' => $plan->id,
+        'scan_status' => 'unscanned',
+    ]);
+    assertDatabaseHas('route_planners', [
+        'id' => $plan->id,
+        'status' => 'scheduled',
     ]);
 });

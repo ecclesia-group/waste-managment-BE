@@ -192,6 +192,8 @@ Route::prefix("provider")->group(function () {
         Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
         Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);
+        Route::get("get_single_plan/{plan}/pickups", [RoutePlannerManagement::class, "planPickups"]);
+        Route::get("clients/{client}/pickup_details", [RoutePlannerManagement::class, "clientPickupDetails"]);
         Route::get("assignment_logs", [RoutePlannerManagement::class, "assignmentLogs"]);
         Route::post("update_plan_status", [RoutePlannerManagement::class, "updateStatus"]);
         Route::put("update_plan_details/{plan}", [RoutePlannerManagement::class, "updatePlan"]);
@@ -403,7 +405,6 @@ Route::prefix("admin")->group(function () {
         Route::get("providers/{provider}/clients", [ActorRelatedDataController::class, "providerClients"]);
         Route::get("providers/{provider}/clients/{client}", [ActorRelatedDataController::class, "providerClient"]);
         Route::get("providers/{provider}/weighbridge_records", [ActorRelatedDataController::class, "providerWeighbridgeRecords"]);
-        // violations + payment history scoped to a single provider
         Route::get("providers/{provider}/violations", [ActorRelatedDataController::class, "providerViolations"]);
         Route::get("providers/{provider}/payments", [ActorRelatedDataController::class, "providerPayments"]);
         // reassing zones to a provider
@@ -431,11 +432,13 @@ Route::prefix("admin")->group(function () {
         Route::post("register_district_assembly", [DistrictAssemblyController::class, "register"]);
         Route::get("all_district_assemblies", [DistrictAssemblyController::class, "index"]);
         Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
-        Route::get("district_assemblies/{district_assembly}/providers", [ActorRelatedDataController::class, "districtAssemblyProviders"]);
-        Route::get("district_assemblies/{district_assembly}/facilities", [ActorRelatedDataController::class, "districtAssemblyFacilities"]);
         Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
         Route::put("update_district_assembly_details/{district_assembly}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
+        Route::get("district_assemblies/{district_assembly}/providers", [ActorRelatedDataController::class, "districtAssemblyProviders"]);
+        Route::get("district_assemblies/{district_assembly}/facilities", [ActorRelatedDataController::class, "districtAssemblyFacilities"]);
         Route::delete("delete_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "deleteDistrictAssembly"]);
+        // Get zones for a district assembly
+        Route::get("district_assemblies/{district_assembly}/zones", [ActorRelatedDataController::class, "districtAssemblyZones"]);
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
