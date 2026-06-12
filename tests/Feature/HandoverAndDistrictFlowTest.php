@@ -19,6 +19,7 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
     $requester = Provider::query()->create([
         'provider_slug' => 'prov-'.Str::lower(Str::random(8)),
         'first_name' => 'Requester',
+        'phone_number' => '0240000001',
         'email' => 'requester+'.Str::lower(Str::random(6)).'@test.local',
         'password' => 'password',
     ]);
@@ -50,17 +51,12 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
 
     $handover = WasteHandoverRequest::query()->create([
         'code' => 'HND-'.Str::upper(Str::random(6)),
+        'submitted_by_slug' => $requester->provider_slug,
         'requester_provider_slug' => $requester->provider_slug,
-        'requester_type' => 'aboboya',
-        'requester_name' => 'Kofi Aboboya',
-        'requester_phone' => '0240000001',
-        'requester_email' => 'kofi@example.com',
         'target_provider_slug' => null,
-        'zone_slug' => $zoneSlug,
-        'zone_slugs' => [$zoneSlug],
-        'title' => 'Waste transfer',
+        'fleet_type' => 'medium_truck',
         'status' => 'pending',
-        'fee_amount' => 0,
+        'fee_amount' => 250,
     ]);
 
     actingAs($outsider, 'provider')

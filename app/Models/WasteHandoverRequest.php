@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class WasteHandoverRequest extends Model
 {
@@ -11,24 +13,16 @@ class WasteHandoverRequest extends Model
 
     protected $fillable = [
         'code',
-        'requester_provider_slug',
-        'requester_type',
-        'requester_name',
-        'requester_phone',
-        'requester_email',
         'submitted_by_slug',
+        'requester_provider_slug',
         'target_provider_slug',
-        'zone_slug',
-        'zone_slugs',
-        'title',
-        'waste_types',
-        'description',
         'pickup_location',
+        'gps_address',
         'latitude',
         'longitude',
+        'fleet_type',
         'selected_driver_slug',
         'selected_fleet_slug',
-        'images',
         'fee_amount',
         'payment_status',
         'paid_at',
@@ -38,9 +32,6 @@ class WasteHandoverRequest extends Model
     ];
 
     protected $casts = [
-        'waste_types' => 'array',
-        'zone_slugs' => 'array',
-        'images' => 'array',
         'fee_amount' => 'float',
         'latitude' => 'float',
         'longitude' => 'float',
@@ -52,6 +43,13 @@ class WasteHandoverRequest extends Model
         'updated_at' => 'datetime',
     ];
 
+    /** Actor (team member) who created the request. */
+    public function submittedBy()
+    {
+        return $this->belongsTo(Provider::class, 'submitted_by_slug', 'provider_slug');
+    }
+
+    /** Main provider organisation that owns the request. */
     public function requester()
     {
         return $this->belongsTo(Provider::class, 'requester_provider_slug', 'provider_slug');
@@ -72,24 +70,45 @@ class WasteHandoverRequest extends Model
         return $this->belongsTo(Fleet::class, 'selected_fleet_slug', 'fleet_slug');
     }
 
-    /** Pending requests visible to a provider based on shared zone assignments. */
-    public function scopeVisibleInProviderZones($query, array $providerZoneSlugs, ?string $excludeRequesterSlug = null)
+    public function declines()
     {
-        $query->where('status', 'pending');
+        return $this->hasMany(HandoverDecline::class, 'waste_handover_request_id');
+    }
 
-        if ($excludeRequesterSlug) {
-            $query->where('requester_provider_slug', '!=', $excludeRequesterSlug);
-        }
-
-        if ($providerZoneSlugs === []) {
+    public function scopeInProviderZones(Builder $query, array $zoneSlugs): Builder
+    {
+        if ($zoneSlugs === []) {
             return $query->whereRaw('0 = 1');
         }
 
-        return $query->where(function ($q) use ($providerZoneSlugs) {
-            $q->whereIn('zone_slug', $providerZoneSlugs);
-            foreach ($providerZoneSlugs as $slug) {
-                $q->orWhereJsonContains('zone_slugs', $slug);
-            }
+        return $query->whereExists(function ($sub) use ($zoneSlugs) {
+            $sub->select(DB::raw(1))
+                ->from('provider_zones')
+                ->whereColumn('provider_zones.provider_slug', 'waste_handover_requests.requester_provider_slug')
+                ->where('provider_zones.status', 'active')
+                ->whereIn('provider_zones.zone_slug', $zoneSlugs);
         });
+    }
+
+    /** Pending requests visible to zone peers (excludes own organisation + declined). */
+    public function scopeVisibleInProviderZones(
+        Builder $query,
+        array $providerZoneSlugs,
+        string $excludeOwnerSlug,
+        ?string $viewingProviderSlug = null
+    ): Builder {
+        return $query
+            ->where('status', 'pending')
+            ->where('requester_provider_slug', '!=', $excludeOwnerSlug)
+            ->when($viewingProviderSlug, fn ($q) => $q->whereDoesntHave(
+                'declines',
+                fn ($decline) => $decline->where('provider_slug', $viewingProviderSlug)
+            ))
+            ->inProviderZones($providerZoneSlugs);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'code';
     }
 }

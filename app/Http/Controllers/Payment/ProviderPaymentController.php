@@ -126,7 +126,7 @@ class ProviderPaymentController extends Controller
         $payment = Payment::query()
             ->where('client_slug', $client->client_slug)
             ->where('provider_slug', $providerSlug)
-            ->where('id', $payment->id)
+            ->where('transaction_id', $payment->transaction_id)
             ->first();
 
         return self::apiResponse(false, "Action Successful", "Client payment retrieved successfully", self::API_SUCCESS, $payment->toArray());

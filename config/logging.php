@@ -127,6 +127,13 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'sent_sms' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/sent_sms.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],  
+
     ],
 
 ];

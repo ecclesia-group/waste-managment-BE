@@ -8,100 +8,113 @@ use App\Models\Fleet;
 use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\WasteHandoverRequest;
-use App\Services\ClientLocationGeocodingService;
 use App\Services\HandoverNotificationService;
+use App\Services\HandoverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class WasteHandoverController extends Controller
 {
+    public function __construct(
+        private readonly HandoverService $handoverService,
+    ) {}
+
+    /** Fleet types and fees for the create form. */
+    public function fleetTypes()
+    {
+        $options = collect($this->handoverService->fleetTypeOptions())
+            ->map(fn (array $meta, string $key) => [
+                'key' => $key,
+                'label' => $meta['label'],
+                'fee' => (float) $meta['fee'],
+            ])
+            ->values()
+            ->all();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Handover fleet types retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $options
+        );
+    }
+
     /**
-     * Team member (or main provider account) submits an aboboya handover request.
-     * All other providers in the same zone(s) receive SMS, email, and in-app alerts.
+     * Provider team member (or main account) submits a handover at their current location.
+     * Zone peers are notified by SMS, email, and in-app alert.
      */
     public function create(Request $request)
     {
         $user = $request->user();
-        $requesterSlug = self::resolveProviderScopeSlug($user);
+        $submittedBySlug = (string) $user->provider_slug;
+        $ownerSlug = (string) ($user->parent_slug ?: $user->provider_slug);
 
-        $data = $request->validate([
-            'title' => ['required', 'string'],
-            'requester_type' => ['nullable', 'string', 'in:aboboya,provider'],
-            'requester_name' => ['required', 'string', 'max:255'],
-            'requester_phone' => ['required', 'string', 'max:50'],
-            'requester_email' => ['nullable', 'email', 'max:255'],
-            'waste_types' => ['nullable', 'array'],
-            'waste_types.*' => ['string'],
-            'description' => ['nullable', 'string'],
-            'pickup_location' => ['nullable', 'string'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'selected_driver_slug' => ['nullable', 'string', 'exists:drivers,driver_slug'],
-            'selected_fleet_slug' => ['nullable', 'string', 'exists:fleets,fleet_slug'],
-            'images' => ['nullable', 'array'],
-            'images.*' => ['nullable'],
-            'fee_amount' => ['nullable', 'numeric', 'min:0'],
-        ]);
-
-        $zoneSlugs = $this->zoneSlugsForProvider($requesterSlug);
-        if ($zoneSlugs === []) {
-            return self::apiResponse(true, 'Action Failed', 'Your provider has no active zone assignments', self::API_FAIL, []);
+        if ($submittedBySlug === '' || $ownerSlug === '') {
+            return self::apiResponse(true, 'Action Failed', 'Provider context is required', self::API_FAIL, []);
         }
 
-        $coords = $this->resolveHandoverCoordinates($data);
-        if ($coords === null) {
+        $allowedFleetTypes = implode(',', $this->handoverService->fleetTypeKeys());
+
+        $data = $request->validate([
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'fleet_type' => ['required', 'string', 'in:'.$allowedFleetTypes],
+            'pickup_location' => ['nullable', 'string', 'max:500'],
+            'gps_address' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $hasCoordinates = isset($data['latitude'], $data['longitude']);
+        $hasGpsAddress = trim((string) ($data['gps_address'] ?? '')) !== '';
+        $hasPickupLocation = trim((string) ($data['pickup_location'] ?? '')) !== '';
+
+        if (! $hasCoordinates && ! $hasGpsAddress && ! $hasPickupLocation) {
             return self::apiResponse(
                 true,
                 'Action Failed',
-                'Provide latitude/longitude or a pickup_location that can be geocoded',
+                'Provide latitude and longitude, a Ghana Post GPS address, or a pickup location',
                 self::API_FAIL,
                 []
             );
         }
 
-        $driverSlug = $data['selected_driver_slug'] ?? null;
-        $fleetSlug = $data['selected_fleet_slug'] ?? null;
-
-        if ($driverSlug) {
-            $driver = Driver::query()->where('driver_slug', $driverSlug)->first();
-            if (! $driver) {
-                return self::apiResponse(true, 'Action Failed', 'Driver not found', self::API_NOT_FOUND, []);
-            }
-            if ($fleetSlug) {
-                $fleetOk = Fleet::query()
-                    ->where('fleet_slug', $fleetSlug)
-                    ->where('provider_slug', $driver->provider_slug)
-                    ->exists();
-                if (! $fleetOk) {
-                    return self::apiResponse(true, 'Action Failed', 'Fleet does not belong to the selected driver provider', self::API_FAIL, []);
-                }
-            }
+        try {
+            $fee = $this->handoverService->feeForFleetType($data['fleet_type']);
+            $coords = $this->handoverService->resolvePickupCoordinates(
+                isset($data['latitude']) ? (float) $data['latitude'] : null,
+                isset($data['longitude']) ? (float) $data['longitude'] : null,
+                $data['gps_address'] ?? null,
+                $data['pickup_location'] ?? null,
+            );
+        } catch (InvalidArgumentException $e) {
+            return self::apiResponse(true, 'Action Failed', $e->getMessage(), self::API_FAIL, []);
         }
 
-        $data = static::processImage(['images'], $data);
-        $fee = (float) ($data['fee_amount'] ?? 0);
+        $zoneSlugs = $this->zoneSlugsForProvider($ownerSlug);
+        if ($zoneSlugs === []) {
+            return self::apiResponse(true, 'Action Failed', 'Your provider has no active zone assignments', self::API_FAIL, []);
+        }
+
+        $ownerProvider = Provider::query()
+            ->where('provider_slug', $ownerSlug)
+            ->first();
+
+        if (! $ownerProvider?->phone_number) {
+            return self::apiResponse(true, 'Action Failed', 'Requester provider must have a phone number on their profile', self::API_FAIL, []);
+        }
 
         $handover = WasteHandoverRequest::create([
             'code' => 'HND-'.Str::upper(Str::random(8)),
-            'requester_provider_slug' => $requesterSlug,
-            'requester_type' => $data['requester_type'] ?? 'aboboya',
-            'requester_name' => $data['requester_name'],
-            'requester_phone' => $data['requester_phone'],
-            'requester_email' => $data['requester_email'] ?? null,
-            'submitted_by_slug' => $user->provider_slug ?? null,
+            'submitted_by_slug' => $submittedBySlug,
+            'requester_provider_slug' => $ownerSlug,
             'target_provider_slug' => null,
-            'zone_slug' => $zoneSlugs[0],
-            'zone_slugs' => $zoneSlugs,
-            'title' => $data['title'],
-            'waste_types' => $data['waste_types'] ?? [],
-            'description' => $data['description'] ?? null,
             'pickup_location' => $data['pickup_location'] ?? null,
+            'gps_address' => $data['gps_address'] ?? null,
             'latitude' => $coords['latitude'],
             'longitude' => $coords['longitude'],
-            'selected_driver_slug' => $driverSlug,
-            'selected_fleet_slug' => $fleetSlug,
-            'images' => $data['images'] ?? [],
+            'fleet_type' => $data['fleet_type'],
             'fee_amount' => $fee,
             'payment_status' => $fee > 0 ? 'unpaid' : 'paid',
             'status' => 'pending',
@@ -134,8 +147,8 @@ class WasteHandoverController extends Controller
 
         return $this->paginatedApiResponseMapped(
             WasteHandoverRequest::query()
-                ->with(['requester', 'driver', 'fleet'])
-                ->visibleInProviderZones($zoneSlugs, $providerSlug)
+                ->with(['requester', 'submittedBy', 'driver', 'fleet'])
+                ->visibleInProviderZones($zoneSlugs, $providerSlug, $providerSlug)
                 ->latest()
                 ->paginate($this->perPage($request)),
             'Available handover requests in your zone',
@@ -175,17 +188,14 @@ class WasteHandoverController extends Controller
         $zoneSlugs = $this->zoneSlugsForProvider($providerSlug);
 
         $query = WasteHandoverRequest::query()
-            ->with(['requester', 'acceptedProvider', 'driver', 'fleet'])
+            ->with(['requester', 'submittedBy', 'acceptedProvider', 'driver', 'fleet'])
             ->where(function ($q) use ($providerSlug, $zoneSlugs) {
                 $q->where('requester_provider_slug', $providerSlug)
                     ->orWhere('target_provider_slug', $providerSlug);
 
                 if ($zoneSlugs !== []) {
                     $q->orWhere(function ($zoneQ) use ($zoneSlugs) {
-                        $zoneQ->whereIn('zone_slug', $zoneSlugs);
-                        foreach ($zoneSlugs as $slug) {
-                            $zoneQ->orWhereJsonContains('zone_slugs', $slug);
-                        }
+                        $zoneQ->inProviderZones($zoneSlugs);
                     });
                 }
             })
@@ -209,7 +219,7 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }
 
-        $handover->load(['requester', 'acceptedProvider', 'driver', 'fleet']);
+        $handover->load(['requester', 'submittedBy', 'acceptedProvider', 'driver', 'fleet']);
 
         return self::apiResponse(
             in_error: false,
@@ -221,7 +231,7 @@ class WasteHandoverController extends Controller
     }
 
     /**
-     * First provider in the zone to accept owns the job; requester gets SMS/email with provider & fleet details.
+     * First provider in the zone to accept owns the job; requester gets SMS/email with provider contact.
      */
     public function accept(WasteHandoverRequest $handover, Request $request)
     {
@@ -237,8 +247,7 @@ class WasteHandoverController extends Controller
         }
 
         $zoneSlugs = $this->zoneSlugsForProvider($providerSlug);
-        $handoverZones = $handover->zone_slugs ?? [$handover->zone_slug];
-        if (count(array_intersect($zoneSlugs, $handoverZones)) === 0) {
+        if (! $this->handoverService->sharesZoneWithRequester($handover, $zoneSlugs)) {
             return self::apiResponse(true, 'Action Failed', 'Request is outside your zone', self::API_FAIL, []);
         }
 
@@ -311,20 +320,27 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'Request is not pending', self::API_FAIL, []);
         }
 
-        if (! in_array($handover->zone_slug, $this->zoneSlugsForProvider($providerSlug), true)
-            && count(array_intersect($handover->zone_slugs ?? [], $this->zoneSlugsForProvider($providerSlug))) === 0) {
+        if ((string) $handover->requester_provider_slug === (string) $providerSlug) {
+            return self::apiResponse(true, 'Action Failed', 'You cannot decline your own handover request', self::API_FAIL, []);
+        }
+
+        $zones = $this->zoneSlugsForProvider($providerSlug);
+        if (! $this->handoverService->sharesZoneWithRequester($handover, $zones)) {
             return self::apiResponse(true, 'Action Failed', 'Request is outside your zone', self::API_FAIL, []);
         }
+
+        $this->handoverService->recordDecline($handover, $providerSlug);
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Decline noted (request remains available for other providers)',
+            reason: 'Decline recorded; request remains available for other providers in your zone',
             status_code: self::API_SUCCESS,
             data: $this->transformHandover($handover)
         );
     }
 
+    /** Requester confirms cash/momo payment when the collecting provider arrives. */
     public function confirmPayment(WasteHandoverRequest $handover, Request $request)
     {
         $requesterSlug = self::resolveProviderScopeSlug($request->user());
@@ -347,7 +363,18 @@ class WasteHandoverController extends Controller
         }
 
         if ($handover->payment_status === 'paid') {
-            return self::apiResponse(false, 'Action Successful', 'Already paid', self::API_SUCCESS, $this->transformHandover($handover));
+            $receipt = $this->handoverService->buildReceipt($handover);
+
+            return self::apiResponse(
+                false,
+                'Action Successful',
+                'Already paid',
+                self::API_SUCCESS,
+                [
+                    'handover' => $this->transformHandover($handover),
+                    'receipt' => $receipt,
+                ]
+            );
         }
 
         $paymentData = $request->validate([
@@ -355,19 +382,26 @@ class WasteHandoverController extends Controller
             'network' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string'],
             'name' => ['required', 'string'],
+            'transaction_id' => ['nullable', 'string', 'max:100'],
         ]);
 
         DB::beginTransaction();
         try {
-            Payment::create([
+            $handover->loadMissing('requester');
+            $transactionId = $paymentData['transaction_id']
+                ?? ('HND-PAY-'.Str::upper(Str::random(10)));
+
+            $payment = Payment::create([
                 'client_slug' => 'handover:'.$handover->code,
                 'provider_slug' => $handover->target_provider_slug,
-                'payment_type' => 'waste_handover',
-                'transaction_id' => 'HND-PAY-'.now()->format('YmdHis'),
+                'payment_type' => Payment::PAYMENT_TYPE_HANDOVER,
+                'payable_reference' => $handover->code,
+                'transaction_id' => $transactionId,
                 'payment_method' => $paymentData['payment_method'],
                 'network' => $paymentData['network'] ?? 'unknown',
                 'phone_number' => $paymentData['phone_number'] ?? null,
                 'name' => $paymentData['name'],
+                'client_email' => $handover->requester?->email,
                 'amount' => $fee,
                 'currency' => 'GHS',
                 'status' => Payment::STATUS_PAID,
@@ -381,18 +415,47 @@ class WasteHandoverController extends Controller
 
             DB::commit();
 
+            $handover->refresh()->load(['acceptedProvider', 'requester']);
+            $receipt = $this->handoverService->buildReceipt($handover, $payment);
+            app(HandoverNotificationService::class)->notifyPaymentReceipt($handover, $receipt);
+
             return self::apiResponse(
                 in_error: false,
                 message: 'Action Successful',
-                reason: 'Handover payment confirmed',
+                reason: 'Handover payment confirmed; receipt sent by email when available',
                 status_code: self::API_SUCCESS,
-                data: $this->transformHandover($handover->fresh()->load(['acceptedProvider']))
+                data: [
+                    'handover' => $this->transformHandover($handover),
+                    'receipt' => $receipt,
+                ]
             );
         } catch (\Throwable $e) {
             DB::rollBack();
 
             return self::apiResponse(true, 'Action Failed', 'Payment failed: '.$e->getMessage(), self::API_FAIL, []);
         }
+    }
+
+    /** Download / view payment receipt for a paid handover. */
+    public function receipt(WasteHandoverRequest $handover, Request $request)
+    {
+        if (! $this->canAccessHandover($handover, $request->user())) {
+            return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
+        }
+
+        if ($handover->payment_status !== 'paid') {
+            return self::apiResponse(true, 'Action Failed', 'Payment has not been confirmed for this handover', self::API_FAIL, []);
+        }
+
+        $receipt = $this->handoverService->buildReceipt($handover);
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Handover payment receipt retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: ['receipt' => $receipt]
+        );
     }
 
     public function complete(WasteHandoverRequest $handover, Request $request)
@@ -426,76 +489,68 @@ class WasteHandoverController extends Controller
 
     private function transformHandover(WasteHandoverRequest $handover): array
     {
-        $payload = $handover->toArray();
-        $payload['coordinates'] = [
-            'latitude' => $handover->latitude !== null ? (float) $handover->latitude : null,
-            'longitude' => $handover->longitude !== null ? (float) $handover->longitude : null,
-            'map_ready' => $handover->latitude !== null && $handover->longitude !== null,
-        ];
-        $payload['requester_contact'] = [
-            'name' => $handover->requester_name,
-            'phone_number' => $handover->requester_phone,
-            'email' => $handover->requester_email,
-        ];
-        $payload['accepted_provider'] = $handover->acceptedProvider?->only([
-            'provider_slug',
-            'business_name',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'email',
-        ]);
-        $payload['requester'] = $handover->requester?->only([
-            'provider_slug',
-            'business_name',
-            'first_name',
-            'last_name',
-        ]);
-        $payload['driver'] = $handover->driver?->only([
-            'driver_slug',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'email',
-            'provider_slug',
-        ]);
-        $payload['fleet'] = $handover->fleet?->only([
-            'fleet_slug',
-            'license_plate',
-            'vehicle_make',
-            'model',
-        ]);
-        $payload['amount_payable'] = (float) ($handover->fee_amount ?? 0);
-        $payload['can_pay'] = $handover->status === 'accepted'
-            && $payload['amount_payable'] > 0
-            && $handover->payment_status !== 'paid';
+        $handover->loadMissing(['requester', 'submittedBy', 'acceptedProvider', 'driver', 'fleet']);
 
-        return $payload;
-    }
+        $feeAmount = (float) ($handover->fee_amount ?? 0);
+        $latitude = $handover->latitude !== null ? (float) $handover->latitude : null;
+        $longitude = $handover->longitude !== null ? (float) $handover->longitude : null;
 
-    private function resolveHandoverCoordinates(array $data): ?array
-    {
-        if (! empty($data['latitude']) && ! empty($data['longitude'])) {
-            return [
-                'latitude' => (float) $data['latitude'],
-                'longitude' => (float) $data['longitude'],
-            ];
-        }
-
-        if (empty($data['pickup_location'])) {
-            return null;
-        }
-
-        $resolved = app(ClientLocationGeocodingService::class)
-            ->resolveCoordinates((string) $data['pickup_location']);
-
-        if ($resolved === null) {
-            return null;
-        }
+        $requesterProvider = $this->handoverService->providerContactBrief($handover->requester);
+        $submittedBySlug = (string) $handover->submitted_by_slug;
+        $ownerSlug = (string) $handover->requester_provider_slug;
+        $submittedByTeamMember = $submittedBySlug !== '' && $submittedBySlug !== $ownerSlug;
 
         return [
-            'latitude' => $resolved['latitude'],
-            'longitude' => $resolved['longitude'],
+            'id' => $handover->id,
+            'code' => $handover->code,
+            'title' => $this->handoverService->handoverTitle($handover),
+            'status' => $handover->status,
+            'fleet_type' => $handover->fleet_type,
+            'fleet_type_label' => $handover->fleet_type
+                ? $this->handoverService->fleetTypeLabel((string) $handover->fleet_type)
+                : null,
+            'fee_amount' => $feeAmount,
+            'payment_status' => $handover->payment_status,
+            'paid_at' => $handover->paid_at?->toISOString(),
+            'pickup' => [
+                'location' => $handover->pickup_location,
+                'gps_address' => $handover->gps_address,
+                'coordinates' => [
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'map_ready' => $latitude !== null && $longitude !== null,
+                ],
+            ],
+            'requester_provider_slug' => $handover->requester_provider_slug,
+            'submitted_by_slug' => $handover->submitted_by_slug,
+            'target_provider_slug' => $handover->target_provider_slug,
+            'requester_provider' => $requesterProvider,
+            'submitted_by' => $submittedByTeamMember
+                ? $this->handoverService->providerContactBrief($handover->submittedBy)
+                : null,
+            'accepted_provider' => $this->handoverService->providerContactBrief($handover->acceptedProvider),
+            'driver' => $handover->driver?->only([
+                'driver_slug',
+                'first_name',
+                'last_name',
+                'phone_number',
+                'email',
+                'provider_slug',
+            ]),
+            'fleet' => $handover->fleet?->only([
+                'fleet_slug',
+                'license_plate',
+                'vehicle_make',
+                'model',
+            ]),
+            'accepted_at' => $handover->accepted_at?->toISOString(),
+            'completed_at' => $handover->completed_at?->toISOString(),
+            'created_at' => $handover->created_at?->toISOString(),
+            'updated_at' => $handover->updated_at?->toISOString(),
+            'can_pay' => $handover->status === 'accepted'
+                && $feeAmount > 0
+                && $handover->payment_status !== 'paid',
+            'can_download_receipt' => $handover->payment_status === 'paid',
         ];
     }
 
@@ -510,13 +565,18 @@ class WasteHandoverController extends Controller
 
     private function canAccessHandover(WasteHandoverRequest $handover, object $user): bool
     {
-        $slug = self::resolveProviderScopeSlug($user);
-        if ($handover->requester_provider_slug === $slug || $handover->target_provider_slug === $slug) {
+        $ownerSlug = self::resolveProviderScopeSlug($user);
+        $actorSlug = (string) ($user->provider_slug ?? '');
+
+        if ($handover->requester_provider_slug === $ownerSlug
+            || $handover->target_provider_slug === $ownerSlug
+            || ($actorSlug !== '' && $handover->submitted_by_slug === $actorSlug)) {
             return true;
         }
 
-        $zones = $handover->zone_slugs ?? [$handover->zone_slug];
-
-        return count(array_intersect($zones, $this->zoneSlugsForProvider($slug))) > 0;
+        return $this->handoverService->sharesZoneWithRequester(
+            $handover,
+            $this->zoneSlugsForProvider($ownerSlug)
+        );
     }
 }

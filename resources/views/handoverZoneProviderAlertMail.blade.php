@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Waste Handover Request</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #e6e6e6; font-family: 'Poppins', Arial, sans-serif;">
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#e6e6e6">
+        <tr>
+            <td align="center" style="padding: 40px 10px;">
+                <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff"
+                    style="max-width: 600px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td align="center" bgcolor="#00361B" style="padding: 30px 20px;">
+                            <img src="https://wastebackend.tripsecuregh.com/images/logo.png" alt="Logo"
+                                style="max-width: 140px; margin-bottom: 15px;">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 30px 25px; background-color: #fdfdfd;">
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff"
+                                style="border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 25px;">
+                                <tr>
+                                    <td style="padding: 20px 25px;">
+                                        <p style="font-size: 16px; color: #333333; margin-bottom: 12px;">
+                                            Hello
+                                            <span
+                                                style="display: inline-block; background-color: #f4fff0; padding: 6px 10px; border-radius: 6px; color: #62a93b; font-weight: 600; font-size: 16px; border: 1px solid #bcffb3;">
+                                                {{ $providerName }}
+                                            </span>,
+                                        </p>
+                                        <p style="font-size: 15px; color: #555555; line-height: 1.6; margin: 0;">
+                                            A new <strong>{{ $requesterType }}</strong> waste handover request is
+                                            available in your zone. Review the details below and log in to the provider
+                                            app to accept it.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#F0FAFF"
+                                style="border: 1px dashed #66B3FF; border-radius: 10px; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="font-size: 15px; color: #333; margin-bottom: 8px;">
+                                            <strong>Request Details</strong>
+                                        </p>
+                                        <p style="font-size: 14px; color: #555; margin: 0; line-height: 1.7;">
+                                            🆔 Code: <strong>{{ $requestCode }}</strong><br>
+                                            📋 Title: <strong>{{ $title }}</strong><br>
+                                            📍 Location: <strong>{{ $pickupLocation }}</strong><br>
+                                            ♻️ Waste type: <strong>{{ $wasteTypes }}</strong><br>
+                                            @if ($fleetTypeLabel)
+                                                🚛 Fleet type requested: <strong>{{ $fleetTypeLabel }}</strong><br>
+                                            @endif
+                                            @if ($amountPayable > 0)
+                                                💰 Amount payable on pickup:
+                                                <strong>GHS {{ number_format($amountPayable, 2) }}</strong><br>
+                                            @endif
+                                            👤 Requester: <strong>{{ $requesterName }}</strong>
+                                            @if ($requesterPhone !== '')
+                                                — <strong>{{ $requesterPhone }}</strong>
+                                            @endif
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 30px;">
+                                        <p
+                                            style="font-size: 14px; color: #00361B; text-align: center; font-weight: 600; margin: 0;">
+                                            Log in to the provider app to accept this request.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <p style="font-size: 14px; color: #888; text-align: center; margin: 0;">
+                                            If you did not expect this notification, please ignore this email or
+                                            contact support.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

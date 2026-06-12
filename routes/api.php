@@ -40,6 +40,7 @@ use App\Http\Controllers\Teams\TeamMemberController;
 use App\Http\Controllers\Violation\ViolationManagementController;
 use App\Http\Controllers\WeighBridge\WeighBridgeController;
 use App\Http\Controllers\ZoneManagementController;
+use App\Traits\AppNotifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,13 @@ Route::get('/user', function (Request $request) {
 
 Route::get("yes", function () {
     return "yes yes";
+});
+
+// test sms
+Route::get('test_sms', function () {
+    AppNotifications::sendSms('233556906969', 'Hello, this is a test SMS', 'WMS', 'test');
+
+    return response()->json(['queued' => true, 'queue' => 'sms']);
 });
 
 /** CalPay server-to-server callback (no auth). */
@@ -237,10 +245,12 @@ Route::prefix("provider")->group(function () {
         Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
 
         // Waste Handover Requests
+        Route::get("handover_requests/fleet_types", [WasteHandoverController::class, "fleetTypes"]);
         Route::post("handover_requests", [WasteHandoverController::class, "create"]);
         Route::get("handover_requests", [WasteHandoverController::class, "list"]);
         Route::get("handover_requests/available", [WasteHandoverController::class, "availableInZone"]);
         Route::get("handover_requests/drivers/{driverSlug}/fleets", [WasteHandoverController::class, "fleetsForDriver"]);
+        Route::get("handover_requests/{handover}/receipt", [WasteHandoverController::class, "receipt"]);
         Route::get("handover_requests/{handover}", [WasteHandoverController::class, "show"]);
         Route::post("handover_requests/{handover}/accept", [WasteHandoverController::class, "accept"]);
         Route::post("handover_requests/{handover}/decline", [WasteHandoverController::class, "decline"]);

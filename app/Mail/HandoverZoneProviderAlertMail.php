@@ -21,6 +21,8 @@ class HandoverZoneProviderAlertMail extends Mailable
         public string $pickupLocation,
         public string $wasteTypes,
         public string $title,
+        public ?string $fleetTypeLabel = null,
+        public float $amountPayable = 0,
     ) {}
 
     public function envelope(): Envelope
@@ -33,15 +35,7 @@ class HandoverZoneProviderAlertMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: '<p>Hello '.$this->providerName.',</p>'
-                .'<p>A new <strong>'.$this->requesterType.'</strong> waste handover request is available in your zone.</p>'
-                .'<p><strong>Code:</strong> '.$this->requestCode.'</p>'
-                .'<p><strong>Title:</strong> '.$this->title.'</p>'
-                .'<p><strong>Location:</strong> '.$this->pickupLocation.'</p>'
-                .'<p><strong>Waste type:</strong> '.$this->wasteTypes.'</p>'
-                .'<p><strong>Requester:</strong> '.$this->requesterName
-                .($this->requesterPhone !== '' ? ' — '.$this->requesterPhone : '').'</p>'
-                .'<p>Log in to the provider app to accept this request.</p>',
+            view: 'handoverZoneProviderAlertMail',
         );
     }
 }

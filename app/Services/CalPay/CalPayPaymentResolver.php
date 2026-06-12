@@ -159,11 +159,13 @@ class CalPayPaymentResolver
             throw new \RuntimeException('Handover is already paid');
         }
 
+        $title = app(\App\Services\HandoverService::class)->handoverTitle($handover);
+
         return new CalPayPaymentContext(
             amount: $amount,
             orderCode: $this->orderCode('HND'),
-            description: 'Waste handover — '.$handover->title,
-            itemName: $handover->title,
+            description: $title,
+            itemName: $title,
             itemCode: $handover->code,
             clientSlug: 'handover:'.$handover->code,
             providerSlug: (string) ($handover->target_provider_slug ?? $handover->requester_provider_slug),

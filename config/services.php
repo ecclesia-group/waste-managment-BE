@@ -47,9 +47,9 @@ return [
 
     'sms' => [
         'enabled' => env('SMS_ENABLED', false),
-        'endpoint' => env('SMS_API_ENDPOINT'),
+        'endpoint' => env('SMS_API_ENDPOINT', 'https://txtconnect.net/dev/api/sms/send'),
         'token' => env('SMS_API_TOKEN'),
-        'from' => env('SMS_FROM', 'APP'),
+        'from' => env('SMS_FROM', 'WMS'),
     ],
 
     'paystack' => [

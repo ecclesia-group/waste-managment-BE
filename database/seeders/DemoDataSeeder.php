@@ -543,21 +543,14 @@ class DemoDataSeeder extends Seeder
         return WasteHandoverRequest::firstOrCreate(
             ['code' => 'HND-DEMO-001'],
             [
+                'submitted_by_slug' => $provider->provider_slug,
                 'requester_provider_slug' => $provider->provider_slug,
-                'requester_type' => 'aboboya',
-                'requester_name' => 'Kofi Aboboya',
-                'requester_phone' => '233201000007',
-                'requester_email' => 'kofi.aboboya@demo.test',
-                'zone_slug' => $zone->zone_slug,
-                'zone_slugs' => [$zone->zone_slug],
-                'title' => 'Demo handover to main provider',
-                'waste_types' => ['general', 'recyclable'],
-                'description' => 'Sample handover request for API docs',
+                'fleet_type' => 'medium_truck',
                 'pickup_location' => 'Kaneshie Market',
                 'latitude' => 5.5900,
                 'longitude' => -0.2400,
-                'fee_amount' => 75.00,
-                'payment_status' => 'pending',
+                'fee_amount' => 250.00,
+                'payment_status' => 'unpaid',
                 'status' => 'pending',
             ]
         );
