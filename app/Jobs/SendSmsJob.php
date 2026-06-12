@@ -23,33 +23,44 @@ class SendSmsJob implements ShouldQueue
         public string $from,
         public string $context = 'general',
     ) {
-        // $this->onQueue('sms');
+        $this->onQueue('sms');
     }
 
     public function handle(): void
     {
-        $endpoint = 'https://api.txtconnect.net/dev/api/sms/send';
+        $endpoint = trim((string) (config('services.sms.endpoint') ?: 'https://api.txtconnect.net/dev/api/sms/send'));
+        $token = trim((string) (config('services.sms.token') ?: ''));
+
+        if ($endpoint === '' || $token === '') {
+            Log::channel('sent_sms')->warning('SendSmsJob: missing endpoint or token', [
+                'context' => $this->context,
+                'phone_number' => $this->phoneNumber,
+            ]);
+
+            return;
+        }
 
         $payload = [
             'to' => $this->phoneNumber,
-            'from' => $this->from,
+            'from' => $this->from !== '' ? $this->from : (string) config('services.sms.from', 'WMS'),
             'unicode' => 1,
             'sms' => $this->message,
         ];
 
-        $headers = [
-            "Authorization: Bearer " . "2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3",
-            "Content-Type: application/json"
-        ];
-
-
         try {
-            $response = Http::withHeaders($headers)->post($endpoint, $payload);
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => 'Bearer '.$token,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($endpoint, $payload);
 
             Log::channel('sent_sms')->info('SMS API Response', [
                 'context' => $this->context,
                 'phone_number' => $this->phoneNumber,
-                'response' => json_encode($response->json()),
+                'status' => $response->status(),
+                'response' => $response->json(),
             ]);
 
             if (! $response->successful()) {
