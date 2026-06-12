@@ -29,7 +29,6 @@ class SendSmsJob implements ShouldQueue
     public function handle(): void
     {
         $endpoint = 'https://api.txtconnect.net/dev/api/sms/send';
-        $token = '2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3';
 
         $payload = [
             'to' => $this->phoneNumber,
@@ -39,7 +38,7 @@ class SendSmsJob implements ShouldQueue
         ];
 
         $headers = [
-            "Authorization: Bearer " . $token,
+            "Authorization: Bearer " . "2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3",
             "Content-Type: application/json"
         ];
 
