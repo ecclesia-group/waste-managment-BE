@@ -28,7 +28,7 @@ class SendSmsJob implements ShouldQueue
 
     public function handle(): void
     {
-        $endpoint = 'https://txtconnect.net/dev/api/sms/send';
+        $endpoint = 'https://api.txtconnect.net/dev/api/sms/send';
         $token = '2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3';
 
         $payload = [
