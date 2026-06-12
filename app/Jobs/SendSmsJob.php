@@ -23,7 +23,7 @@ class SendSmsJob implements ShouldQueue
         public string $from,
         public string $context = 'general',
     ) {
-        $this->onQueue('sms');
+        // $this->onQueue('sms');
     }
 
     public function handle(): void
