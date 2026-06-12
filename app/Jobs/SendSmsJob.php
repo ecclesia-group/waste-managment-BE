@@ -38,14 +38,15 @@ class SendSmsJob implements ShouldQueue
             'sms' => $this->message,
         ];
 
+        $headers = [
+            "Authorization: Bearer " . $token,
+            "Content-Type: application/json"
+        ];
+
+
         try {
             $response = Http::timeout(20)
-                ->withHeaders([
-                    'Authorization' => 'Bearer '.$token,
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                    'Cache-Control' => 'no-cache',
-                ])
+                ->withHeaders($headers)
                 ->post($endpoint, $payload);
 
             Log::channel('sent_sms')->info('SMS API Response', [
