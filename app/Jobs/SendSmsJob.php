@@ -28,8 +28,10 @@ class SendSmsJob implements ShouldQueue
 
     public function handle(): void
     {
-        $endpoint = trim((string) (config('services.sms.endpoint') ?: 'https://txtconnect.net/dev/api/sms/send'));
-        $token = trim((string) (config('services.sms.token') ?: '2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3'));
+        // $endpoint = trim((string) (config('services.sms.endpoint') ?: 'https://txtconnect.net/dev/api/sms/send'));
+        $endpoint = 'https://txtconnect.net/dev/api/sms/send';
+        // $token = trim((string) (config('services.sms.token') ?: '2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3'));
+        $token = '2p6iDItRUfCFxjVBXbm9cGQ5eAYln0NZPzEqsLKrJvWy8hgou3';
 
         if ($endpoint === '' || $token === '') {
             Log::channel('sent_sms')->warning('SendSmsJob: missing endpoint or token', [
@@ -42,7 +44,7 @@ class SendSmsJob implements ShouldQueue
 
         $payload = [
             'to' => $this->phoneNumber,
-            'from' => $this->from !== '' ? $this->from : (string) config('services.sms.from', 'WMS'),
+            'from' => $this->from,
             'unicode' => 1,
             'sms' => $this->message,
         ];
