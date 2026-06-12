@@ -44,9 +44,7 @@ class SendSmsJob implements ShouldQueue
 
 
         try {
-            $response = Http::timeout(20)
-                ->withHeaders($headers)
-                ->post($endpoint, $payload);
+            $response = Http::withHeaders($headers)->post($endpoint, $payload);
 
             Log::channel('sent_sms')->info('SMS API Response', [
                 'context' => $this->context,
