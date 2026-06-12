@@ -23,7 +23,7 @@ class SendEmailJob implements ShouldQueue
         public array $parameters,
         public string $context = 'general',
     ) {
-        $this->onQueue('emails');
+        // $this->onQueue('emails');
     }
 
     public function handle(): void
