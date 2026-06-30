@@ -28,7 +28,7 @@ class RoutePlannerManagement extends Controller
 
     public function planOptions(Request $request)
     {
-        $providerSlug = $this->resolveProviderScopeSlug($request->user());
+        $providerSlug = $this->ownerProviderSlug($request->user());
 
         return self::apiResponse(
             in_error: false,
@@ -119,7 +119,7 @@ class RoutePlannerManagement extends Controller
         $data = $request->validated();
 
         if (isset($user->provider_slug)) {
-            $data['provider_slug'] = $this->resolveProviderScopeSlug($user);
+            $data['provider_slug'] = $this->actorProviderSlug($user);
         }
 
         if (empty($data['provider_slug'])) {
@@ -179,7 +179,7 @@ class RoutePlannerManagement extends Controller
                 'pickups as total_pickups',
                 'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
             ])
-            ->where('provider_slug', $this->resolveProviderScopeSlug($user))
+            ->forProviderOrganisation((string) $this->ownerProviderSlug($user))
             ->latest()
             ->paginate($this->perPage(request()));
 
@@ -269,7 +269,7 @@ class RoutePlannerManagement extends Controller
         $data = $request->validated();
         $user = $request->user();
 
-        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
+        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -319,7 +319,7 @@ class RoutePlannerManagement extends Controller
     public function deletePlan(RoutePlanner $plan)
     {
         $user = request()->user();
-        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) $this->resolveProviderScopeSlug($user)) {
+        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -342,8 +342,9 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerRecords(Request $request, Provider $provider)
     {
+        $ownerSlug = (string) self::ownerSlugForProviderRecord($provider->provider_slug);
         $paginator = RoutePlanner::query()
-            ->where('provider_slug', $provider->provider_slug)
+            ->forProviderOrganisation($ownerSlug)
             ->with(['driver', 'fleet'])
             ->withCount([
                 'pickups as total_pickups',
@@ -361,7 +362,7 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerRecord(Request $request, Provider $provider, RoutePlanner $routerplanner)
     {
-        if ($routerplanner->provider_slug !== $provider->provider_slug) {
+        if (! self::recordBelongsToProviderOrganisation($routerplanner->provider_slug, $provider)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -381,7 +382,7 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerPickups(Request $request, Provider $provider, RoutePlanner $routerplanner)
     {
-        if ($routerplanner->provider_slug !== $provider->provider_slug) {
+        if (! self::recordBelongsToProviderOrganisation($routerplanner->provider_slug, $provider)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -412,7 +413,7 @@ class RoutePlannerManagement extends Controller
     {
         $user = request()->user();
 
-        if (isset($user->provider_slug) && $plan->provider_slug !== $this->resolveProviderScopeSlug($user)) {
+        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',

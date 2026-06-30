@@ -14,24 +14,24 @@ class DriverController extends Controller
 {
     public function register(RegisterRequest $request)
     {
-        $user                      = Auth::guard('provider')->user();
-        $effectiveProviderSlug     = self::resolveProviderScopeSlug($user);
-        $password                  = Str::random(8);
-        $data                      = $request->validated();
-        $data['driver_slug']       = Str::uuid();
-        $data['password']          = $password;
+        $user = Auth::guard('provider')->user();
+        $actorSlug = self::actorProviderSlug($user);
+        $password = Str::random(8);
+        $data = $request->validated();
+        $data['driver_slug'] = Str::uuid();
+        $data['password'] = $password;
         $data['email_verified_at'] = now();
-        $data['provider_slug']     = $effectiveProviderSlug;
+        $data['provider_slug'] = $actorSlug;
 
-        // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
             'license_front_image',
             'license_back_image',
             'profile_image',
         ];
 
-        $data   = static::processImage($image_fields, $data);
+        $data = static::processImage($image_fields, $data);
         $driver = Driver::create($data);
+        $driver->load('provider');
 
         self::sendEmail(
             $driver->email,
@@ -48,29 +48,30 @@ class DriverController extends Controller
             message: "Action Successful",
             reason: "Driver registered successfully",
             status_code: self::API_SUCCESS,
-            data: $driver->toArray()
+            data: $this->transformDriver($driver)
         );
     }
 
     public function allDrivers()
     {
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        $ownerSlug = self::ownerProviderSlug($user);
 
-        return $this->paginatedApiResponse(
+        return $this->paginatedApiResponseMapped(
             Driver::query()
-                ->where('provider_slug', $effectiveProviderSlug)
+                ->with('provider')
+                ->forProviderOrganisation((string) $ownerSlug)
                 ->latest()
                 ->paginate($this->perPage(request())),
-            'Drivers retrieved successfully'
+            'Drivers retrieved successfully',
+            fn ($driver) => $this->transformDriver($driver),
         );
     }
 
     public function show(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
-        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
+        if (! self::driverBelongsToProviderOrganisation($driver, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -80,24 +81,26 @@ class DriverController extends Controller
             );
         }
 
+        $driver->load('provider');
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $driver->toArray()
+            data: $this->transformDriver($driver)
         );
     }
 
     public function updateStatus(StatusRequest $request)
     {
-        $data           = $request->validated();
-
+        $data = $request->validated();
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        $ownerSlug = self::ownerProviderSlug($user);
+
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
-            ->where('provider_slug', $effectiveProviderSlug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->first();
 
         if (! $driver) {
@@ -118,15 +121,14 @@ class DriverController extends Controller
             message: "Action Successful",
             reason: "Driver status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $driver->toArray()
+            data: $this->transformDriver($driver)
         );
     }
 
     public function updateDriverProfile(UpdateProfileRequest $request, Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
-        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
+        if (! self::driverBelongsToProviderOrganisation($driver, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -136,7 +138,7 @@ class DriverController extends Controller
             );
         }
 
-        $data         = $request->validated();
+        $data = $request->validated();
         $image_fields = [
             'license_front_image',
             'license_back_image',
@@ -145,20 +147,21 @@ class DriverController extends Controller
 
         $data = static::processImage($image_fields, $data);
         $driver->update($data);
+        $driver->load('provider');
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Driver details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $driver->toArray()
+            data: $this->transformDriver($driver)
         );
     }
 
     public function deleteDriver(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
-        if (isset($effectiveProviderSlug) && (string) $driver->provider_slug !== (string) $effectiveProviderSlug) {
+        if (! self::driverBelongsToProviderOrganisation($driver, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -191,10 +194,10 @@ class DriverController extends Controller
         ]);
 
         $user = Auth::guard('provider')->user();
-        $effectiveProviderSlug = self::resolveProviderScopeSlug($user);
+        $ownerSlug = self::ownerProviderSlug($user);
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
-            ->where('provider_slug', $effectiveProviderSlug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->first();
 
         if (! $driver) {
@@ -221,5 +224,27 @@ class DriverController extends Controller
             status_code: self::API_SUCCESS,
             data: $driver->only(['driver_slug', 'latitude', 'longitude', 'last_location_at'])
         );
+    }
+
+    private function transformDriver(Driver $driver): array
+    {
+        $payload = $driver->toArray();
+        $creator = $driver->provider;
+        $payload['created_by_provider_slug'] = $driver->provider_slug;
+        $payload['owner_provider_slug'] = $creator
+            ? ((bool) ($creator->is_main ?? true)
+                ? $creator->provider_slug
+                : ($creator->parent_slug ?: $creator->provider_slug))
+            : $driver->provider_slug;
+        $payload['created_by'] = $creator ? [
+            'provider_slug' => $creator->provider_slug,
+            'is_main' => (bool) ($creator->is_main ?? true),
+            'parent_slug' => $creator->parent_slug,
+            'business_name' => $creator->business_name,
+            'first_name' => $creator->first_name,
+            'last_name' => $creator->last_name,
+        ] : null;
+
+        return $payload;
     }
 }

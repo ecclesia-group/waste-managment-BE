@@ -1,6 +1,8 @@
 <?php
 namespace App\Traits;
 
+use App\Support\ProviderOrganisation;
+
 use App\Models\Actor;
 use App\Models\OtpToken;
 use Illuminate\Support\Facades\Storage;
@@ -305,14 +307,43 @@ trait Helpers
         return $qrCodeUrl; // Return the API URL if download fails
     }
 
+    protected static function actorProviderSlug(object $user): ?string
+    {
+        return ProviderOrganisation::actorSlug($user);
+    }
+
+    /**
+     * Main provider organisation slug (parent when team member, own slug when is_main).
+     * Use for org-wide listings, zones, fleets, and shared resources.
+     */
+    protected static function ownerProviderSlug(object $user): ?string
+    {
+        return ProviderOrganisation::ownerSlugForUser($user);
+    }
+
+    protected static function ownerSlugForProviderRecord(?string $providerSlug): ?string
+    {
+        return ProviderOrganisation::ownerSlug($providerSlug);
+    }
+
+    protected static function recordBelongsToProviderOrganisation(?string $recordProviderSlug, object $user): bool
+    {
+        return ProviderOrganisation::recordBelongsToOrganisation($recordProviderSlug, $user);
+    }
+
+    protected static function providerSlugsShareOrganisation(?string $slugA, ?string $slugB): bool
+    {
+        return ProviderOrganisation::slugsShareOrganisation($slugA, $slugB);
+    }
+
+    /** @deprecated Use ownerProviderSlug() for org scope or actorProviderSlug() for the logged-in account. */
     protected static function resolveProviderScopeSlug(object $user): ?string
     {
-        if (! isset($user->provider_slug)) {
-            return null;
-        }
+        return self::ownerProviderSlug($user);
+    }
 
-        return (bool) ($user->is_main ?? true)
-            ? (string) $user->provider_slug
-            : (string) ($user->parent_slug ?: $user->provider_slug);
+    protected static function driverBelongsToProviderOrganisation(\App\Models\Driver $driver, object $user): bool
+    {
+        return self::recordBelongsToProviderOrganisation($driver->provider_slug, $user);
     }
 }

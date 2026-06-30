@@ -11,14 +11,14 @@ use Illuminate\Support\Str;
 
 class GroupController extends Controller
 {
-    // Lists all groups
     public function allGroups()
     {
         $user = Auth::guard('provider')->user();
+        $ownerSlug = self::ownerProviderSlug($user);
 
         return $this->paginatedApiResponse(
             Group::query()
-                ->where('provider_slug', $user->provider_slug)
+                ->forProviderOrganisation((string) $ownerSlug)
                 ->with('clients')
                 ->orderByDesc('created_at')
                 ->paginate($this->perPage(request())),
@@ -26,11 +26,10 @@ class GroupController extends Controller
         );
     }
 
-    // Gets details of a single group
     public function show(Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -49,15 +48,15 @@ class GroupController extends Controller
         );
     }
 
-    // Creates a new group
     public function register(GroupCreation $request)
     {
-        $user                  = Auth::guard('provider')->user();
-        $data                  = $request->validated();
-        $data['group_slug']    = Str::uuid();
-        $data['provider_slug'] = $user->provider_slug;
-        $data['status']        = 'active';
-        $group                 = Group::create($data);
+        $user = Auth::guard('provider')->user();
+        $data = $request->validated();
+        $data['group_slug'] = Str::uuid();
+        $data['provider_slug'] = self::actorProviderSlug($user);
+        $data['status'] = 'active';
+        $group = Group::create($data);
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -67,11 +66,10 @@ class GroupController extends Controller
         );
     }
 
-    // Updates an existing group
     public function updateGroup(GroupUpdation $request, Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -93,15 +91,14 @@ class GroupController extends Controller
         );
     }
 
-    // Updates the status of a group
     public function updateGroupStatus(GroupStatusUpdate $request)
     {
-        $data          = $request->validated();
-
-        $user          = Auth::guard('provider')->user();
-        $group         = Group::query()
+        $data = $request->validated();
+        $user = Auth::guard('provider')->user();
+        $ownerSlug = self::ownerProviderSlug($user);
+        $group = Group::query()
             ->where('group_slug', $data['group_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->first();
 
         if (! $group) {
@@ -113,8 +110,10 @@ class GroupController extends Controller
                 data: []
             );
         }
+
         $group->status = $data['status'];
         $group->save();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -124,11 +123,10 @@ class GroupController extends Controller
         );
     }
 
-    // Deletes a group
     public function deleteGroup(Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -139,6 +137,7 @@ class GroupController extends Controller
         }
 
         $group->delete();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",

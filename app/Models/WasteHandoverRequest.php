@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesProviderOrganisation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,11 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class WasteHandoverRequest extends Model
 {
-    use SoftDeletes;
+    use ScopesProviderOrganisation, SoftDeletes;
 
     protected $fillable = [
         'code',
-        'submitted_by_slug',
         'requester_provider_slug',
         'target_provider_slug',
         'pickup_location',
@@ -43,13 +43,6 @@ class WasteHandoverRequest extends Model
         'updated_at' => 'datetime',
     ];
 
-    /** Actor (team member) who created the request. */
-    public function submittedBy()
-    {
-        return $this->belongsTo(Provider::class, 'submitted_by_slug', 'provider_slug');
-    }
-
-    /** Main provider organisation that owns the request. */
     public function requester()
     {
         return $this->belongsTo(Provider::class, 'requester_provider_slug', 'provider_slug');
@@ -90,16 +83,16 @@ class WasteHandoverRequest extends Model
         });
     }
 
-    /** Pending requests visible to zone peers (excludes own organisation + declined). */
+    /** Pending requests visible to zone peers (excludes own requests + declined). */
     public function scopeVisibleInProviderZones(
         Builder $query,
         array $providerZoneSlugs,
-        string $excludeOwnerSlug,
+        string $excludeRequesterSlug,
         ?string $viewingProviderSlug = null
     ): Builder {
         return $query
             ->where('status', 'pending')
-            ->where('requester_provider_slug', '!=', $excludeOwnerSlug)
+            ->where('requester_provider_slug', '!=', $excludeRequesterSlug)
             ->when($viewingProviderSlug, fn ($q) => $q->whereDoesntHave(
                 'declines',
                 fn ($decline) => $decline->where('provider_slug', $viewingProviderSlug)

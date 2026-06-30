@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\ScopesProviderOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BulkWasteRequest extends Model
 {
-    use SoftDeletes;
+    use ScopesProviderOrganisation, SoftDeletes;
 
     protected $fillable = [
         'request_code',

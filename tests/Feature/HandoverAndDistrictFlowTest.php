@@ -51,7 +51,6 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
 
     $handover = WasteHandoverRequest::query()->create([
         'code' => 'HND-'.Str::upper(Str::random(6)),
-        'submitted_by_slug' => $requester->provider_slug,
         'requester_provider_slug' => $requester->provider_slug,
         'target_provider_slug' => null,
         'fleet_type' => 'medium_truck',
@@ -60,11 +59,11 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
     ]);
 
     actingAs($outsider, 'provider')
-        ->postJson('/api/provider/handover_requests/'.$handover->id.'/accept')
+        ->postJson('/api/provider/handover_requests/'.$handover->code.'/accept')
         ->assertStatus(401);
 
     actingAs($acceptor, 'provider')
-        ->postJson('/api/provider/handover_requests/'.$handover->id.'/accept')
+        ->postJson('/api/provider/handover_requests/'.$handover->code.'/accept')
         ->assertOk();
 
     assertDatabaseHas('waste_handover_requests', [

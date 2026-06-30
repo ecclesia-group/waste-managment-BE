@@ -244,18 +244,26 @@ Route::prefix("provider")->group(function () {
         Route::put("bulk_waste_requests/{requestCode}/status", [PickupController::class, "updateBulkWasteRequestStatus"]);
         Route::put("bulk_waste_requests/{requestCode}/price", [PickupController::class, "setBulkWasteRequestPrice"]);
 
-        // Waste Handover Requests
-        Route::get("handover_requests/fleet_types", [WasteHandoverController::class, "fleetTypes"]);
-        Route::post("handover_requests", [WasteHandoverController::class, "create"]);
-        Route::get("handover_requests", [WasteHandoverController::class, "list"]);
-        Route::get("handover_requests/available", [WasteHandoverController::class, "availableInZone"]);
-        Route::get("handover_requests/drivers/{driverSlug}/fleets", [WasteHandoverController::class, "fleetsForDriver"]);
-        Route::get("handover_requests/{handover}/receipt", [WasteHandoverController::class, "receipt"]);
-        Route::get("handover_requests/{handover}", [WasteHandoverController::class, "show"]);
-        Route::post("handover_requests/{handover}/accept", [WasteHandoverController::class, "accept"]);
-        Route::post("handover_requests/{handover}/decline", [WasteHandoverController::class, "decline"]);
-        Route::post("handover_requests/{handover}/confirm_payment", [WasteHandoverController::class, "confirmPayment"]);
-        Route::post("handover_requests/{handover}/complete", [WasteHandoverController::class, "complete"]);
+        // Waste Handover Requests — requester
+        Route::get('handover_requests/fleet_types', [WasteHandoverController::class, 'fleetTypes']);
+        Route::post('handover_requests', [WasteHandoverController::class, 'create']);
+        Route::get('handover_requests', [WasteHandoverController::class, 'myRequests']);
+        Route::get('handover_requests/accepted', [WasteHandoverController::class, 'myAccepted']);
+        Route::get('handover_requests/completed', [WasteHandoverController::class, 'myCompleted']);
+        Route::patch('handover_requests/{handover}', [WasteHandoverController::class, 'update']);
+        Route::delete('handover_requests/{handover}', [WasteHandoverController::class, 'destroy']);
+
+        // Waste Handover Requests — zone peers / collectors
+        Route::get('handover_requests_available', [WasteHandoverController::class, 'availableInZone']);
+        Route::get('handover_requests/accepted_jobs', [WasteHandoverController::class, 'acceptedJobs']);
+        Route::get('handover_requests/drivers/{driverSlug}/fleets', [WasteHandoverController::class, 'fleetsForDriver']);
+        Route::post('handover_requests/{handover}/accept', [WasteHandoverController::class, 'accept']);
+        Route::post('handover_requests/{handover}/decline', [WasteHandoverController::class, 'decline']);
+
+        // Shared
+        Route::get('handover_requests/{handover}', [WasteHandoverController::class, 'show']);
+        Route::get('handover_requests/{handover}/receipt', [WasteHandoverController::class, 'receipt']);
+        Route::post('handover_requests/{handover}/confirm_payment', [WasteHandoverController::class, 'confirmPayment']);
 
         // Team RBAC (provider only)
         Route::get("permissions", [RoleController::class, "permissions"]);

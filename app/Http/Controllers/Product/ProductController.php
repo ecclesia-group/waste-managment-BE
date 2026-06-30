@@ -5,23 +5,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ProductCreationRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
 use App\Models\Product;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    protected static function resolveProviderScopeSlug(object $user): ?string
-    {
-        if (! isset($user->provider_slug)) {
-            return null;
-        }
-
-        return (bool) ($user->is_main ?? true)
-            ? (string) $user->provider_slug
-            : (string) ($user->parent_slug ?: $user->provider_slug);
-    }
-
-    // Lists all products
     public function listProducts(Request $request)
     {
         $category = $request->query('category');
@@ -30,11 +18,10 @@ class ProductController extends Controller
 
         $query = Product::query();
         if (isset($user->client_slug)) {
-            // Clients can only see products owned by their assigned provider.
-            $query->where('provider_slug', $user->provider_slug);
+            $ownerSlug = self::ownerSlugForProviderRecord($user->provider_slug);
+            $query->forProviderOrganisation((string) $ownerSlug);
         } elseif (isset($user->provider_slug)) {
-            // Providers and provider team members can only see their own products.
-            $query->where('provider_slug', static::resolveProviderScopeSlug($user));
+            $query->forProviderOrganisation((string) self::ownerProviderSlug($user));
         }
 
         if (! empty($category)) {
@@ -42,7 +29,7 @@ class ProductController extends Controller
         }
 
         if (! empty($q)) {
-            $query->where('name', 'like', '%' . $q . '%');
+            $query->where('name', 'like', '%'.$q.'%');
         }
 
         return $this->paginatedApiResponse(
@@ -51,11 +38,10 @@ class ProductController extends Controller
         );
     }
 
-    // Gets details of a single product
     public function getProductDetails(Request $request, Product $product)
     {
         $user = $request->user();
-        if (isset($user->client_slug) && (string) $product->provider_slug !== (string) $user->provider_slug) {
+        if (isset($user->client_slug) && ! self::providerSlugsShareOrganisation($product->provider_slug, $user->provider_slug)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -65,7 +51,7 @@ class ProductController extends Controller
             );
         }
 
-        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) static::resolveProviderScopeSlug($user)) {
+        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -84,12 +70,11 @@ class ProductController extends Controller
         );
     }
 
-    // create product
     public function createProduct(ProductCreationRequest $request)
     {
         $data = $request->validated();
-        $providerSlug = static::resolveProviderScopeSlug($request->user());
-        if (! $providerSlug) {
+        $actorSlug = self::actorProviderSlug($request->user());
+        if (! $actorSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -100,12 +85,11 @@ class ProductController extends Controller
         }
 
         $data['product_slug'] = Str::uuid();
-        $data['provider_slug'] = $providerSlug;
+        $data['provider_slug'] = $actorSlug;
 
         $image_fields = ['images'];
         $data = static::processImage($image_fields, $data);
 
-        // Calculate discount if discounted_price is provided
         if (isset($data['discounted_price']) && $data['discounted_price'] > 0) {
             $data['discount_percentage'] = (($data['original_price'] - $data['discounted_price']) / $data['original_price']) * 100;
         }
@@ -123,8 +107,8 @@ class ProductController extends Controller
 
     public function updateProduct(ProductUpdateRequest $request, Product $product)
     {
-        $providerSlug = static::resolveProviderScopeSlug($request->user());
-        if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
+        $user = $request->user();
+        if (! isset($user->provider_slug) || ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -139,6 +123,7 @@ class ProductController extends Controller
 
         $product->update($data);
         $product = $product->fresh();
+
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -150,8 +135,8 @@ class ProductController extends Controller
 
     public function deleteProduct(Product $product)
     {
-        $providerSlug = static::resolveProviderScopeSlug(request()->user());
-        if (! $providerSlug || (string) $product->provider_slug !== (string) $providerSlug) {
+        $user = request()->user();
+        if (! isset($user->provider_slug) || ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -161,7 +146,6 @@ class ProductController extends Controller
             );
         }
 
-        // Delete associated images
         if ($product->images) {
             foreach ($product->images as $image) {
                 static::deleteImage($image);

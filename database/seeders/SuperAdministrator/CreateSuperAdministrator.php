@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders\SuperAdministrator;
 
 use App\Models\Admin;

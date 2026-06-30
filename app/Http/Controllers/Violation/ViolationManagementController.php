@@ -17,10 +17,11 @@ class ViolationManagementController extends Controller
     public function listClientViolations()
     {
         $user = request()->user();
+        $ownerSlug = self::ownerProviderSlug($user);
 
         return $this->paginatedApiResponse(
             Violation::query()
-                ->where('provider_slug', $user->provider_slug)
+                ->forProviderOrganisation((string) $ownerSlug)
                 ->with(['client', 'provider'])
                 ->latest()
                 ->paginate($this->perPage(request())),
@@ -35,7 +36,7 @@ class ViolationManagementController extends Controller
         return $this->paginatedApiResponse(
             Violation::query()
                 ->where('client_slug', $user->client_slug)
-                ->where('provider_slug', $user->provider_slug)
+                ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($user->provider_slug))
                 ->with('client')
                 ->latest()
                 ->paginate($this->perPage(request())),
@@ -62,7 +63,7 @@ class ViolationManagementController extends Controller
                 );
             }
 
-            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) $user->provider_slug) {
+            if (isset($user->provider_slug) && ! self::providerSlugsShareOrganisation($violation->provider_slug, $user->provider_slug)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -72,8 +73,7 @@ class ViolationManagementController extends Controller
                 );
             }
         } else {
-            // Provider can view only violations created under their provider_slug.
-            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) $user->provider_slug) {
+            if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($violation->provider_slug, $user)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -150,7 +150,7 @@ class ViolationManagementController extends Controller
         }
 
         $client = Client::where('client_slug', $clientSlug)
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) self::ownerProviderSlug($user))
             ->first();
 
         if (! $client) {
@@ -166,7 +166,7 @@ class ViolationManagementController extends Controller
         $code                  = Str::random(5);
         $data['code']          = $code;
         $data['client_slug']   = $client->client_slug;
-        $data['provider_slug'] = $user->provider_slug;
+        $data['provider_slug'] = self::actorProviderSlug($user);
 
         $image_fields = ['images'];
         // $video_fields = ['videos'];
@@ -354,7 +354,7 @@ class ViolationManagementController extends Controller
         $user = request()->user();
 
         // Provider-scoped update: only allow changing status for violations of this provider.
-        if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) $user->provider_slug) {
+            if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($violation->provider_slug, $user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -382,7 +382,7 @@ class ViolationManagementController extends Controller
     public function providerUpdateViolation(ViolationUpdateRequest $request, Violation $violation)
     {
         $user = request()->user();
-        if ((string) $violation->provider_slug !== (string) ($user->provider_slug ?? '')) {
+        if (! self::recordBelongsToProviderOrganisation($violation->provider_slug, $user)) {
             return self::apiResponse(true, "Action Failed", "Unauthorized to update this violation", self::API_FAIL, []);
         }
 
@@ -396,7 +396,7 @@ class ViolationManagementController extends Controller
     public function providerDeleteViolation(Violation $violation)
     {
         $user = request()->user();
-        if ((string) $violation->provider_slug !== (string) ($user->provider_slug ?? '')) {
+        if (! self::recordBelongsToProviderOrganisation($violation->provider_slug, $user)) {
             return self::apiResponse(true, "Action Failed", "Unauthorized to delete this violation", self::API_FAIL, []);
         }
 

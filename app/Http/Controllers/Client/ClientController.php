@@ -22,7 +22,7 @@ class ClientController extends Controller
         $data                      = $request->validated();
         $data['client_slug']       = Str::uuid();
         $data['password']          = $password;
-        $data['provider_slug']     = $user->provider_slug;
+        $data['provider_slug']     = self::actorProviderSlug($user);
         $data['email_verified_at'] = now();
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
@@ -61,8 +61,9 @@ class ClientController extends Controller
     public function allClients()
     {
         $user = Auth::user();
+        $ownerSlug = self::ownerProviderSlug($user);
         $clients = Client::query()
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->with('bin')
             ->orderByDesc('created_at')
             ->paginate($this->perPage(request()));
@@ -77,7 +78,7 @@ class ClientController extends Controller
         if ($providerUser) {
             $client = Client::query()
                 ->where('client_slug', $client->client_slug)
-                ->where('provider_slug', $providerUser->provider_slug)
+                ->forProviderOrganisation((string) self::ownerProviderSlug($providerUser))
                 ->first();
         } else {
             $client = Client::where('client_slug', $client->client_slug)->first();
@@ -107,11 +108,11 @@ class ClientController extends Controller
         $data           = $request->validated();
 
         $user = Auth::guard('provider')->user();
+        $ownerSlug = self::ownerProviderSlug($user);
 
-        // Tenant isolation: provider can only update their own clients.
         $client = Client::query()
             ->where('client_slug', $data['client_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->first();
 
         if (! $client) {
@@ -144,7 +145,7 @@ class ClientController extends Controller
         $query = Client::query()->where('client_slug', $client->client_slug);
 
         if ($providerUser) {
-            $query->where('provider_slug', $providerUser->provider_slug);
+            $query->forProviderOrganisation((string) self::ownerProviderSlug($providerUser));
         } elseif ($clientUser) {
             $query->where('client_slug', $clientUser->client_slug);
         }
@@ -228,10 +229,11 @@ class ClientController extends Controller
     public function deleteClient(Client $client)
     {
         $user = Auth::guard('provider')->user();
+        $ownerSlug = self::ownerProviderSlug($user);
 
         $deleted = Client::query()
             ->where('client_slug', $client->client_slug)
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) $ownerSlug)
             ->delete();
 
         if ($deleted === 0) {
@@ -275,14 +277,17 @@ class ClientController extends Controller
                 );
             }
 
+            $ownerSlug = self::ownerProviderSlug($providerUser);
+
             $bin = Bin::query()
                 ->where('bin_code', $qrData['bin_code'])
-                ->where('provider_slug', $providerUser->provider_slug)
+                ->forProviderOrganisation((string) $ownerSlug)
                 ->where('status', 'active')
                 ->first();
 
-            $client = Client::where('client_slug', $qrData['client_slug'])
-                ->where('provider_slug', $providerUser->provider_slug)
+            $client = Client::query()
+                ->where('client_slug', $qrData['client_slug'])
+                ->forProviderOrganisation((string) $ownerSlug)
                 ->first();
 
             if (! $client) {

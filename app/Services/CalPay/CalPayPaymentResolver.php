@@ -9,6 +9,7 @@ use App\Models\Pickup;
 use App\Models\Purchase;
 use App\Models\WasteHandoverRequest;
 use App\Models\WeighbridgeRecord;
+use App\Support\ProviderOrganisation;
 use Illuminate\Support\Str;
 
 class CalPayPaymentResolver
@@ -180,10 +181,7 @@ class CalPayPaymentResolver
         $entry = WeighbridgeRecord::query()->where('code', $recordCode)->firstOrFail();
 
         if ($user && isset($user->provider_slug)) {
-            $slug = $user->is_main ?? true
-                ? $user->provider_slug
-                : ($user->parent_slug ?: $user->provider_slug);
-            if ((string) $entry->provider_slug !== (string) $slug) {
+            if (! ProviderOrganisation::recordBelongsToOrganisation($entry->provider_slug, $user)) {
                 throw new \RuntimeException('Unauthorized weighbridge record');
             }
         }

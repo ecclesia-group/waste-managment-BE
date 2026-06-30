@@ -71,7 +71,7 @@ class PurchaseController extends Controller
             // Validate products and calculate totals
             foreach ($data['items'] as $item) {
                 $product = Product::where('product_slug', $item['product_slug'])
-                    ->where('provider_slug', $user->provider_slug)
+                    ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($user->provider_slug))
                     ->first();
 
                 if (!$product) {

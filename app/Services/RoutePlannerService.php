@@ -10,6 +10,7 @@ use App\Models\Group;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\RoutePlanner;
+use App\Support\ProviderOrganisation;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -30,18 +31,20 @@ class RoutePlannerService
     /** @return array{pickup_types: list<string>, normal: array<string, mixed>, bulk_waste_request: array<string, mixed>} */
     public function planOptionsForProvider(string $providerSlug): array
     {
+        $ownerSlug = ProviderOrganisation::ownerSlug($providerSlug) ?? $providerSlug;
+
         $groups = Group::query()
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->where('status', 'active')
             ->with(['clients' => fn ($query) => $query
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation($ownerSlug)
                 ->where('status', 'active')])
             ->orderBy('name')
             ->get();
 
         $bulkRequests = BulkWasteRequest::query()
             ->with('client')
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->where('status', 'approved')
             ->orderByDesc('created_at')
             ->get();
@@ -373,16 +376,18 @@ class RoutePlannerService
         Collection $bulkCodes,
         array $allowedBulkStatuses = ['approved']
     ): array {
+        $ownerSlug = ProviderOrganisation::ownerSlug($providerSlug) ?? $providerSlug;
+
         if ($pickupType === self::PICKUP_TYPE_BULK) {
             $bulkByClient = BulkWasteRequest::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation($ownerSlug)
                 ->whereIn('status', $allowedBulkStatuses)
                 ->whereIn('request_code', $bulkCodes->all())
                 ->get()
                 ->keyBy('client_slug');
 
             $clients = Client::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation($ownerSlug)
                 ->where('status', 'active')
                 ->whereIn('client_slug', $bulkByClient->keys()->all())
                 ->get();
@@ -391,7 +396,7 @@ class RoutePlannerService
         }
 
         $clients = Client::query()
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->where('status', 'active')
             ->whereIn('group_slug', $groupSlugs->all())
             ->get();
@@ -585,16 +590,18 @@ class RoutePlannerService
         Collection $bulkCodes,
         array $allowedBulkStatuses = ['approved']
     ): bool {
+        $ownerSlug = ProviderOrganisation::ownerSlug($providerSlug) ?? $providerSlug;
+
         if (! Driver::query()
             ->where('driver_slug', $driverSlug)
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->exists()) {
             return false;
         }
 
         if (! Fleet::query()
             ->where('fleet_slug', $fleetSlug)
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->exists()) {
             return false;
         }
@@ -602,14 +609,14 @@ class RoutePlannerService
         if ($pickupType === self::PICKUP_TYPE_NORMAL) {
             $count = Group::query()
                 ->whereIn('group_slug', $groupSlugs->all())
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation($ownerSlug)
                 ->count();
 
             return $count === $groupSlugs->count();
         }
 
         $bulkCount = BulkWasteRequest::query()
-            ->where('provider_slug', $providerSlug)
+            ->forProviderOrganisation($ownerSlug)
             ->whereIn('status', $allowedBulkStatuses)
             ->whereIn('request_code', $bulkCodes->all())
             ->count();

@@ -68,7 +68,7 @@ class CartController extends Controller
         $data = $validator->validated();
         $product = Product::query()
             ->where('product_slug', $data['product_slug'])
-            ->where('provider_slug', $user->provider_slug)
+            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($user->provider_slug))
             ->first();
 
         if (! $product) {
@@ -247,7 +247,7 @@ class CartController extends Controller
 
             foreach ($cart->items as $cartItem) {
                 $product = $cartItem->product;
-                if (! $product || (string) $product->provider_slug !== (string) $user->provider_slug) {
+                if (! $product || ! self::providerSlugsShareOrganisation($product->provider_slug, $user->provider_slug)) {
                     DB::rollBack();
                     return self::apiResponse(
                         in_error: true,

@@ -1,8 +1,11 @@
 <?php
 namespace App\Models;
 
+use App\Traits\ScopesProviderOrganisation;
+
 class Client extends Actor
 {
+    use ScopesProviderOrganisation;
     protected $with = [
         'group',
         'bin',

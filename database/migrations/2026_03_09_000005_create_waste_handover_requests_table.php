@@ -11,9 +11,7 @@ return new class extends Migration
         Schema::create('waste_handover_requests', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            /** Team member / actor who submitted (user provider_slug). */
-            $table->string('submitted_by_slug');
-            /** Main provider account the submitter belongs to (parent_slug or provider_slug when is_main). */
+            /** Provider (main or team member) who created the request. */
             $table->string('requester_provider_slug');
             /** Provider who accepts and collects the waste. */
             $table->string('target_provider_slug')->nullable();
@@ -34,7 +32,6 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['requester_provider_slug', 'status']);
-            $table->index(['submitted_by_slug', 'status']);
             $table->index(['target_provider_slug', 'status']);
         });
     }

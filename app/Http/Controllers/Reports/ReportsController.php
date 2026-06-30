@@ -21,7 +21,7 @@ class ReportsController extends Controller
     public function providerReports(Request $request)
     {
         $user = $request->user();
-        $providerSlug = Helpers::resolveProviderScopeSlug($user);
+        $providerSlug = self::ownerProviderSlug($user);
 
         // Clients grouped by status for provider
         $activeStatuses = ['activate', 'active'];
@@ -30,26 +30,26 @@ class ReportsController extends Controller
 
         $customersOverview = [
             'active' => Client::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->whereIn('status', $activeStatuses)
                 ->count(),
             'inactive' => Client::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->whereIn('status', $inactiveStatuses)
                 ->count(),
             'suspended' => Client::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->whereIn('status', $suspendedStatuses)
                 ->count(),
         ];
 
         $fleetOverview = [
             'active' => Fleet::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('status', 'active')
                 ->count(),
             'inactive' => Fleet::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('status', '!=', 'active')
                 ->count(),
         ];
@@ -58,31 +58,37 @@ class ReportsController extends Controller
         $utilization = [
             'scanned_bins' => Pickup::query()
                 ->whereNotNull('route_planner_id')
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('scan_status', 'scanned')
                 ->count(),
             'unscanned_bins' => Pickup::query()
                 ->whereNotNull('route_planner_id')
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
                 ->count(),
             'handover_requests_total' => WasteHandoverRequest::query()
                 ->where(function ($q) use ($providerSlug) {
-                    $q->where('requester_provider_slug', $providerSlug)
-                        ->orWhere('target_provider_slug', $providerSlug);
+                    $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                        ->orWhere(function ($sub) use ($providerSlug) {
+                            $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                        });
                 })
                 ->count(),
             'handover_requests_completed' => WasteHandoverRequest::query()
                 ->where(function ($q) use ($providerSlug) {
-                    $q->where('requester_provider_slug', $providerSlug)
-                        ->orWhere('target_provider_slug', $providerSlug);
+                    $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                        ->orWhere(function ($sub) use ($providerSlug) {
+                            $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                        });
                 })
                 ->where('status', 'completed')
                 ->count(),
             'handover_requests_accepted' => WasteHandoverRequest::query()
                 ->where(function ($q) use ($providerSlug) {
-                    $q->where('requester_provider_slug', $providerSlug)
-                        ->orWhere('target_provider_slug', $providerSlug);
+                    $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                        ->orWhere(function ($sub) use ($providerSlug) {
+                            $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                        });
                 })
                 ->where('status', 'accepted')
                 ->count(),
@@ -153,11 +159,11 @@ class ReportsController extends Controller
 
         $paymentAnalytics = [
             'payments_success_count' => Payment::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('status', 'success')
                 ->count(),
             'payments_success_total_amount' => Payment::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('status', 'success')
                 ->sum('amount'),
             'paid_purchases_count' => (int) ($paidPurchasesCountAndTotal?->paid_purchases_count ?? 0),
@@ -169,10 +175,10 @@ class ReportsController extends Controller
         // Violation overview
         $violationOverview = [
             'total_violations' => Violation::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->count(),
             'by_type' => Violation::query()
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->select('type', DB::raw('count(*) as total'))
                 ->groupBy('type')
                 ->get()
@@ -398,26 +404,26 @@ class ReportsController extends Controller
 
             $customersOverview = [
                 'active' => Client::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->whereIn('status', $activeStatuses)
                     ->count(),
                 'inactive' => Client::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->whereIn('status', $inactiveStatuses)
                     ->count(),
                 'suspended' => Client::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->whereIn('status', $suspendedStatuses)
                     ->count(),
             ];
 
             $fleetOverview = [
                 'active' => Fleet::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('status', 'active')
                     ->count(),
                 'inactive' => Fleet::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('status', '!=', 'active')
                     ->count(),
             ];
@@ -425,31 +431,37 @@ class ReportsController extends Controller
             $utilization = [
                 'scanned_bins' => Pickup::query()
                     ->whereNotNull('route_planner_id')
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('scan_status', 'scanned')
                     ->count(),
                 'unscanned_bins' => Pickup::query()
                     ->whereNotNull('route_planner_id')
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
                     ->count(),
                 'handover_requests_total' => WasteHandoverRequest::query()
                     ->where(function ($q) use ($providerSlug) {
-                        $q->where('requester_provider_slug', $providerSlug)
-                            ->orWhere('target_provider_slug', $providerSlug);
+                        $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                            ->orWhere(function ($sub) use ($providerSlug) {
+                                $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                            });
                     })
                     ->count(),
                 'handover_requests_accepted' => WasteHandoverRequest::query()
                     ->where(function ($q) use ($providerSlug) {
-                        $q->where('requester_provider_slug', $providerSlug)
-                            ->orWhere('target_provider_slug', $providerSlug);
+                        $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                            ->orWhere(function ($sub) use ($providerSlug) {
+                                $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                            });
                     })
                     ->where('status', 'accepted')
                     ->count(),
                 'handover_requests_completed' => WasteHandoverRequest::query()
                     ->where(function ($q) use ($providerSlug) {
-                        $q->where('requester_provider_slug', $providerSlug)
-                            ->orWhere('target_provider_slug', $providerSlug);
+                        $q->forProviderOrganisation((string) $providerSlug, 'requester_provider_slug')
+                            ->orWhere(function ($sub) use ($providerSlug) {
+                                $sub->forProviderOrganisation((string) $providerSlug, 'target_provider_slug');
+                            });
                     })
                     ->where('status', 'completed')
                     ->count(),
@@ -462,7 +474,7 @@ class ReportsController extends Controller
 
             $scannedAssignments = Pickup::query()
                 ->whereNotNull('route_planner_id')
-                ->where('provider_slug', $providerSlug)
+                ->forProviderOrganisation((string) $providerSlug)
                 ->where('scan_status', 'scanned')
                 ->whereNotNull('scanned_at')
                 ->get(['created_at', 'scanned_at', 'group_slug']);
@@ -492,21 +504,21 @@ class ReportsController extends Controller
 
             $paymentAnalytics = [
                 'payments_success_total_amount' => Payment::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('status', 'success')
                     ->sum('amount'),
                 'payments_success_count' => Payment::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('status', 'success')
                     ->count(),
             ];
 
             $violationOverview = [
                 'total_violations' => Violation::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->count(),
                 'by_type' => Violation::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->select('type', DB::raw('count(*) as total'))
                     ->groupBy('type')
                     ->get()
@@ -515,14 +527,14 @@ class ReportsController extends Controller
 
             $overallPerformance = [
                 'total_customers_served' => Client::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->whereIn('status', ['activate', 'active'])
                     ->count(),
                 'total_waste_collected_amount' => (float) WeighbridgeRecord::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->sum('amount'),
                 'revenue_generated_amount' => (float) Payment::query()
-                    ->where('provider_slug', $providerSlug)
+                    ->forProviderOrganisation((string) $providerSlug)
                     ->where('status', 'success')
                     ->sum('amount'),
                 'outstanding_revenue_amount' => (float) Purchase::query()

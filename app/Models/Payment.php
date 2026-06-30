@@ -1,12 +1,13 @@
 <?php
 namespace App\Models;
 
+use App\Traits\ScopesProviderOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
 {
-    use SoftDeletes;
+    use ScopesProviderOrganisation, SoftDeletes;
 
     public const PAYMENT_TYPE_REGISTRATION_FEE = 'registration_fee';
     public const PAYMENT_TYPE_BULK_WASTE = 'bulk_waste_request';
