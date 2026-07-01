@@ -126,4 +126,9 @@ class Provider extends Actor
     {
         return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
     }
+
+    public function fees()
+    {
+        return $this->hasMany(ProviderFee::class, 'provider_slug', 'provider_slug');
+    }
 }

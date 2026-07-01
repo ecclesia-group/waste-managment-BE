@@ -31,6 +31,7 @@ use App\Http\Controllers\Pickup\PickupController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
+use App\Http\Controllers\Provider\ProviderFeeController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
 use App\Http\Controllers\Purchase\PurchaseController;
 use App\Http\Controllers\Reports\ReportsController;
@@ -73,8 +74,16 @@ Route::prefix("client")->group(function () {
 
     Route::middleware(["auth:client"])->group(function () {
         Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
-        Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
+
+        Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
+        Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
+        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
+        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
+    });
+
+    Route::middleware(["auth:client", "client.registration_paid"])->group(function () {
+        Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
 
         // Bulk Waste Request Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
@@ -83,11 +92,6 @@ Route::prefix("client")->group(function () {
         Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
         Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
         Route::post('bulk_waste_requests/{requestCode}/pay', [PickupController::class, 'payBulkWasteRequest']);
-
-        Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
-        Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
-        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
-        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
 
         // Complaint Management
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
@@ -169,6 +173,12 @@ Route::prefix("provider")->group(function () {
         Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
         Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
         Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
+
+        // Provider fee catalogue (registration, etc.)
+        Route::get('fees', [ProviderFeeController::class, 'index']);
+        Route::post('fees', [ProviderFeeController::class, 'store']);
+        Route::put('fees/{fee}', [ProviderFeeController::class, 'update']);
+        Route::delete('fees/{fee}', [ProviderFeeController::class, 'destroy']);
 
         // Clients Management
         Route::post("register_client", [ClientController::class, "register"]);

@@ -313,6 +313,14 @@ trait Helpers
     }
 
     /**
+     * Logged-in provider context: actor slug, parent slug, is_main, and org owner slug.
+     */
+    protected static function providerActorContext(object $user): array
+    {
+        return ProviderOrganisation::actorContext($user);
+    }
+
+    /**
      * Main provider organisation slug (parent when team member, own slug when is_main).
      * Use for org-wide listings, zones, fleets, and shared resources.
      */

@@ -10,13 +10,12 @@ return new class extends Migration
     {
         Schema::create('bins', function (Blueprint $table) {
             $table->id();
-            $table->string('bin_slug')->unique();
             $table->string('bin_code')->unique();
             $table->string('client_slug');
             $table->string('provider_slug');
             $table->string('product_slug')->nullable();
             $table->string('source')->default('registration'); // registration|purchase|manual
-            $table->string('status')->default('active');
+            $table->string('status')->default('inactive');
             $table->timestamps();
             $table->softDeletes();
 

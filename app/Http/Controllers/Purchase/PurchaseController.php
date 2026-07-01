@@ -3,15 +3,14 @@ namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseCreationRequest;
-use App\Models\Bin;
 use App\Models\Client;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Services\BinService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PurchaseController extends Controller
 {
@@ -215,7 +214,7 @@ class PurchaseController extends Controller
             ]);
 
             $purchase->save();
-            $this->createBinsForPaidPurchase($purchase);
+            BinService::createBinsForPaidPurchase($purchase);
 
             // Generate QR code for the bin if this is a bin purchase
             // $client = Client::where('client_slug', $user->client_slug)->first();
@@ -304,63 +303,24 @@ class PurchaseController extends Controller
         );
     }
 
-    // Generate QR code for client bin
     protected static function generateQRCode(string $clientSlug, Client $client): ?string
     {
         try {
-            // QR code data containing client information
+            $bin = $client->primaryBin();
+
             $qrData = json_encode([
                 'client_slug' => $clientSlug,
                 'name' => $client->first_name . ' ' . ($client->last_name ?? ''),
                 'phone' => $client->phone_number,
                 'email' => $client->email,
                 'location' => $client->gps_address,
-                'bin_code' => $client->bin_code,
+                'bin_code' => $bin?->bin_code,
             ]);
 
-            // Generate QR code image using Helpers trait method
-            $qrCodeUrl = static::generateQRCodeImage($qrData, $clientSlug);
-
-            return $qrCodeUrl;
+            return static::generateQRCodeImage($qrData, $clientSlug);
         } catch (\Exception $e) {
             logger()->error('Failed to generate QR code', ['error' => $e->getMessage()]);
             return null;
         }
     }
-
-    private function createBinsForPaidPurchase(Purchase $purchase): void
-    {
-        $purchase->loadMissing('items');
-        $client = Client::query()->where('client_slug', $purchase->client_slug)->first();
-
-        if (! $client) {
-            return;
-        }
-
-        foreach ($purchase->items as $item) {
-            $product = Product::query()->where('product_slug', $item->product_slug)->first();
-
-            for ($i = 0; $i < (int) $item->quantity; $i++) {
-                Bin::query()->create([
-                    'bin_slug' => (string) Str::uuid(),
-                    'bin_code' => $this->generateUniqueBinCode(),
-                    'client_slug' => $client->client_slug,
-                    'provider_slug' => $product?->provider_slug ?? $client->provider_slug,
-                    'product_slug' => $item->product_slug,
-                    'source' => 'purchase',
-                    'status' => 'active',
-                ]);
-            }
-        }
-    }
-
-    private function generateUniqueBinCode(): string
-    {
-        do {
-            $code = 'BIN-' . Str::upper(Str::random(8));
-        } while (Bin::query()->where('bin_code', $code)->exists());
-
-        return $code;
-    }
-
 }

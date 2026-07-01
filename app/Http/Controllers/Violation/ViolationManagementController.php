@@ -8,6 +8,7 @@ use App\Models\Bin;
 use App\Models\Notification;
 use App\Models\Client;
 use App\Models\Violation;
+use App\Services\BinService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -220,26 +221,20 @@ class ViolationManagementController extends Controller
 
     protected function regenerateClientBinQrAndCode(Client $client): void
     {
-        do {
-            $newBinCode = 'BIN-' . Str::upper(Str::random(8));
-        } while (Bin::query()->where('bin_code', $newBinCode)->exists());
+        $oldBin = $client->primaryBin();
 
-        $bin = $client->primaryBin();
-        $binSlug = $bin?->bin_slug ?? (string) Str::uuid();
+        if ($oldBin) {
+            $oldBin->update(['status' => Bin::STATUS_INACTIVE]);
+        }
 
-        Bin::query()->updateOrCreate(
-            ['bin_slug' => $binSlug],
-            [
-                'bin_code' => $newBinCode,
-                'client_slug' => $client->client_slug,
-                'provider_slug' => $client->provider_slug,
-                'product_slug' => $bin?->product_slug,
-                'source' => $bin?->source ?? 'registration',
-                'status' => 'active',
-            ]
-        );
-
-        $client->update(['bin_slug' => $binSlug]);
+        $newBin = Bin::query()->create([
+            'bin_code' => BinService::uniqueBinCode(),
+            'client_slug' => $client->client_slug,
+            'provider_slug' => $client->provider_slug,
+            'product_slug' => $oldBin?->product_slug,
+            'source' => $oldBin?->source ?? Bin::SOURCE_MANUAL,
+            'status' => Bin::STATUS_ACTIVE,
+        ]);
 
         $qrData = json_encode([
             'client_slug' => $client->client_slug,
@@ -247,7 +242,7 @@ class ViolationManagementController extends Controller
             'phone' => $client->phone_number,
             'email' => $client->email,
             'location' => $client->gps_address,
-            'bin_code' => $newBinCode,
+            'bin_code' => $newBin->bin_code,
         ]);
 
         static::generateQRCodeImage($qrData, $client->client_slug);

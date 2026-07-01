@@ -3,112 +3,84 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Bin;
 use App\Models\Client;
-use App\Models\Payment;
+use App\Services\ClientRegistrationCheckoutService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ClientPaymentController extends Controller
 {
     public function createRegistrationPayment(Request $request)
     {
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'string'],
-            'network' => ['nullable', 'string'],
-            'phone_number' => ['nullable', 'string'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'name' => ['nullable', 'string'],
-            'currency' => ['nullable', 'string'],
-            'transaction_id' => ['nullable', 'string', 'max:255'],
-            'client_slug' => ['required', 'string', 'exists:clients,client_slug'],
+            'datacompleteurl' => ['required', 'url', 'max:500'],
+            'datacancelurl' => ['required', 'url', 'max:500'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_contact' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $client = Client::query()->where('client_slug', $data['client_slug'])->first();
+        /** @var Client $client */
+        $client = Client::query()
+            ->where('client_slug', $request->user()->client_slug)
+            ->with(['fee', 'bins.product'])
+            ->firstOrFail();
 
-        if (! $client) {
-            return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
-        }
-
-        $expected = round((float) ($client->registration_fee ?? 0), 2);
-        $submitted = round((float) $data['amount'], 2);
-        if (abs($submitted - $expected) > 0.02) {
+        if (! $client->requiresRegistrationPayment()) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
-                reason: 'Amount must match the registration fee set by your provider',
+                reason: 'Registration payment is not required for this account',
                 status_code: self::API_FAIL,
-                data: ['registration_fee' => $expected],
+                data: [
+                    'registration_status' => (bool) $client->registration_status,
+                ]
             );
         }
 
-        $clientSlug = (string) $client->client_slug;
-        $providerSlug = (string) $client->provider_slug;
-
-        $payment = null;
-        DB::transaction(function () use ($data, $client, $clientSlug, $providerSlug, $expected, &$payment) {
-            $payment = Payment::create([
-                'client_slug' => $clientSlug,
-                'provider_slug' => $providerSlug,
-                'payment_type' => Payment::PAYMENT_TYPE_REGISTRATION_FEE,
-                'transaction_id' => $data['transaction_id'] ?? ('CREG-' . Str::upper(Str::random(12))),
-                'payment_method' => $data['payment_method'],
-                'network' => $data['network'] ?? 'unknown',
-                'phone_number' => $data['phone_number'] ?? null,
-                'name' => $data['name'] ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')) ?: 'client',
-                'client_email' => $client->email ?? null,
-                'card_name' => null,
-                'card_number' => null,
-                'card_expiry' => null,
-                'card_cvv' => null,
-                'amount' => $expected,
-                'currency' => $data['currency'] ?? 'GHS',
-                'status' => Payment::STATUS_PENDING,
-                'purchase_id' => null,
-                'pickup_id' => null,
-            ]);
-
-            $client->registration_status = false;
-            $client->save();
-
-            $bin = $client->primaryBin();
-            if ($bin) {
-                $client->update(['bin_slug' => $bin->bin_slug]);
-            }
-        });
-
-        if (! $payment instanceof Payment) {
-            return self::apiResponse(true, 'Action Failed', 'Could not record payment', self::API_FAIL, []);
+        try {
+            $checkout = app(ClientRegistrationCheckoutService::class)->startCheckout($client, $data);
+        } catch (\Throwable $e) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: $e->getMessage(),
+                status_code: self::API_FAIL,
+                data: []
+            );
         }
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Registration fee payment recorded successfully',
+            reason: 'Registration checkout created — redirect user to payment_url',
             status_code: self::API_CREATED,
-            data: [
-                'payment' => $payment->toArray(),
-                'client' => $client->fresh()->load('group', 'bins')->toArray(),
-            ]
+            data: array_merge($checkout, [
+                'client' => $client->fresh(['group', 'bins.product', 'fee'])->toArray(),
+            ])
         );
     }
 
     public function registrationPaymentStatus(Request $request)
     {
-        $client = Client::query()->where('client_slug', $request->user()->client_slug)->first();
+        $client = Client::query()
+            ->where('client_slug', $request->user()->client_slug)
+            ->first();
 
         if (! $client) {
             return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
         }
+
+        $client->syncRegistrationStatusFromPayments();
+        $client->refresh();
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
             reason: 'Registration payment status retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $client->load('group', 'bins')->toArray(),
+            data: array_merge($client->load('group', 'bins.product', 'fee')->toArray(), [
+                'requires_registration_payment' => $client->requiresRegistrationPayment(),
+            ]),
         );
     }
 }

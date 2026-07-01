@@ -6,10 +6,9 @@ use App\Traits\ScopesProviderOrganisation;
 class Client extends Actor
 {
     use ScopesProviderOrganisation;
+
     protected $with = [
         'group',
-        'bin',
-        // 'provider'
     ];
 
     protected $fillable = [
@@ -26,10 +25,10 @@ class Client extends Actor
         'longitude',
         'type',
         'status',
-        'bin_slug',
         'group_slug',
         'registration_fee',
         'registration_status',
+        'fee_id',
         'profile_image',
     ];
 
@@ -53,9 +52,6 @@ class Client extends Actor
         'registration_status' => 'boolean',
     ];
 
-    /**
-     * If a paid registration_fee payment exists, set registration_status true (keeps client row in sync).
-     */
     public function syncRegistrationStatusFromPayments(): void
     {
         $paid = Payment::query()
@@ -70,12 +66,12 @@ class Client extends Actor
         }
     }
 
-    // public function requiresRegistrationPayment(): bool
-    // {
-    //     $fee = (float) ($this->registration_fee ?? 0);
+    public function requiresRegistrationPayment(): bool
+    {
+        $fee = (float) ($this->registration_fee ?? 0);
 
-    //     return $fee > 0 && ! (bool) $this->registration_status;
-    // }
+        return $fee > 0 && ! (bool) $this->registration_status;
+    }
 
     public function complaints()
     {
@@ -102,6 +98,11 @@ class Client extends Actor
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
     }
 
+    public function fee()
+    {
+        return $this->belongsTo(ProviderFee::class, 'fee_id');
+    }
+
     public function getRouteKeyName(): string
     {
         return "client_slug";
@@ -112,27 +113,27 @@ class Client extends Actor
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
-    public function bin()
-    {
-        return $this->belongsTo(Bin::class, 'bin_slug', 'bin_slug');
-    }
-
     public function bins()
     {
         return $this->hasMany(Bin::class, 'client_slug', 'client_slug');
     }
 
+    public function activeBins()
+    {
+        return $this->bins()->where('status', Bin::STATUS_ACTIVE);
+    }
+
+    public function registrationBin(): ?Bin
+    {
+        return $this->bins()
+            ->where('source', Bin::SOURCE_REGISTRATION)
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function primaryBin(): ?Bin
     {
-        if ($this->relationLoaded('bin') && $this->bin) {
-            return $this->bin;
-        }
-
-        if ($this->bin_slug) {
-            return $this->bin()->first();
-        }
-
-        return $this->bins()->where('status', 'active')->orderByDesc('id')->first();
+        return $this->activeBins()->orderByDesc('id')->first();
     }
 
     public function getBinCodeAttribute(): ?string
@@ -147,9 +148,7 @@ class Client extends Actor
 
     public function getBinSizeAttribute(): ?string
     {
-        $bin = $this->primaryBin();
-
-        return $bin?->product?->size;
+        return $this->primaryBin()?->product?->size;
     }
 
     public function getCoordinatesAttribute(): array

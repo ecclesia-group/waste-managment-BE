@@ -23,6 +23,18 @@ class ProviderOrganisation
             : (string) ($user->parent_slug ?: $user->provider_slug);
     }
 
+    public static function actorContext(object $user): array
+    {
+        $isMain = (bool) ($user->is_main ?? true);
+
+        return [
+            'provider_slug' => self::actorSlug($user),
+            'parent_slug' => $isMain ? null : ($user->parent_slug ?? null),
+            'is_main' => $isMain,
+            'owner_slug' => self::ownerSlugForUser($user),
+        ];
+    }
+
     public static function ownerSlug(?string $providerSlug): ?string
     {
         if ($providerSlug === null || $providerSlug === '') {

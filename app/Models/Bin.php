@@ -10,8 +10,17 @@ class Bin extends Model
 {
     use ScopesProviderOrganisation, SoftDeletes;
 
+    public const SOURCE_REGISTRATION = 'registration';
+
+    public const SOURCE_PURCHASE = 'purchase';
+
+    public const SOURCE_MANUAL = 'manual';
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_INACTIVE = 'inactive';
+
     protected $fillable = [
-        'bin_slug',
         'bin_code',
         'client_slug',
         'provider_slug',
@@ -43,6 +52,6 @@ class Bin extends Model
 
     public function getRouteKeyName(): string
     {
-        return 'bin_slug';
+        return 'bin_code';
     }
 }

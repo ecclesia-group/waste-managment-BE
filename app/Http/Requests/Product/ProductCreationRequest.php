@@ -22,7 +22,7 @@ class ProductCreationRequest extends FormRequest
     {
         return [
             "name"              => ["required", "string"],
-            "category"         => ["nullable", "string", "max:255"],
+            "category"         => ["nullable", "string", "max:255", "in:bin,waste_item"],
             "color"             => ["nullable", "string"],
             "size"              => ["nullable", "string"],
             "images"            => ["nullable", "array"],

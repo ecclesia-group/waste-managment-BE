@@ -98,7 +98,7 @@ class GroupController extends Controller
         $ownerSlug = self::ownerProviderSlug($user);
         $group = Group::query()
             ->where('group_slug', $data['group_slug'])
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->where('provider_slug', $ownerSlug)
             ->first();
 
         if (! $group) {

@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Product extends Model
 {
     use ScopesProviderOrganisation;
+
+    public const CATEGORY_BIN = 'bin';
+
+    public const CATEGORY_WASTE_ITEM = 'waste_item';
     protected $with = [
         'provider',
     ];

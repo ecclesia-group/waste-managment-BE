@@ -7,36 +7,72 @@ use App\Http\Requests\Client\StatusRequest;
 use App\Http\Requests\Client\UpdateClientProfileRequest;
 use App\Models\Bin;
 use App\Models\Client;
+use App\Models\Product;
+use App\Models\ProviderFee;
+use App\Services\BinService;
 use App\Services\ClientLocationGeocodingService;
 use App\Traits\PaginatesApiResults;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ClientController extends Controller
 {
     use PaginatesApiResults;
+
     public function register(RegisterRequest $request)
     {
-        $user                      = Auth::user();
-        $password                  = Str::random(8);
-        $data                      = static::formatPhoneNumbersInData($request->validated());
-        $data['client_slug']       = Str::uuid();
-        $data['password']          = $password;
-        $data['provider_slug']     = self::actorProviderSlug($user);
+        $user = Auth::user();
+        $password = Str::random(8);
+        $data = static::formatPhoneNumbersInData($request->validated());
+        $providerSlug = (string) self::actorProviderSlug($user);
+
+        $fee = ProviderFee::query()
+            ->where('id', $data['fee_id'])
+            ->forProviderOrganisation($providerSlug)
+            ->firstOrFail();
+
+        $product = Product::query()
+            ->where('product_slug', $data['product_slug'])
+            ->where('category', Product::CATEGORY_BIN)
+            ->forProviderOrganisation($providerSlug)
+            ->firstOrFail();
+
+        if ((int) $product->quantity < 1) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Selected bin product is out of stock',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        unset($data['product_slug']);
+
+        $data['client_slug'] = Str::uuid();
+        $data['password'] = $password;
+        $data['provider_slug'] = $providerSlug;
         $data['email_verified_at'] = now();
+        $data['registration_fee'] = round((float) $fee->amount, 2);
+        $data['registration_status'] = $data['registration_fee'] <= 0;
 
-        // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
-        $image_fields = [
-            'profile_image',
-        ];
-
-        $data     = static::processImage($image_fields, $data);
-        $data['registration_status'] = ((float) ($data['registration_fee'] ?? 0)) <= 0;
-
+        $image_fields = ['profile_image'];
+        $data = static::processImage($image_fields, $data);
         $data = $this->applyGeocodedCoordinates($data);
 
-        $client = Client::create(collect($data)->except('registration_status')->all());
-        $this->ensureRegistrationBin($client);
+        $client = DB::transaction(function () use ($data, $product) {
+            $client = Client::create($data);
+
+            BinService::createRegistrationBin(
+                $client,
+                $product,
+                active: (bool) $data['registration_status']
+            );
+            $product->decrement('quantity');
+
+            return $client->fresh(['fee', 'bins.product']);
+        });
 
         self::sendEmail(
             $client->email,
@@ -54,7 +90,9 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client registered successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('bin')->toArray()
+            data: array_merge($client->toArray(), [
+                'requires_registration_payment' => $client->requiresRegistrationPayment(),
+            ])
         );
     }
 
@@ -64,7 +102,7 @@ class ClientController extends Controller
         $ownerSlug = self::ownerProviderSlug($user);
         $clients = Client::query()
             ->forProviderOrganisation((string) $ownerSlug)
-            ->with('bin')
+            ->with(['bins.product'])
             ->orderByDesc('created_at')
             ->paginate($this->perPage(request()));
 
@@ -99,13 +137,13 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('bin')->toArray()
+            data: $client->load(['bins.product'])->toArray()
         );
     }
 
     public function updateStatus(StatusRequest $request)
     {
-        $data           = $request->validated();
+        $data = $request->validated();
 
         $user = Auth::guard('provider')->user();
         $ownerSlug = self::ownerProviderSlug($user);
@@ -133,7 +171,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load('bin')->toArray()
+            data: $client->load(['bins.product'])->toArray()
         );
     }
 
@@ -162,11 +200,8 @@ class ClientController extends Controller
             );
         }
 
-        $data         = static::formatPhoneNumbersInData($request->validated());
-        $image_fields = [
-            'profile_image',
-        ];
-
+        $data = static::formatPhoneNumbersInData($request->validated());
+        $image_fields = ['profile_image'];
         $data = static::processImage($image_fields, $data);
 
         if ($clientUser) {
@@ -189,20 +224,16 @@ class ClientController extends Controller
         }
 
         $client->update($data);
-        $this->ensureRegistrationBin($client);
 
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->fresh()->load('bin')->toArray()
+            data: $client->fresh()->load(['bins.product'])->toArray()
         );
     }
 
-    /**
-     * Fill latitude/longitude from gps_address when missing (Google Maps, then Ghana Post GPS).
-     */
     private function applyGeocodedCoordinates(array $data, bool $force = false): array
     {
         if (! $force && ! empty($data['latitude']) && ! empty($data['longitude'])) {
@@ -255,7 +286,6 @@ class ClientController extends Controller
         );
     }
 
-    // Scan QR code to get client details (for providers)
     public function scanQRCode()
     {
         $providerUser = request()->user();
@@ -282,7 +312,7 @@ class ClientController extends Controller
             $bin = Bin::query()
                 ->where('bin_code', $qrData['bin_code'])
                 ->forProviderOrganisation((string) $ownerSlug)
-                ->where('status', 'active')
+                ->where('status', Bin::STATUS_ACTIVE)
                 ->first();
 
             $client = Client::query()
@@ -290,23 +320,12 @@ class ClientController extends Controller
                 ->forProviderOrganisation((string) $ownerSlug)
                 ->first();
 
-            if (! $client) {
+            if (! $client || ! $bin || $bin->client_slug !== $client->client_slug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
-                    reason: "Client not found",
+                    reason: "Client or bin not found",
                     status_code: self::API_NOT_FOUND,
-                    data: []
-                );
-            }
-
-            // Prevent old/damaged QR codes from working after regeneration.
-            if (! $bin && (string) $client->bin_code !== (string) ($qrData['bin_code'] ?? '')) {
-                return self::apiResponse(
-                    in_error: true,
-                    message: "Action Failed",
-                    reason: "QR code does not match the current bin_code",
-                    status_code: self::API_FAIL,
                     data: []
                 );
             }
@@ -323,9 +342,9 @@ class ClientController extends Controller
                     'email'           => $client->email,
                     'gps_address'     => $client->gps_address,
                     'pickup_location' => $client->pickup_location,
-                    'bin_code'        => $client->bin_code,
-                    'bin_size'        => $client->bin_size,
-                    'bin'             => $bin?->toArray(),
+                    'bin_code'        => $bin->bin_code,
+                    'bin_size'        => $bin->product?->size,
+                    'bin'             => $bin->load('product')->toArray(),
                 ]
             );
         } catch (\Exception $e) {
@@ -337,39 +356,5 @@ class ClientController extends Controller
                 data: []
             );
         }
-    }
-
-    private function ensureRegistrationBin(Client $client): void
-    {
-        $existing = Bin::query()
-            ->where('client_slug', $client->client_slug)
-            ->where('status', 'active')
-            ->first();
-
-        if ($existing) {
-            if (empty($client->bin_slug)) {
-                $client->update(['bin_slug' => $existing->bin_slug]);
-            }
-
-            return;
-        }
-
-        do {
-            $binCode = 'BIN-' . Str::upper(Str::random(8));
-        } while (Bin::query()->where('bin_code', $binCode)->exists());
-
-        $binSlug = (string) Str::uuid();
-
-        Bin::query()->create([
-            'bin_slug' => $binSlug,
-            'bin_code' => $binCode,
-            'client_slug' => $client->client_slug,
-            'provider_slug' => $client->provider_slug,
-            'product_slug' => null,
-            'source' => 'registration',
-            'status' => 'active',
-        ]);
-
-        $client->update(['bin_slug' => $binSlug]);
     }
 }
