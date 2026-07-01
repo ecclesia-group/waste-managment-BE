@@ -202,13 +202,13 @@ class TeamMemberController extends Controller
 
             Notification::create([
                 'actor' => $context['actor'],
-                'actor_id' => (string) $member->id,
+                'admin_slug' => auth('admin')->user()->admin_slug,
                 'actor_slug' => $member->{$context['slug_column']},
                 'title' => 'Account suspended',
                 'message' => trim(
                     'Your account has been suspended.'
-                    . ($member->suspension_reason ? ' Reason: ' . $member->suspension_reason . '.' : '')
-                    . ($member->corrective_action ? ' Corrective action: ' . $member->corrective_action . '.' : '')
+                        . ($member->suspension_reason ? ' Reason: ' . $member->suspension_reason . '.' : '')
+                        . ($member->corrective_action ? ' Corrective action: ' . $member->corrective_action . '.' : '')
                 ),
                 'type' => 'account_suspension',
             ]);
@@ -219,7 +219,7 @@ class TeamMemberController extends Controller
 
             Notification::create([
                 'actor' => $context['actor'],
-                'actor_id' => (string) $member->id,
+                'admin_slug' => auth('admin')->user()->admin_slug,
                 'actor_slug' => $member->{$context['slug_column']},
                 'title' => 'Account reactivated',
                 'message' => 'Your account is active again.',

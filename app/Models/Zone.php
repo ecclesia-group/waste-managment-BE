@@ -49,4 +49,9 @@ class Zone extends Model
     {
         return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
     }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
+    }
 }

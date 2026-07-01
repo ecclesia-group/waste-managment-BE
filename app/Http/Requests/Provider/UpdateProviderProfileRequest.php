@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Requests\Provider;
 
 use App\Models\Provider;
@@ -57,10 +58,10 @@ class UpdateProviderProfileRequest extends FormRequest
 
             'region'                           => 'required|string|max:100',
             'location'                         => 'required|string|max:255',
-            'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
+            'profile_image'                    => 'nullable|starts_with:data:,http://,https://'
 
-            'zone_ids'                       => 'nullable|array',
-            'zone_ids.*'                     => 'required|integer|distinct|exists:zones,id',
+            // 'zone_ids'                       => 'nullable|array',
+            // 'zone_ids.*'                     => 'required|integer|distinct|exists:zones,id',
         ];
     }
 

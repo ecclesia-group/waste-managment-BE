@@ -35,11 +35,12 @@ class ProviderController extends Controller
 
         $zoneIds = is_array($data['zone_ids'] ?? null) ? $data['zone_ids'] : [];
         unset($data['zone_ids']);
-        $zoneSlugs = array_values(array_unique(array_filter($zoneSlugs)));
+        $zoneIds = array_values(array_unique(array_filter($zoneIds ?? [])));
 
         $data['provider_slug'] = Str::uuid();
         $data['password'] = $password;
         $data['email_verified_at'] = now();
+        $data['admin_slug'] = auth('admin')->user()->admin_slug;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -86,7 +87,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider registered successfully",
             status_code: self::API_SUCCESS,
-            data: array_merge($provider->load('zones', 'mmda')->toArray())
+            data: $provider->toArray()
         );
     }
 
@@ -95,7 +96,6 @@ class ProviderController extends Controller
         return $this->paginatedApiResponse(
             Provider::query()
                 ->orderByDesc('created_at')
-                ->with('zones', 'mmda')
                 ->paginate($this->perPage($request)),
             'Providers retrieved successfully'
         );
@@ -105,7 +105,6 @@ class ProviderController extends Controller
     {
         $provider = Provider::query()
             ->where('provider_slug', $provider->provider_slug)
-            ->with('zones', 'mmda')
             ->first();
 
         if (! $provider) {
@@ -140,7 +139,7 @@ class ProviderController extends Controller
 
             Notification::create([
                 'actor' => 'provider',
-                'actor_id' => (string) $provider->id,
+                'admin_slug' => auth('admin')->user()->admin_slug,
                 'actor_slug' => $provider->provider_slug,
                 'title' => 'Account suspended',
                 'message' => trim(
@@ -157,7 +156,7 @@ class ProviderController extends Controller
 
             Notification::create([
                 'actor' => 'provider',
-                'actor_id' => (string) $provider->id,
+                'admin_slug' => auth('admin')->user()->admin_slug,
                 'actor_slug' => $provider->provider_slug,
                 'title' => 'Account reactivated',
                 'message' => 'Your provider account is active again.',
@@ -171,7 +170,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->load('zones', 'mmda')->toArray()
+            data: $provider->toArray()
         );
     }
 
@@ -195,7 +194,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: request()->user()->load('zones', 'mmda')->toArray()
+            data: request()->user()->toArray()
         );
     }
 
@@ -217,6 +216,7 @@ class ProviderController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
+        $data['admin_slug'] = auth('admin')->user()->admin_slug;
         $provider->update($data);
 
         return self::apiResponse(
@@ -224,7 +224,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $provider->fresh()->load('zones', 'mmda')->toArray()
+            data: $provider->fresh()->toArray()
         );
     }
 
@@ -263,7 +263,7 @@ class ProviderController extends Controller
             message: 'Action Successful',
             reason: 'Provider zones reassigned successfully',
             status_code: self::API_SUCCESS,
-            data: $provider->fresh()->load('zones', 'mmda')->toArray()
+            data: $provider->fresh()->toArray()
         );
     }
 
@@ -281,7 +281,7 @@ class ProviderController extends Controller
             message: 'Action Successful',
             reason: 'Provider MMDA reassigned successfully',
             status_code: self::API_SUCCESS,
-            data: $provider->fresh()->load('zones', 'mmda')->toArray()
+            data: $provider->fresh()->toArray()
         );
     }
 }

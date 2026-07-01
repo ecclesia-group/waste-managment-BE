@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Zone\ZoneCreationRequest;
@@ -12,7 +13,6 @@ use App\Models\Zone;
 use App\Services\ZoneAssignmentService;
 use App\Traits\RespondsWithZoneAssignments;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 /** Admin zone CRUD and zone assignment for providers and facilities. */
 class ZoneManagementController extends Controller
@@ -63,6 +63,7 @@ class ZoneManagementController extends Controller
     {
         $data = $request->validated();
         $data['status'] = $data['status'] ?? 'active';
+        $data['admin_slug'] = auth('admin')->user()->admin_slug;
         $zone = Zone::create($data);
 
         return self::apiResponse(
@@ -76,7 +77,9 @@ class ZoneManagementController extends Controller
 
     public function updateZone(ZoneUpdationRequest $request, Zone $zone)
     {
-        $zone->update($request->validated());
+        $data = $request->validated();
+        $data['admin_slug'] = auth('admin')->user()->admin_slug;
+        $zone->update($data);
 
         return self::apiResponse(
             in_error: false,
@@ -92,6 +95,7 @@ class ZoneManagementController extends Controller
         $data = $request->validated();
         $zone = Zone::query()->findOrFail($data['zone_id']);
         $zone->status = $data['status'];
+        $zone->admin_slug = auth('admin')->user()->admin_slug;
         $zone->save();
 
         return self::apiResponse(

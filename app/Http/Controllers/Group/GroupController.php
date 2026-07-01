@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Group;
 
 use App\Http\Controllers\Controller;
@@ -19,7 +20,6 @@ class GroupController extends Controller
         return $this->paginatedApiResponse(
             Group::query()
                 ->forProviderOrganisation((string) $ownerSlug)
-                ->with('clients')
                 ->orderByDesc('created_at')
                 ->paginate($this->perPage(request())),
             'Groups retrieved successfully'
@@ -44,7 +44,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $group->load('clients')->toArray()
+            data: $group->toArray()
         );
     }
 
@@ -62,7 +62,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group created successfully",
             status_code: self::API_SUCCESS,
-            data: $group->load('clients')->toArray()
+            data: $group->toArray()
         );
     }
 
@@ -87,7 +87,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group updated successfully",
             status_code: self::API_SUCCESS,
-            data: $group->load('clients')->toArray()
+            data: $group->toArray()
         );
     }
 
@@ -119,7 +119,7 @@ class GroupController extends Controller
             message: "Action Successful",
             reason: "Group status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $group->load('clients')->toArray()
+            data: $group->toArray()
         );
     }
 

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('parent_slug')->nullable();
             $table->boolean('is_main')->default(true);
             $table->uuid('role_slug')->nullable();
-            $table->string('facility_slug')->unique();
+            $table->string('admin_slug')->nullable();
             $table->string('region');
             $table->string('district')->nullable();
             $table->string('name')->nullable();

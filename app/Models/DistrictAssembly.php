@@ -21,6 +21,7 @@ class DistrictAssembly extends Actor
         'corrective_action',
         'suspended_at',
         'profile_image',
+        'admin_slug',
     ];
 
     protected $hidden = [
@@ -45,5 +46,10 @@ class DistrictAssembly extends Actor
     public function zones()
     {
         return $this->hasMany(Zone::class, 'district_assembly', 'district_assembly_slug');
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
     }
 }

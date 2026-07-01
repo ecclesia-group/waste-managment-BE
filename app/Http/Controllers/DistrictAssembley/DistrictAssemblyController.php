@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\DistrictAssembley;
 
 use App\Http\Controllers\Controller;
@@ -6,9 +7,7 @@ use App\Http\Requests\DistrictAssembley\AccountStatusRequest;
 use App\Http\Requests\DistrictAssembley\OnboardingRequest;
 use App\Http\Requests\DistrictAssembley\ProfileUpdateRequest;
 use App\Models\DistrictAssembly;
-use App\Models\Facility;
 use App\Models\Notification;
-use App\Models\Provider;
 use Illuminate\Support\Str;
 
 class DistrictAssemblyController extends Controller
@@ -19,6 +18,7 @@ class DistrictAssemblyController extends Controller
         $data                           = static::formatPhoneNumbersInData($request->validated());
         $data['district_assembly_slug'] = Str::uuid();
         $data['password']               = $password;
+        $data['admin_slug']             = auth('admin')->user()->admin_slug;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -50,22 +50,11 @@ class DistrictAssemblyController extends Controller
 
     public function index()
     {
-        $district_assemblies = DistrictAssembly::all();
-        if ($district_assemblies->isEmpty()) {
-            return self::apiResponse(
-                in_error: true,
-                message: "No District Assemblies Found",
-                reason: "No district assemblies are registered in the system",
-                status_code: self::API_NOT_FOUND,
-                data: null
-            );
-        }
-        return self::apiResponse(
-            in_error: false,
-            message: "Action Successful",
-            reason: "District Assemblies retrieved successfully",
-            status_code: self::API_SUCCESS,
-            data: $district_assemblies->toArray()
+        return $this->paginatedApiResponse(
+            DistrictAssembly::query()
+                ->latest()
+                ->paginate($this->perPage(request())),
+            'All district assemblies retrieved successfully'
         );
     }
 
@@ -76,7 +65,7 @@ class DistrictAssemblyController extends Controller
             message: "Action Successful",
             reason: "District Assembly details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: array_merge($district_assembly->toArray())
+            data: $district_assembly->toArray()
         );
     }
 
@@ -98,8 +87,8 @@ class DistrictAssemblyController extends Controller
                 'title' => 'Account suspended',
                 'message' => trim(
                     'Your district assembly account has been suspended.'
-                    . ($district_assembly->suspension_reason ? ' Reason: ' . $district_assembly->suspension_reason . '.' : '')
-                    . ($district_assembly->corrective_action ? ' Corrective action: ' . $district_assembly->corrective_action . '.' : '')
+                        . ($district_assembly->suspension_reason ? ' Reason: ' . $district_assembly->suspension_reason . '.' : '')
+                        . ($district_assembly->corrective_action ? ' Corrective action: ' . $district_assembly->corrective_action . '.' : '')
                 ),
                 'type' => 'account_suspension',
             ]);
@@ -110,7 +99,7 @@ class DistrictAssemblyController extends Controller
 
             Notification::create([
                 'actor' => 'district_assembly',
-                'actor_id' => (string) $district_assembly->id,
+                'admin_slug' => auth('admin')->user()->admin_slug,
                 'actor_slug' => $district_assembly->district_assembly_slug,
                 'title' => 'Account reactivated',
                 'message' => 'Your district assembly account is active again.',
@@ -164,6 +153,7 @@ class DistrictAssemblyController extends Controller
         ];
 
         $data = static::processImage($image_fields, $data);
+        $data['admin_slug'] = auth('admin')->user()->admin_slug;
 
         $district_assembly->update($data);
 

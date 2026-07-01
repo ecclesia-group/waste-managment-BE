@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 class Admin extends Actor
@@ -43,5 +44,15 @@ class Admin extends Actor
     public function getRouteKeyName(): string
     {
         return "admin_slug";
+    }
+
+    public function districtAssemblies()
+    {
+        return $this->hasMany(DistrictAssembly::class, 'admin_slug', 'admin_slug');
+    }
+
+    public function zones()
+    {
+        return $this->hasMany(Zone::class, 'admin_slug', 'admin_slug');
     }
 }

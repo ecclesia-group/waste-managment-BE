@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('is_main')->default(true);
             $table->uuid('role_slug')->nullable();
             $table->string('district_assembly_slug')->unique();
+            $table->string('admin_slug')->nullable();
             $table->string('region');
             $table->string('district');
             $table->string('email')->unique();

@@ -29,7 +29,7 @@ class Provider extends Actor
         'region',
         'location',
         'profile_image',
-        'facility_slug',
+        'admin_slug',
     ];
 
     protected $hidden = [
@@ -120,5 +120,10 @@ class Provider extends Actor
     public function mmda()
     {
         return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
     }
 }

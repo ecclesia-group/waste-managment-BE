@@ -10,7 +10,7 @@ class Notification extends Model
 
     protected $fillable = [
         'actor',
-        'actor_id',
+        'admin_slug',
         'actor_slug',
         'title',
         'message',
@@ -27,7 +27,7 @@ class Notification extends Model
 
     public function actor()
     {
-        return $this->morphTo(__FUNCTION__, 'actor', 'actor_id', 'id');
+        return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
     }
 
     public function getRouteKeyName(): string

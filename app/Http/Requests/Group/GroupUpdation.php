@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Requests\Group;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,7 +23,7 @@ class GroupUpdation extends FormRequest
     public function rules(): array
     {
         $group_slug    = $this->route('group');         // current group slug
-        $provider_slug = auth()->user()->provider_slug; // owner provider
+        $provider_slug = auth('provider')->user()->provider_slug; // owner provider
         return [
             'name'        => [
                 'sometimes',

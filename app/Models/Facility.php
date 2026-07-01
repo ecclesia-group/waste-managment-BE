@@ -64,4 +64,9 @@ class Facility extends Actor
     {
         return $this->hasMany(Provider::class, 'facility_slug', 'facility_slug');
     }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
+    }
 }

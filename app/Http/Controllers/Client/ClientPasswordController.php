@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
@@ -45,6 +46,9 @@ class ClientPasswordController extends Controller
     {
         $data = $http_request->validated();
         $user = Client::where("client_slug", $data["client_slug"])->first();
+
+        // revoke all tokens for the user
+        $user->tokens()->where('name', 'client')->delete();
 
         return self::resetActorPassword(
             otp: $data["otp"],
