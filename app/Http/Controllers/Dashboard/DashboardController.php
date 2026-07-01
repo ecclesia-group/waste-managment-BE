@@ -21,15 +21,15 @@ class DashboardController extends Controller
         $client = $request->user();
         $provider = Provider::query()->where('provider_slug', $client->provider_slug)->first();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $provider?->district_assembly)->first();
-        $primaryZoneSlug = $provider
+        $primaryZoneId = $provider
             ? DB::table('provider_zones')
                 ->where('provider_slug', $provider->provider_slug)
                 ->where('status', 'active')
                 ->orderByDesc('assigned_at')
-                ->value('zone_slug')
+                ->value('zone_id')
             : null;
-        $zone = $primaryZoneSlug
-            ? Zone::query()->where('zone_slug', $primaryZoneSlug)->first()
+        $zone = $primaryZoneId
+            ? Zone::query()->find($primaryZoneId)
             : null;
 
         return self::apiResponse(
@@ -218,13 +218,13 @@ class DashboardController extends Controller
             ->whereIn('provider_slug', $pickups->pluck('provider_slug')->unique()->filter())
             ->where('status', 'active')
             ->orderByDesc('assigned_at')
-            ->get(['provider_slug', 'zone_slug'])
+            ->get(['provider_slug', 'zone_id'])
             ->groupBy('provider_slug')
-            ->map(fn ($rows) => optional($rows->first())->zone_slug);
+            ->map(fn ($rows) => (int) optional($rows->first())->zone_id);
 
         $items = $pickups->map(function (Pickup $p) use ($providerDistricts, $providerZones) {
             $c = $p->client;
-            $zoneSlug = $providerZones[$p->provider_slug] ?? null;
+            $zoneId = $providerZones[$p->provider_slug] ?? null;
 
             return [
                 'route_planner_id' => $p->route_planner_id,
@@ -232,8 +232,7 @@ class DashboardController extends Controller
                 'provider_slug' => $p->provider_slug,
                 'provider_id' => $p->provider_slug,
                 'group_slug' => $p->group_slug,
-                'zone_slug' => $zoneSlug,
-                'zone_id' => $zoneSlug,
+                'zone_id' => $zoneId,
                 'mmda_slug' => $providerDistricts[$p->provider_slug] ?? null,
                 'latitude' => $c?->latitude !== null ? (float) $c->latitude : null,
                 'longitude' => $c?->longitude !== null ? (float) $c->longitude : null,
@@ -245,7 +244,7 @@ class DashboardController extends Controller
         $groups = match ($groupBy) {
             'plan' => $items->groupBy('route_planner_id')->map->values(),
             'group' => $items->groupBy('group_slug')->map->values(),
-            'zone' => $items->groupBy('zone_slug')->map->values(),
+            'zone' => $items->groupBy('zone_id')->map->values(),
             'mmda' => $items->groupBy('mmda_slug')->map->values(),
             default => $items->groupBy('provider_slug')->map->values(),
         };

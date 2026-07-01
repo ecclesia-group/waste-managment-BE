@@ -59,8 +59,8 @@ class UpdateProviderProfileRequest extends FormRequest
             'location'                         => 'required|string|max:255',
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
 
-            'zone_slugs'                       => 'nullable|array',
-            'zone_slugs.*'                     => 'required|string|distinct|exists:zones,zone_slug',
+            'zone_ids'                       => 'nullable|array',
+            'zone_ids.*'                     => 'required|integer|distinct|exists:zones,id',
         ];
     }
 

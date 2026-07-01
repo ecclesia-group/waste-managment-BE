@@ -339,7 +339,7 @@ class ActorRelatedDataController extends Controller
 
     public function zoneProviders(Request $request, Zone $zone)
     {
-        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone($zone->zone_slug);
+        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone((int) $zone->id);
 
         $query = Provider::query()
             ->whereIn('provider_slug', $providerSlugs)
@@ -351,23 +351,9 @@ class ActorRelatedDataController extends Controller
         );
     }
 
-    public function zoneFacilities(Request $request, Zone $zone)
-    {
-        $facilitySlugs = app(ZoneAssignmentService::class)->facilitySlugsInZone($zone->zone_slug);
-
-        $query = Facility::query()
-            ->whereIn('facility_slug', $facilitySlugs)
-            ->orderBy('name');
-
-        return $this->paginatedApiResponse(
-            $query->paginate($this->perPage($request)),
-            'Zone facilities retrieved successfully'
-        );
-    }
-
     public function zoneClients(Request $request, Zone $zone)
     {
-        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone($zone->zone_slug);
+        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone((int) $zone->id);
 
         $query = Client::query()
             ->whereIn('provider_slug', $providerSlugs)
@@ -382,7 +368,7 @@ class ActorRelatedDataController extends Controller
 
     public function zonePickups(Request $request, Zone $zone)
     {
-        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone($zone->zone_slug);
+        $providerSlugs = app(ZoneAssignmentService::class)->providerSlugsInZone((int) $zone->id);
 
         $query = Pickup::query()
             ->whereIn('provider_slug', $providerSlugs)

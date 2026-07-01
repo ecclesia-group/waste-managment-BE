@@ -67,13 +67,13 @@ class Provider extends Actor
         return $this->belongsToMany(
             Zone::class,
             'provider_zones',
-            'provider_slug', // FK on pivot -> providers.provider_slug
-            'zone_slug', // FK on pivot -> zones.zone_slug
-            'provider_slug', // providers parent key
-            'zone_slug' // zones related key
+            'provider_slug',
+            'zone_id',
+            'provider_slug',
+            'id'
         )
             ->withPivot(['assigned_at', 'status'])
-            ->wherePivot('status', 'active')  // Filter by active status
+            ->wherePivot('status', 'active')
             ->withTimestamps();
     }
 

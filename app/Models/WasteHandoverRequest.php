@@ -68,25 +68,25 @@ class WasteHandoverRequest extends Model
         return $this->hasMany(HandoverDecline::class, 'waste_handover_request_id');
     }
 
-    public function scopeInProviderZones(Builder $query, array $zoneSlugs): Builder
+    public function scopeInProviderZones(Builder $query, array $zoneIds): Builder
     {
-        if ($zoneSlugs === []) {
+        if ($zoneIds === []) {
             return $query->whereRaw('0 = 1');
         }
 
-        return $query->whereExists(function ($sub) use ($zoneSlugs) {
+        return $query->whereExists(function ($sub) use ($zoneIds) {
             $sub->select(DB::raw(1))
                 ->from('provider_zones')
                 ->whereColumn('provider_zones.provider_slug', 'waste_handover_requests.requester_provider_slug')
                 ->where('provider_zones.status', 'active')
-                ->whereIn('provider_zones.zone_slug', $zoneSlugs);
+                ->whereIn('provider_zones.zone_id', $zoneIds);
         });
     }
 
     /** Pending requests visible to zone peers (excludes own requests + declined). */
     public function scopeVisibleInProviderZones(
         Builder $query,
-        array $providerZoneSlugs,
+        array $providerZoneIds,
         string $excludeRequesterSlug,
         ?string $viewingProviderSlug = null
     ): Builder {
@@ -97,7 +97,7 @@ class WasteHandoverRequest extends Model
                 'declines',
                 fn ($decline) => $decline->where('provider_slug', $viewingProviderSlug)
             ))
-            ->inProviderZones($providerZoneSlugs);
+            ->inProviderZones($providerZoneIds);
     }
 
     public function getRouteKeyName(): string

@@ -346,4 +346,77 @@ trait Helpers
     {
         return self::recordBelongsToProviderOrganisation($driver->provider_slug, $user);
     }
+
+    // Ghana phone number formatting (stored as 233XXXXXXXXX — 12 digits).
+    protected static function formatPhoneNumber(string $phone_number): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone_number) ?? '';
+
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+            return '233' . substr($digits, 1);
+        }
+
+        if (str_starts_with($digits, '233') && strlen($digits) === 12) {
+            return $digits;
+        }
+
+        if (strlen($digits) === 9) {
+            return '233' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
+     * @param  list<string>  $fields
+     */
+    protected static function formatPhoneNumbersInData(array $data, array $fields = ['phone_number']): array
+    {
+        foreach ($fields as $field) {
+            if (! empty($data[$field]) && is_string($data[$field])) {
+                $data[$field] = static::formatPhoneNumber($data[$field]);
+            }
+        }
+
+        return $data;
+    }
+
+    /** @return list<string> */
+    protected static function phoneLookupCandidates(string $phoneNumber): array
+    {
+        $digits = preg_replace('/\D+/', '', $phoneNumber) ?? '';
+        $normalized = static::formatPhoneNumber($phoneNumber);
+
+        $candidates = array_values(array_filter(array_unique([
+            $phoneNumber,
+            $digits,
+            $normalized,
+        ])));
+
+        if ($normalized !== '' && str_starts_with($normalized, '233') && strlen($normalized) === 12) {
+            $candidates[] = '0' . substr($normalized, 3);
+        }
+
+        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+            $candidates[] = '233' . substr($digits, 1);
+        }
+
+        return array_values(array_unique(array_filter($candidates)));
+    }
+
+    protected static function findActorByEmailOrPhone(string $modelClass, string $emailOrPhone): ?object
+    {
+        $candidates = static::phoneLookupCandidates($emailOrPhone);
+
+        return $modelClass::query()
+            ->where(function ($query) use ($emailOrPhone, $candidates) {
+                $query->where('email', $emailOrPhone)
+                    ->orWhereIn('phone_number', $candidates);
+            })
+            ->first();
+    }
 }

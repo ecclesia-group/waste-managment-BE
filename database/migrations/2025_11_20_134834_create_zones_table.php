@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('zones', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
-            $table->string('zone_slug')->unique();
             $table->string('region');
             $table->text('description')->nullable();
             $table->longText('locations')->nullable();
             $table->string('status')->default('active');
             $table->string('district_assembly')->nullable();
+            $table->string('admin_slug')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

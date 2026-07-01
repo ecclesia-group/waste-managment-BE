@@ -29,9 +29,7 @@ class FacilityPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $facility = Facility::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $facility = self::findActorByEmailOrPhone(Facility::class, (string) request('emailOrPhone'));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $facility, guard: "facility");

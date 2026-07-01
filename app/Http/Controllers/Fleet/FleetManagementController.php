@@ -13,7 +13,7 @@ class FleetManagementController extends Controller
 {
     public function register(RegisterFleetRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['owner_phone_number']);
         $data['fleet_slug'] = Str::uuid();
         $user = Auth::guard('provider')->user();
         $data['provider_slug'] = self::actorProviderSlug($user);
@@ -87,7 +87,7 @@ class FleetManagementController extends Controller
 
     public function updateStatus(FleetStatusUpdateRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['owner_phone_number']);
         $user = Auth::guard('provider')->user();
         $ownerSlug = self::ownerProviderSlug($user);
         $fleet = Fleet::query()
@@ -130,7 +130,7 @@ class FleetManagementController extends Controller
             );
         }
 
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['owner_phone_number']);
         unset($data['provider_slug']);
 
         $image_fields = [

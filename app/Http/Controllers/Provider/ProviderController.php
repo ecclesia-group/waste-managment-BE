@@ -31,10 +31,10 @@ class ProviderController extends Controller
     public function register(StoreProviderRegisterRequest $request)
     {
         $password = Str::random(8);
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
 
-        $zoneSlugs = is_array($data['zone_slugs'] ?? null) ? $data['zone_slugs'] : [];
-        unset($data['zone_slugs']);
+        $zoneIds = is_array($data['zone_ids'] ?? null) ? $data['zone_ids'] : [];
+        unset($data['zone_ids']);
         $zoneSlugs = array_values(array_unique(array_filter($zoneSlugs)));
 
         $data['provider_slug'] = Str::uuid();
@@ -55,8 +55,8 @@ class ProviderController extends Controller
         DB::beginTransaction();
         try {
             $provider = Provider::create($data);
-            if ($zoneSlugs !== []) {
-                app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
+            if ($zoneIds !== []) {
+                app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneIds);
             }
             DB::commit();
         } catch (\Throwable $e) {
@@ -177,7 +177,7 @@ class ProviderController extends Controller
 
     public function updateProfile(UpdateProviderProfileRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
 
         $image_fields = [
             'business_certificate_image',
@@ -201,10 +201,10 @@ class ProviderController extends Controller
 
     public function updateProviderProfile(UpdateProviderProfileRequest $request, Provider $provider)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
 
-        $zones = array_values(array_unique(array_filter($data['zone_slugs'] ?? [])));
-        unset($data['zone_slugs']);
+        $zones = array_values(array_unique(array_filter($data['zone_ids'] ?? [])));
+        unset($data['zone_ids']);
 
         app(ZoneAssignmentService::class)->setProviderZones($provider->provider_slug, $zones, true);
 
@@ -245,12 +245,12 @@ class ProviderController extends Controller
     public function reassignZones(Request $request, Provider $provider)
     {
         $data = $request->validate([
-            'zone_slugs' => 'required|array|min:1',
-            'zone_slugs.*' => 'required|string|exists:zones,zone_slug',
+            'zone_ids' => 'required|array|min:1',
+            'zone_ids.*' => 'required|integer|exists:zones,id',
             'replace' => 'sometimes|boolean',
         ]);
 
-        $zones = array_values(array_unique($data['zone_slugs']));
+        $zones = array_values(array_unique($data['zone_ids']));
 
         app(ZoneAssignmentService::class)->setProviderZones(
             $provider->provider_slug,

@@ -19,7 +19,7 @@ class ClientController extends Controller
     {
         $user                      = Auth::user();
         $password                  = Str::random(8);
-        $data                      = $request->validated();
+        $data                      = static::formatPhoneNumbersInData($request->validated());
         $data['client_slug']       = Str::uuid();
         $data['password']          = $password;
         $data['provider_slug']     = self::actorProviderSlug($user);
@@ -162,7 +162,7 @@ class ClientController extends Controller
             );
         }
 
-        $data         = $request->validated();
+        $data         = static::formatPhoneNumbersInData($request->validated());
         $image_fields = [
             'profile_image',
         ];

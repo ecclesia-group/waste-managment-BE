@@ -21,7 +21,7 @@ class ZoneStatusUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'zone_slug' => 'required|exists:zones,zone_slug',
+            'zone_id' => 'required|exists:zones,id',
             'status'    => 'required|in:active,revoke',
         ];
     }

@@ -7,7 +7,6 @@ use App\Http\Requests\Facility\FacilityOnboardingRequest;
 use App\Http\Requests\Facility\UpdateFacilityProfileRequest;
 use App\Models\Facility;
 use App\Models\Notification;
-use App\Services\ZoneAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,7 +27,7 @@ class FacilityController extends Controller
     public function register(FacilityOnboardingRequest $request)
     {
         $password              = Str::random(8);
-        $data                  = $request->validated();
+        $data                  = static::formatPhoneNumbersInData($request->validated());
         $data['facility_slug'] = Str::uuid();
         $data['password']      = $password;
 
@@ -41,17 +40,11 @@ class FacilityController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
-        unset($data['zone_slugs']);
-
         $data = static::processImage($image_fields, $data);
 
         DB::beginTransaction();
         try {
             $facility = Facility::create($data);
-            if ($zoneSlugs !== []) {
-                app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
-            }
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -154,7 +147,7 @@ class FacilityController extends Controller
 
     public function updateProfile(UpdateFacilityProfileRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
 
         $image_fields = [
             'business_certificate_image',
@@ -178,7 +171,7 @@ class FacilityController extends Controller
 
     public function updateFacilityProfile(UpdateFacilityProfileRequest $request, Facility $facility)
     {
-        $data         = $request->validated();
+        $data         = static::formatPhoneNumbersInData($request->validated());
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',

@@ -30,9 +30,7 @@ class ProviderPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $provider = Provider::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $provider = self::findActorByEmailOrPhone(Provider::class, (string) request('emailOrPhone'));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $provider, guard: "provider");
@@ -40,9 +38,7 @@ class ProviderPasswordController extends Controller
 
     public function sendVerificationNotification()
     {
-        $provider = Provider::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $provider = self::findActorByEmailOrPhone(Provider::class, (string) request('emailOrPhone'));
 
         return self::sendActorResetPasswordNotification(actor: $provider, guard: "provider");
     }

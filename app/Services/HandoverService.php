@@ -99,24 +99,25 @@ class HandoverService
     }
 
     /** @return list<string> */
-    public function zoneSlugsForOwner(string $ownerProviderSlug): array
+    public function zoneIdsForOwner(string $ownerProviderSlug): array
     {
         return \Illuminate\Support\Facades\DB::table('provider_zones')
             ->where('provider_slug', $ownerProviderSlug)
             ->where('status', 'active')
-            ->pluck('zone_slug')
+            ->pluck('zone_id')
+            ->map(fn ($id) => (int) $id)
             ->all();
     }
 
-    public function sharesZoneWithRequester(WasteHandoverRequest $handover, array $viewerZoneSlugs): bool
+    public function sharesZoneWithRequester(WasteHandoverRequest $handover, array $viewerZoneIds): bool
     {
-        if ($viewerZoneSlugs === []) {
+        if ($viewerZoneIds === []) {
             return false;
         }
 
-        $requesterZones = $this->zoneSlugsForOwner((string) $handover->requester_provider_slug);
+        $requesterZones = $this->zoneIdsForOwner((string) $handover->requester_provider_slug);
 
-        return count(array_intersect($requesterZones, $viewerZoneSlugs)) > 0;
+        return count(array_intersect($requesterZones, $viewerZoneIds)) > 0;
     }
 
     public function assertValidFleetType(string $fleetType): void

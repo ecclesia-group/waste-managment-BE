@@ -12,9 +12,7 @@ class DistrictAssembleyAuthenticationController extends Controller
 {
     public function login(): JsonResponse
     {
-        $district_assembly = DistrictAssembly::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $district_assembly = self::findActorByEmailOrPhone(DistrictAssembly::class, (string) request('emailOrPhone'));
 
         if ($district_assembly) {
             $bool = Hash::check(request('password'), $district_assembly->password);

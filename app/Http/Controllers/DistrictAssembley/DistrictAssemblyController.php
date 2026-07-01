@@ -16,7 +16,7 @@ class DistrictAssemblyController extends Controller
     public function register(OnboardingRequest $request)
     {
         $password                       = Str::random(8);
-        $data                           = $request->validated();
+        $data                           = static::formatPhoneNumbersInData($request->validated());
         $data['district_assembly_slug'] = Str::uuid();
         $data['password']               = $password;
 
@@ -130,7 +130,7 @@ class DistrictAssemblyController extends Controller
 
     public function updateProfile(ProfileUpdateRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
 
         $image_fields = [
             'business_certificate_image',
@@ -154,7 +154,7 @@ class DistrictAssemblyController extends Controller
 
     public function updateDistrictAssemblyProfile(ProfileUpdateRequest $request, DistrictAssembly $district_assembly)
     {
-        $data         = $request->validated();
+        $data         = static::formatPhoneNumbersInData($request->validated());
         $image_fields = [
             'business_certificate_image',
             'district_assembly_contract_image',

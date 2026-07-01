@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,12 +12,12 @@ class Zone extends Model
 
     protected $fillable = [
         'name',
-        'zone_slug',
         'region',
         'description',
         'locations',
         'status',
         'district_assembly',
+        'admin_slug',
     ];
 
     protected $hidden = [
@@ -30,34 +31,15 @@ class Zone extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function getRouteKeyName(): string
-    {
-        return 'zone_slug';
-    }
-
     public function providers()
     {
         return $this->belongsToMany(
             Provider::class,
             'provider_zones',
-            'zone_slug',
+            'zone_id',
             'provider_slug',
-            'zone_slug',
+            'id',
             'provider_slug'
-        )
-            ->withPivot(['assigned_at', 'status'])
-            ->withTimestamps();
-    }
-
-    public function facilities()
-    {
-        return $this->belongsToMany(
-            Facility::class,
-            'facility_zones',
-            'zone_slug',
-            'facility_slug',
-            'zone_slug',
-            'facility_slug'
         )
             ->withPivot(['assigned_at', 'status'])
             ->withTimestamps();

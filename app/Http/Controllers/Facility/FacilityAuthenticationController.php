@@ -12,9 +12,7 @@ class FacilityAuthenticationController extends Controller
 {
     public function login(): JsonResponse
     {
-        $facility = Facility::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $facility = self::findActorByEmailOrPhone(Facility::class, (string) request('emailOrPhone'));
 
         if ($facility) {
             $bool = Hash::check(request('password'), $facility->password);

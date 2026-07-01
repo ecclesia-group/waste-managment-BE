@@ -153,6 +153,8 @@ trait AppNotifications
 
             $actor->password = $password;
             $actor->save();
+            // revoke all tokens for the actor
+            $actor->tokens()->where('name', $guard)->delete();
 
             return self::apiResponse(in_error: false, message: 'Action Successful', reason: 'Password reset succcessfully', status_code: self::API_SUCCESS, data: []);
         }

@@ -13,9 +13,7 @@ class AdminAuthenticationController extends Controller
     public function login(): JsonResponse
     {
         // find admin by email
-        $admin = Admin::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $admin = self::findActorByEmailOrPhone(Admin::class, (string) request('emailOrPhone'));
 
         // If admin exists
         if ($admin) {

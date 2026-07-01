@@ -12,9 +12,7 @@ class ProviderAuthenticationController extends Controller
 {
     public function login(): JsonResponse
     {
-        $provider = Provider::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $provider = self::findActorByEmailOrPhone(Provider::class, (string) request('emailOrPhone'));
 
         if ($provider) {
             $bool = Hash::check(request('password'), $provider->password);

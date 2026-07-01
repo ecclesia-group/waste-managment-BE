@@ -29,9 +29,7 @@ class DistrictAssembleyPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $district_assembly = DistrictAssembly::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $district_assembly = self::findActorByEmailOrPhone(DistrictAssembly::class, (string) request('emailOrPhone'));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $district_assembly, guard: "district_assembly");

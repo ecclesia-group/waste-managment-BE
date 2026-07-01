@@ -14,7 +14,12 @@ use function Pest\Laravel\assertDatabaseHas;
 uses(RefreshDatabase::class);
 
 it('allows zone provider to accept pending handover and blocks out-of-zone provider', function () {
-    $zoneSlug = 'zone-'.Str::lower(Str::random(8));
+    $zone = Zone::query()->create([
+        'name' => 'Zone '.Str::upper(Str::random(4)),
+        'region' => 'Greater Accra',
+        'status' => 'active',
+        'locations' => ['Accra Central'],
+    ]);
 
     $requester = Provider::query()->create([
         'provider_slug' => 'prov-'.Str::lower(Str::random(8)),
@@ -41,7 +46,7 @@ it('allows zone provider to accept pending handover and blocks out-of-zone provi
     foreach ([$requester->provider_slug, $acceptor->provider_slug] as $slug) {
         DB::table('provider_zones')->insert([
             'provider_slug' => $slug,
-            'zone_slug' => $zoneSlug,
+            'zone_id' => $zone->id,
             'status' => 'active',
             'assigned_at' => now(),
             'created_at' => now(),
@@ -83,7 +88,7 @@ it('lists available zones for mmda zone management', function () {
         'first_name' => 'MMDA',
     ]);
 
-    $provider = Provider::query()->create([
+    Provider::query()->create([
         'provider_slug' => 'prov-'.Str::lower(Str::random(8)),
         'first_name' => 'Provider',
         'email' => 'provider+'.Str::lower(Str::random(6)).'@test.local',
@@ -93,9 +98,9 @@ it('lists available zones for mmda zone management', function () {
 
     Zone::query()->create([
         'name' => 'Zone '.Str::upper(Str::random(4)),
-        'zone_slug' => 'zone-'.Str::lower(Str::random(8)),
         'region' => 'Greater Accra',
         'status' => 'active',
+        'locations' => ['Accra Central'],
     ]);
 
     actingAs($district, 'district_assembly')
@@ -124,40 +129,40 @@ it('allows mmda to assign and reallocate provider zones', function () {
 
     $zoneA = Zone::query()->create([
         'name' => 'Zone A',
-        'zone_slug' => 'zone-a-'.Str::lower(Str::random(6)),
         'region' => 'Greater Accra',
         'status' => 'active',
+        'locations' => ['Area A'],
     ]);
 
     $zoneB = Zone::query()->create([
         'name' => 'Zone B',
-        'zone_slug' => 'zone-b-'.Str::lower(Str::random(6)),
         'region' => 'Greater Accra',
         'status' => 'active',
+        'locations' => ['Area B'],
     ]);
 
     actingAs($district, 'district_assembly')
         ->postJson('/api/district_assembly/providers/'.$provider->provider_slug.'/zones', [
-            'zone_slugs' => [$zoneA->zone_slug],
+            'zone_ids' => [$zoneA->id],
         ])
         ->assertOk();
 
     actingAs($district, 'district_assembly')
         ->postJson('/api/district_assembly/providers/'.$provider->provider_slug.'/zones', [
-            'zone_slugs' => [$zoneB->zone_slug],
+            'zone_ids' => [$zoneB->id],
             'replace' => true,
         ])
         ->assertOk();
 
     assertDatabaseHas('provider_zones', [
         'provider_slug' => $provider->provider_slug,
-        'zone_slug' => $zoneB->zone_slug,
+        'zone_id' => $zoneB->id,
         'status' => 'active',
     ]);
 
     assertDatabaseHas('provider_zones', [
         'provider_slug' => $provider->provider_slug,
-        'zone_slug' => $zoneA->zone_slug,
+        'zone_id' => $zoneA->id,
         'status' => 'revoked',
     ]);
 });

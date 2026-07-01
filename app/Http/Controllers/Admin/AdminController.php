@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RegisterRequest;
+use App\Http\Requests\Admin\UpdateProfileRequest;
 use App\Models\Admin;
 use App\Models\Client;
 use App\Models\DistrictAssembly;
@@ -16,11 +18,13 @@ class AdminController extends Controller
     public function register(RegisterRequest $request)
     {
         $password                  = Str::random(8);
-        $data                      = $request->validated();
+        $data                      = static::formatPhoneNumbersInData($request->validated());
         $data['admin_slug']        = Str::uuid();
         $data['password']          = $password;
         $data['email_verified_at'] = now();
         $data['status']            = 'active';
+        // $data['is_main']           = false;
+        // $data['role_slug']         = Role::where('actor', 'admin')->where('actor_slug', $data['admin_slug'])->first()->role_slug;
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
             'profile_image',
@@ -74,6 +78,26 @@ class AdminController extends Controller
             reason: "Statistics overview retrieved successfully",
             status_code: self::API_SUCCESS,
             data: $data
+        );
+    }
+
+    public function updateProfile(UpdateProfileRequest $request)
+    {
+        /** @var Admin $user */
+        $user = auth('admin')->user();
+        $data = static::formatPhoneNumbersInData($request->validated());
+        $image_fields = [
+            'profile_image',
+        ];
+        $data = static::processImage($image_fields, $data, $user->toArray());
+        $user->update($data);
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Profile updated successfully",
+            status_code: self::API_SUCCESS,
+            data: $user->fresh()->toArray()
         );
     }
 }

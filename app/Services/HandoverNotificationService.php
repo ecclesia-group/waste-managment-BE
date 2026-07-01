@@ -18,11 +18,11 @@ use Illuminate\Support\Facades\DB;
 class HandoverNotificationService
 {
     /** Notify every other active provider assigned to the same zone(s). */
-    public function notifyProvidersInZones(WasteHandoverRequest $handover, array $zoneSlugs): void
+    public function notifyProvidersInZones(WasteHandoverRequest $handover, array $zoneIds): void
     {
         $handover->loadMissing('requester');
         $requesterSlug = (string) $handover->requester_provider_slug;
-        $providers = $this->providersInZones($zoneSlugs, $requesterSlug);
+        $providers = $this->providersInZones($zoneIds, $requesterSlug);
         $handoverService = app(HandoverService::class);
 
         if ($providers->isEmpty()) {
@@ -143,14 +143,14 @@ class HandoverNotificationService
     /**
      * @return Collection<int, Provider>
      */
-    private function providersInZones(array $zoneSlugs, string $excludeProviderSlug): Collection
+    private function providersInZones(array $zoneIds, string $excludeProviderSlug): Collection
     {
-        if ($zoneSlugs === []) {
+        if ($zoneIds === []) {
             return collect();
         }
 
         $slugs = DB::table('provider_zones')
-            ->whereIn('zone_slug', $zoneSlugs)
+            ->whereIn('zone_id', $zoneIds)
             ->where('status', 'active')
             ->where('provider_slug', '!=', $excludeProviderSlug)
             ->pluck('provider_slug')

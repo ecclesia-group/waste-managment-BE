@@ -5,7 +5,6 @@ use App\Http\Requests\Zone\ZoneCreationRequest;
 use App\Http\Requests\Zone\ZoneStatusUpdateRequest;
 use App\Http\Requests\Zone\ZoneUpdationRequest;
 use App\Models\Client;
-use App\Models\Facility;
 use App\Models\Pickup;
 use App\Models\Provider;
 use App\Models\RoutePlanner;
@@ -36,8 +35,7 @@ class ZoneManagementController extends Controller
     public function zoneOverview(Zone $zone)
     {
         $zones = app(ZoneAssignmentService::class);
-        $providerSlugs = $zones->providerSlugsInZone($zone->zone_slug);
-        $facilitySlugs = $zones->facilitySlugsInZone($zone->zone_slug);
+        $providerSlugs = $zones->providerSlugsInZone((int) $zone->id);
 
         return self::apiResponse(
             in_error: false,
@@ -47,7 +45,6 @@ class ZoneManagementController extends Controller
             data: [
                 'zone' => $zone->toArray(),
                 'providers_count' => count($providerSlugs),
-                'facilities_count' => count($facilitySlugs),
                 'clients_count' => Client::query()
                     ->whereIn('provider_slug', $providerSlugs)
                     ->where('status', 'active')
@@ -65,7 +62,6 @@ class ZoneManagementController extends Controller
     public function createZone(ZoneCreationRequest $request)
     {
         $data = $request->validated();
-        $data['zone_slug'] = (string) Str::uuid();
         $data['status'] = $data['status'] ?? 'active';
         $zone = Zone::create($data);
 
@@ -94,7 +90,7 @@ class ZoneManagementController extends Controller
     public function updateZoneStatus(ZoneStatusUpdateRequest $request)
     {
         $data = $request->validated();
-        $zone = Zone::where('zone_slug', $data['zone_slug'])->firstOrFail();
+        $zone = Zone::query()->findOrFail($data['zone_id']);
         $zone->status = $data['status'];
         $zone->save();
 
@@ -130,23 +126,8 @@ class ZoneManagementController extends Controller
         return $this->assignProviderZonesResponse($request, $provider);
     }
 
-    public function listFacilityZones(Facility $facility)
-    {
-        return $this->listFacilityZonesResponse($facility);
-    }
-
-    public function assignFacilityZones(Request $request, Facility $facility)
-    {
-        return $this->assignFacilityZonesResponse($request, $facility);
-    }
-
     public function revokeProviderZone(Request $request, Provider $provider, Zone $zone)
     {
         return $this->revokeProviderZoneResponse($provider, $zone);
-    }
-
-    public function revokeFacilityZone(Request $request, Facility $facility, Zone $zone)
-    {
-        return $this->revokeFacilityZoneResponse($facility, $zone);
     }
 }

@@ -80,7 +80,7 @@ class TeamMemberController extends Controller
             return self::apiResponse(in_error: true, message: 'Action Failed', reason: $validator->errors()->first(), status_code: self::API_FAIL, data: []);
         }
 
-        $data = $validator->validated();
+        $data = static::formatPhoneNumbersInData($validator->validated());
         $role = $this->findOwnedRole($context, $data['role_slug']);
         if (! $role) {
             return self::apiResponse(in_error: true, message: 'Action Failed', reason: 'Role not found for this account', status_code: self::API_NOT_FOUND, data: []);
@@ -92,10 +92,10 @@ class TeamMemberController extends Controller
             'parent_slug' => $context['owner_slug'],
             'is_main' => false,
             'role_slug' => $role->role_slug,
-            'first_name' => $request->input('first_name'),
-            'last_name' => $request->input('last_name'),
-            'email' => $request->input('email'),
-            'phone_number' => $request->input('phone_number'),
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'email' => $data['email'],
+            'phone_number' => $data['phone_number'],
             'password' => $plainPassword,
             'email_verified_at' => now(),
             'status' => $data['status'] ?? 'active',
@@ -136,7 +136,7 @@ class TeamMemberController extends Controller
             return self::apiResponse(in_error: true, message: 'Action Failed', reason: $validator->errors()->first(), status_code: self::API_FAIL, data: []);
         }
 
-        $data = $validator->validated();
+        $data = static::formatPhoneNumbersInData($validator->validated());
         if (array_key_exists('role_slug', $data)) {
             $role = $this->findOwnedRole($context, $data['role_slug']);
             if (! $role) {

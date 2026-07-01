@@ -370,9 +370,6 @@ Route::prefix("district_assembly")->group(function () {
         Route::get("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "listProviderZones"]);
         Route::post("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "assignProviderZones"]);
         Route::delete("providers/{provider}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeProviderZone"]);
-        Route::get("facilities/{facility}/zones", [DistrictAssemblyManagementController::class, "listFacilityZones"]);
-        Route::post("facilities/{facility}/zones", [DistrictAssemblyManagementController::class, "assignFacilityZones"]);
-        Route::delete("facilities/{facility}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeFacilityZone"]);
 
         Route::get("complaints", [DistrictAssemblyManagementController::class, "listComplaints"]);
         Route::get("get_single_complaint/{complaint}", [DistrictAssemblyManagementController::class, "getComplaint"]);
@@ -406,11 +403,12 @@ Route::prefix("admin")->group(function () {
     Route::post("reset_password_notification", [AdminPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [AdminPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [AdminPasswordController::class, "sendResetPasswordNotification"]);
-    Route::post("register_admin", [AdminController::class, "register"]);
+    // Route::post("register_admin", [AdminController::class, "register"]);
 
     Route::middleware(["auth:admin", "verified"])->group(function () {
         Route::post("logout", [AdminAuthenticationController::class, "logout"]);
         Route::post("change_password", [AdminPasswordController::class, "changePassword"]);
+        Route::post("update_profile", [AdminController::class, "updateProfile"]);
 
         // Admin reports/analytics (Super Admin)
         Route::get("reports", [ReportsController::class, "adminReports"]);
@@ -477,7 +475,6 @@ Route::prefix("admin")->group(function () {
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
         Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'zoneOverview']);
         Route::get('zones/{zone}/providers', [ActorRelatedDataController::class, 'zoneProviders']);
-        Route::get('zones/{zone}/facilities', [ActorRelatedDataController::class, 'zoneFacilities']);
         Route::get('zones/{zone}/clients', [ActorRelatedDataController::class, 'zoneClients']);
         Route::get('zones/{zone}/pickups', [ActorRelatedDataController::class, 'zonePickups']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
@@ -489,9 +486,6 @@ Route::prefix("admin")->group(function () {
         Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
         Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
         Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
-        Route::get('facilities/{facility}/zones', [ZoneManagementController::class, 'listFacilityZones']);
-        Route::post('facilities/{facility}/zones', [ZoneManagementController::class, 'assignFacilityZones']);
-        Route::delete('facilities/{facility}/zones/{zone}', [ZoneManagementController::class, 'revokeFacilityZone']);
 
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);

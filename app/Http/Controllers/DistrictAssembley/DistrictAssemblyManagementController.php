@@ -136,33 +136,6 @@ class DistrictAssemblyManagementController extends Controller
         return $this->revokeProviderZoneResponse($provider, $zone);
     }
 
-    public function listFacilityZones(Request $request, Facility $facility)
-    {
-        if (! $this->facilityBelongsToDistrict($request, $facility)) {
-            return $this->unauthorizedDistrictActorResponse('Facility');
-        }
-
-        return $this->listFacilityZonesResponse($facility);
-    }
-
-    public function assignFacilityZones(Request $request, Facility $facility)
-    {
-        if (! $this->facilityBelongsToDistrict($request, $facility)) {
-            return $this->unauthorizedDistrictActorResponse('Facility');
-        }
-
-        return $this->assignFacilityZonesResponse($request, $facility);
-    }
-
-    public function revokeFacilityZone(Request $request, Facility $facility, Zone $zone)
-    {
-        if (! $this->facilityBelongsToDistrict($request, $facility)) {
-            return $this->unauthorizedDistrictActorResponse('Facility');
-        }
-
-        return $this->revokeFacilityZoneResponse($facility, $zone);
-    }
-
     public function listComplaints(Request $request)
     {
         $districtSlug = $this->districtSlug($request);
@@ -247,7 +220,7 @@ class DistrictAssemblyManagementController extends Controller
         $userDistrictSlug = $this->districtSlug($request);
         $password = Str::random(8);
 
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
         $data['provider_slug'] = Str::uuid();
         $data['district_assembly'] = $userDistrictSlug;
         $data['password'] = $password;
@@ -261,14 +234,14 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
-        unset($data['zone_slugs']);
+        $zoneIds = array_values(array_unique($data['zone_ids'] ?? []));
+        unset($data['zone_ids']);
 
         $data = static::processImage($image_fields, $data);
         $provider = Provider::create($data);
 
-        if ($zoneSlugs !== []) {
-            app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneSlugs);
+        if ($zoneIds !== []) {
+            app(ZoneAssignmentService::class)->assignZonesToProvider($provider->provider_slug, $zoneIds);
         }
 
         self::sendEmail(
@@ -296,7 +269,7 @@ class DistrictAssemblyManagementController extends Controller
         $userDistrictSlug = $this->districtSlug($request);
         $password = Str::random(8);
 
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated());
         $data['facility_slug'] = Str::uuid();
         $data['district_assembly'] = $userDistrictSlug;
         $data['password'] = $password;
@@ -309,15 +282,8 @@ class DistrictAssemblyManagementController extends Controller
             'profile_image',
         ];
 
-        $zoneSlugs = array_values(array_unique($data['zone_slugs'] ?? []));
-        unset($data['zone_slugs']);
-
         $data = static::processImage($image_fields, $data);
         $facility = Facility::create($data);
-
-        if ($zoneSlugs !== []) {
-            app(ZoneAssignmentService::class)->assignZonesToFacility($facility->facility_slug, $zoneSlugs);
-        }
 
         self::sendEmail(
             $facility->email,

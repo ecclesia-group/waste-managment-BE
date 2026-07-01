@@ -38,8 +38,6 @@ class FacilityOnboardingRequest extends FormRequest
             'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
             'type'                             => 'nullable|string',
             'ownership'                        => 'nullable|string',
-            'zone_slugs'                       => 'nullable|array',
-            'zone_slugs.*'                     => 'required|string|distinct|exists:zones,zone_slug',
         ];
     }
 }

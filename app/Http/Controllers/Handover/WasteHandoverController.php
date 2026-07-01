@@ -83,8 +83,8 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', $e->getMessage(), self::API_FAIL, []);
         }
 
-        $zoneSlugs = $this->zoneSlugsForActor($user);
-        if ($zoneSlugs === []) {
+        $zoneIds = $this->zoneIdsForActor($user);
+        if ($zoneIds === []) {
             return self::apiResponse(true, 'Action Failed', 'Your provider has no active zone assignments', self::API_FAIL, []);
         }
 
@@ -110,7 +110,7 @@ class WasteHandoverController extends Controller
             'status' => 'pending',
         ]);
 
-        app(HandoverNotificationService::class)->notifyProvidersInZones($handover, $zoneSlugs);
+        app(HandoverNotificationService::class)->notifyProvidersInZones($handover, $zoneIds);
 
         return self::apiResponse(
             in_error: false,
@@ -202,9 +202,9 @@ class WasteHandoverController extends Controller
     public function availableInZone(Request $request)
     {
         $providerSlug = self::actorProviderSlug($request->user());
-        $zoneSlugs = $this->zoneSlugsForProvider($providerSlug);
+        $zoneIds = $this->zoneIdsForProvider($providerSlug);
 
-        if ($zoneSlugs === []) {
+        if ($zoneIds === []) {
             return $this->paginatedApiResponse(
                 WasteHandoverRequest::query()->whereRaw('1 = 0')->paginate($this->perPage($request)),
                 'No zone assignments',
@@ -215,7 +215,7 @@ class WasteHandoverController extends Controller
         return $this->paginatedApiResponseMapped(
             WasteHandoverRequest::query()
                 ->with(['requester', 'driver', 'fleet'])
-                ->visibleInProviderZones($zoneSlugs, $providerSlug, $providerSlug)
+                ->visibleInProviderZones($zoneIds, $providerSlug, $providerSlug)
                 ->latest()
                 ->paginate($this->perPage($request)),
             'Available handover requests in your zone',
@@ -232,8 +232,8 @@ class WasteHandoverController extends Controller
         }
 
         $callerSlug = self::actorProviderSlug($request->user());
-        $callerZones = $this->zoneSlugsForProvider($callerSlug);
-        $driverZones = $this->zoneSlugsForProvider($driver->provider_slug);
+        $callerZones = $this->zoneIdsForProvider($callerSlug);
+        $driverZones = $this->zoneIdsForProvider($driver->provider_slug);
 
         if (count(array_intersect($callerZones, $driverZones)) === 0) {
             return self::apiResponse(true, 'Action Failed', 'Driver is outside your zone', self::API_FAIL, []);
@@ -371,8 +371,8 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'You cannot accept your own handover request', self::API_FAIL, []);
         }
 
-        $zoneSlugs = $this->zoneSlugsForProvider($providerSlug);
-        if (! $this->handoverService->sharesZoneWithRequester($handover, $zoneSlugs)) {
+        $zoneIds = $this->zoneIdsForProvider($providerSlug);
+        if (! $this->handoverService->sharesZoneWithRequester($handover, $zoneIds)) {
             return self::apiResponse(true, 'Action Failed', 'Request is outside your zone', self::API_FAIL, []);
         }
 
@@ -455,7 +455,7 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'You cannot decline your own handover request', self::API_FAIL, []);
         }
 
-        $zones = $this->zoneSlugsForProvider($providerSlug);
+        $zones = $this->zoneIdsForProvider($providerSlug);
         if (! $this->handoverService->sharesZoneWithRequester($handover, $zones)) {
             return self::apiResponse(true, 'Action Failed', 'Request is outside your zone', self::API_FAIL, []);
         }
@@ -671,23 +671,24 @@ class WasteHandoverController extends Controller
     }
 
     /** Zones for the actor; team members fall back to parent zones for notifications. */
-    private function zoneSlugsForActor(object $user): array
+    private function zoneIdsForActor(object $user): array
     {
-        $zones = $this->zoneSlugsForProvider(self::actorProviderSlug($user));
+        $zones = $this->zoneIdsForProvider(self::actorProviderSlug($user));
 
         if ($zones === [] && ! empty($user->parent_slug)) {
-            $zones = $this->zoneSlugsForProvider((string) $user->parent_slug);
+            $zones = $this->zoneIdsForProvider((string) $user->parent_slug);
         }
 
         return $zones;
     }
 
-    private function zoneSlugsForProvider(string $providerSlug): array
+    private function zoneIdsForProvider(string $providerSlug): array
     {
         return DB::table('provider_zones')
             ->where('provider_slug', $providerSlug)
             ->where('status', 'active')
-            ->pluck('zone_slug')
+            ->pluck('zone_id')
+            ->map(fn ($id) => (int) $id)
             ->all();
     }
 
@@ -713,7 +714,7 @@ class WasteHandoverController extends Controller
 
         return $this->handoverService->sharesZoneWithRequester(
             $handover,
-            $this->zoneSlugsForProvider($actorSlug)
+            $this->zoneIdsForProvider($actorSlug)
         );
     }
 }

@@ -12,9 +12,7 @@ class ClientAuthenticationController extends Controller
     public function login(): JsonResponse
     {
         // find client by email
-        $client = Client::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $client = self::findActorByEmailOrPhone(Client::class, (string) request('emailOrPhone'));
 
         // If client exists
         if ($client) {

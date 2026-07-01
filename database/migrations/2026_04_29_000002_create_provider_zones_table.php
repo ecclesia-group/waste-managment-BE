@@ -11,12 +11,13 @@ return new class extends Migration
         Schema::create('provider_zones', function (Blueprint $table) {
             $table->id();
             $table->string('provider_slug');
-            $table->string('zone_slug');
+            $table->foreignId('zone_id')->constrained('zones')->cascadeOnDelete();
             $table->timestamp('assigned_at')->nullable();
             $table->string('status')->default('active');
             $table->timestamps();
 
-            $table->unique(['provider_slug', 'zone_slug'], 'provider_zones_unique');
+            $table->unique(['provider_slug', 'zone_id'], 'provider_zones_unique');
+            $table->index(['zone_id', 'status'], 'provider_zones_zone_status_idx');
         });
     }
 

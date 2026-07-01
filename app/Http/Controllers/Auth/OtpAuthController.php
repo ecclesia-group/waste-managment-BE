@@ -184,7 +184,7 @@ class OtpAuthController extends Controller
     private function findActorByPhone(string $actor, string $phoneNumber): ?Actor
     {
         $modelClass = self::ACTOR_MODELS[$actor];
-        $candidates = $this->phoneLookupCandidates($phoneNumber);
+        $candidates = static::phoneLookupCandidates($phoneNumber);
 
         /** @var Actor|null $user */
         $user = $modelClass::query()
@@ -192,22 +192,5 @@ class OtpAuthController extends Controller
             ->first();
 
         return $user;
-    }
-
-    /** @return list<string> */
-    private function phoneLookupCandidates(string $phoneNumber): array
-    {
-        $digits = preg_replace('/\D+/', '', $phoneNumber) ?? '';
-        $candidates = array_values(array_filter([$phoneNumber, $digits]));
-
-        if (str_starts_with($digits, '0') && strlen($digits) === 10) {
-            $candidates[] = '233'.substr($digits, 1);
-        }
-
-        if (str_starts_with($digits, '233') && strlen($digits) >= 12) {
-            $candidates[] = '0'.substr($digits, 3);
-        }
-
-        return array_values(array_unique($candidates));
     }
 }

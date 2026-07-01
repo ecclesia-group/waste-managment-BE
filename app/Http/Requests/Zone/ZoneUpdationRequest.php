@@ -1,30 +1,27 @@
 <?php
 namespace App\Http\Requests\Zone;
 
+use App\Models\Zone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ZoneUpdationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        // Get the zone ID from the route parameter (which should be zone_slug, not zone_id)
-        $zone_slug = $this->route('zone');
+        $zone = $this->route('zone');
+        $zoneId = $zone instanceof Zone ? $zone->id : $zone;
+
         return [
-            'name'        => ['sometimes', Rule::unique('zones')->ignore($zone_slug, 'zone_slug')],
+            'name'        => ['sometimes', Rule::unique('zones')->ignore($zoneId)],
             'region'      => 'sometimes|string',
             'description' => 'nullable|string',
             'locations'   => 'nullable|array',

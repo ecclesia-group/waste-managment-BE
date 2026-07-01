@@ -28,9 +28,7 @@ class AdminPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $admin = Admin::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $admin = self::findActorByEmailOrPhone(Admin::class, (string) request('emailOrPhone'));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $admin, guard: "admin");

@@ -17,7 +17,7 @@ class DriverController extends Controller
         $user = Auth::guard('provider')->user();
         $actorSlug = self::actorProviderSlug($user);
         $password = Str::random(8);
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['phone_number', 'emergency_phone_number']);
         $data['driver_slug'] = Str::uuid();
         $data['password'] = $password;
         $data['email_verified_at'] = now();
@@ -94,7 +94,7 @@ class DriverController extends Controller
 
     public function updateStatus(StatusRequest $request)
     {
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['phone_number', 'emergency_phone_number']);
         $user = Auth::guard('provider')->user();
         $ownerSlug = self::ownerProviderSlug($user);
 
@@ -138,7 +138,7 @@ class DriverController extends Controller
             );
         }
 
-        $data = $request->validated();
+        $data = static::formatPhoneNumbersInData($request->validated(), ['phone_number', 'emergency_phone_number']);
         $image_fields = [
             'license_front_image',
             'license_back_image',

@@ -28,9 +28,7 @@ class ClientPasswordController extends Controller
 
     public function sendResetPasswordNotification()
     {
-        $client = Client::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $client = self::findActorByEmailOrPhone(Client::class, (string) request('emailOrPhone'));
 
         // Send reset password notification
         return self::sendActorResetPasswordNotification(actor: $client, guard: "client");
@@ -38,9 +36,7 @@ class ClientPasswordController extends Controller
 
     public function sendVerificationNotification()
     {
-        $client = Client::where("email", request("emailOrPhone"))
-            ->orWhere("phone_number", request("emailOrPhone"))
-            ->first();
+        $client = self::findActorByEmailOrPhone(Client::class, (string) request('emailOrPhone'));
 
         return self::sendActorResetPasswordNotification(actor: $client, guard: "client");
     }
