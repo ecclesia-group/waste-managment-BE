@@ -25,17 +25,17 @@ class ClientController extends Controller
         $user = Auth::user();
         $password = Str::random(8);
         $data = static::formatPhoneNumbersInData($request->validated());
-        $providerSlug = (string) self::actorProviderSlug($user);
+        $providerSlug = (string) self::providerSlug($user);
 
         $fee = ProviderFee::query()
             ->where('id', $data['fee_id'])
-            ->forProviderOrganisation($providerSlug)
+            ->forProvider($providerSlug)
             ->firstOrFail();
 
         $product = Product::query()
             ->where('product_slug', $data['product_slug'])
             ->where('category', Product::CATEGORY_BIN)
-            ->forProviderOrganisation($providerSlug)
+            ->forProvider($providerSlug)
             ->firstOrFail();
 
         if ((int) $product->quantity < 1) {
@@ -99,9 +99,9 @@ class ClientController extends Controller
     public function allClients()
     {
         $user = Auth::user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
         $clients = Client::query()
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->with(['bins.product'])
             ->orderByDesc('created_at')
             ->paginate($this->perPage(request()));
@@ -116,7 +116,7 @@ class ClientController extends Controller
         if ($providerUser) {
             $client = Client::query()
                 ->where('client_slug', $client->client_slug)
-                ->forProviderOrganisation((string) self::ownerProviderSlug($providerUser))
+                ->forProvider((string) self::providerSlug($providerUser))
                 ->first();
         } else {
             $client = Client::where('client_slug', $client->client_slug)->first();
@@ -146,11 +146,11 @@ class ClientController extends Controller
         $data = $request->validated();
 
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
 
         $client = Client::query()
             ->where('client_slug', $data['client_slug'])
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->first();
 
         if (! $client) {
@@ -183,7 +183,7 @@ class ClientController extends Controller
         $query = Client::query()->where('client_slug', $client->client_slug);
 
         if ($providerUser) {
-            $query->forProviderOrganisation((string) self::ownerProviderSlug($providerUser));
+            $query->forProvider((string) self::providerSlug($providerUser));
         } elseif ($clientUser) {
             $query->where('client_slug', $clientUser->client_slug);
         }
@@ -260,11 +260,11 @@ class ClientController extends Controller
     public function deleteClient(Client $client)
     {
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
 
         $deleted = Client::query()
             ->where('client_slug', $client->client_slug)
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->delete();
 
         if ($deleted === 0) {
@@ -307,17 +307,17 @@ class ClientController extends Controller
                 );
             }
 
-            $ownerSlug = self::ownerProviderSlug($providerUser);
+            $ownerSlug = self::providerSlug($providerUser);
 
             $bin = Bin::query()
                 ->where('bin_code', $qrData['bin_code'])
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $ownerSlug)
                 ->where('status', Bin::STATUS_ACTIVE)
                 ->first();
 
             $client = Client::query()
                 ->where('client_slug', $qrData['client_slug'])
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $ownerSlug)
                 ->first();
 
             if (! $client || ! $bin || $bin->client_slug !== $client->client_slug) {

@@ -15,11 +15,11 @@ class GroupController extends Controller
     public function allGroups()
     {
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $providerSlug = self::providerSlug($user);
 
         return $this->paginatedApiResponse(
             Group::query()
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $providerSlug)
                 ->orderByDesc('created_at')
                 ->paginate($this->perPage(request())),
             'Groups retrieved successfully'
@@ -29,7 +29,7 @@ class GroupController extends Controller
     public function show(Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -53,7 +53,7 @@ class GroupController extends Controller
         $user = Auth::guard('provider')->user();
         $data = $request->validated();
         $data['group_slug'] = Str::uuid();
-        $data['provider_slug'] = self::actorProviderSlug($user);
+        $data['provider_slug'] = self::providerSlug($user);
         $data['status'] = 'active';
         $group = Group::create($data);
 
@@ -69,7 +69,7 @@ class GroupController extends Controller
     public function updateGroup(GroupUpdation $request, Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -95,10 +95,10 @@ class GroupController extends Controller
     {
         $data = $request->validated();
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $providerSlug = self::providerSlug($user);
         $group = Group::query()
             ->where('group_slug', $data['group_slug'])
-            ->where('provider_slug', $ownerSlug)
+            ->forProvider((string) $providerSlug)
             ->first();
 
         if (! $group) {
@@ -126,7 +126,7 @@ class GroupController extends Controller
     public function deleteGroup(Group $group)
     {
         $user = Auth::guard('provider')->user();
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($group->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $group->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

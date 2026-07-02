@@ -14,11 +14,11 @@ class ComplaintmanagementController extends Controller
     public function listClientComplaints()
     {
         $user = request()->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
 
         return $this->paginatedApiResponse(
             Complaint::query()
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $ownerSlug)
                 ->with(['client', 'provider'])
                 ->latest()
                 ->paginate($this->perPage(request())),
@@ -54,7 +54,7 @@ class ComplaintmanagementController extends Controller
         return $this->paginatedApiResponse(
             Complaint::query()
                 ->where('client_slug', $user->client_slug)
-                ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($user->provider_slug))
+                ->forProvider((string) $user->provider_slug)
                 ->with(['client', 'provider'])
                 ->latest()
                 ->paginate($this->perPage(request())),
@@ -81,7 +81,7 @@ class ComplaintmanagementController extends Controller
                 );
             }
 
-            if (isset($user->provider_slug) && ! self::providerSlugsShareOrganisation($complaint->provider_slug, $user->provider_slug)) {
+            if (isset($user->provider_slug) && (string) $complaint->provider_slug !== (string) $user->provider_slug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -92,7 +92,7 @@ class ComplaintmanagementController extends Controller
             }
         } else {
             // Provider can view only complaints created under their provider_slug.
-            if (isset($user->provider_slug) && ! self::providerSlugsShareOrganisation($complaint->provider_slug, $user->provider_slug)) {
+            if (isset($user->provider_slug) && (string) $complaint->provider_slug !== (string) $user->provider_slug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -204,7 +204,7 @@ class ComplaintmanagementController extends Controller
         $user = request()->user();
 
         // Provider-scoped status updates.
-            if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($complaint->provider_slug, $user)) {
+            if (isset($user->provider_slug) && (string) $complaint->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

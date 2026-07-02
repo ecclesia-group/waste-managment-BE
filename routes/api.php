@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\ActorRelatedDataController;
 use App\Http\Controllers\Admin\AdminAuthenticationController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminPasswordController;
@@ -184,9 +183,9 @@ Route::prefix("provider")->group(function () {
         Route::post("register_client", [ClientController::class, "register"]);
         Route::get("all_clients", [ClientController::class, "allClients"]);
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
-        Route::get("clients/{client}/pickups", [ActorRelatedDataController::class, "clientPickups"]);
-        Route::get("clients/{client}/violations", [ActorRelatedDataController::class, "clientViolations"]);
-        Route::get("clients/{client}/payments", [ActorRelatedDataController::class, "clientPayments"]);
+        // Route::get("clients/{client}/pickups", [ActorRelatedDataController::class, "clientPickups"]);
+        // Route::get("clients/{client}/violations", [ActorRelatedDataController::class, "clientViolations"]);
+        // Route::get("clients/{client}/payments", [ActorRelatedDataController::class, "clientPayments"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
         Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
@@ -421,8 +420,8 @@ Route::prefix("admin")->group(function () {
         Route::post("update_profile", [AdminController::class, "updateProfile"]);
 
         // Admin reports/analytics (Super Admin)
-        Route::get("reports", [ReportsController::class, "adminReports"]);
-        Route::get("map_pickup_overview", [DashboardController::class, "mapPickupOverview"]);
+        // Route::get("reports", [ReportsController::class, "adminReports"]);
+        // Route::get("map_pickup_overview", [DashboardController::class, "mapPickupOverview"]);
 
         // Provider Management
         Route::post("register_provider", [ProviderController::class, "register"]);
@@ -431,40 +430,41 @@ Route::prefix("admin")->group(function () {
         Route::post("update_provider_status", [ProviderController::class, "updateStatus"]);
         Route::put("update_provider_details/{provider}", [ProviderController::class, "updateProviderProfile"]);
         Route::delete("delete_provider/{provider}", [ProviderController::class, "deleteProvider"]);
-        Route::get("providers/{provider}/clients", [ActorRelatedDataController::class, "providerClients"]);
-        Route::get("providers/{provider}/clients/{client}", [ActorRelatedDataController::class, "providerClient"]);
+
+        // Route::get("providers/{provider}/clients", [ActorRelatedDataController::class, "providerClients"]);
+        // Route::get("providers/{provider}/clients/{client}", [ActorRelatedDataController::class, "providerClient"]);
         // get provider drivers and single driver
-        Route::get("providers/{provider}/drivers", [ActorRelatedDataController::class, "providerDrivers"]);
-        Route::get("providers/{provider}/drivers/{driver}", [ActorRelatedDataController::class, "providerDriver"]);
+        // Route::get("providers/{provider}/drivers", [ActorRelatedDataController::class, "providerDrivers"]);
+        // Route::get("providers/{provider}/drivers/{driver}", [ActorRelatedDataController::class, "providerDriver"]);
         // get provider fleets and single fleet
-        Route::get("providers/{provider}/fleets", [ActorRelatedDataController::class, "providerFleets"]);
-        Route::get("providers/{provider}/fleets/{fleet}", [ActorRelatedDataController::class, "providerFleet"]);
+        // Route::get("providers/{provider}/fleets", [ActorRelatedDataController::class, "providerFleets"]);
+        // Route::get("providers/{provider}/fleets/{fleet}", [ActorRelatedDataController::class, "providerFleet"]);
         // get provider weighbridge records and single weighbridge record
-        Route::get("providers/{provider}/weighbridge_records", [ActorRelatedDataController::class, "providerWeighbridgeRecords"]);
-        Route::get("providers/{provider}/weighbridge_records/{weighbridge}", [ActorRelatedDataController::class, "providerWeighbridgeRecord"]);
+        // Route::get("providers/{provider}/weighbridge_records", [ActorRelatedDataController::class, "providerWeighbridgeRecords"]);
+        // Route::get("providers/{provider}/weighbridge_records/{weighbridge}", [ActorRelatedDataController::class, "providerWeighbridgeRecord"]);
         // Get provider groups and single group
-        Route::get("providers/{provider}/groups", [ActorRelatedDataController::class, "providerGroups"]);
-        Route::get("providers/{provider}/groups/{group}", [ActorRelatedDataController::class, "providerGroup"]);
-        Route::get("providers/{provider}/violations", [ActorRelatedDataController::class, "providerViolations"]);
-        Route::get("providers/{provider}/violations/{violation}", [ActorRelatedDataController::class, "providerViolation"]);
-        Route::get("providers/{provider}/payments", [ActorRelatedDataController::class, "providerPayments"]);
-        Route::get("providers/{provider}/payments/{transaction_id}", [ActorRelatedDataController::class, "providerPayment"]);
+        // Route::get("providers/{provider}/groups", [ActorRelatedDataController::class, "providerGroups"]);
+        // Route::get("providers/{provider}/groups/{group}", [ActorRelatedDataController::class, "providerGroup"]);
+        // Route::get("providers/{provider}/violations", [ActorRelatedDataController::class, "providerViolations"]);
+        // Route::get("providers/{provider}/violations/{violation}", [ActorRelatedDataController::class, "providerViolation"]);
+        // Route::get("providers/{provider}/payments", [ActorRelatedDataController::class, "providerPayments"]);
+        // Route::get("providers/{provider}/payments/{transaction_id}", [ActorRelatedDataController::class, "providerPayment"]);
         // reassing zones to a provider
-        Route::post("providers/{provider}/reassign_zones", [ProviderController::class, "reassignZones"]);
+        // Route::post("providers/{provider}/reassign_zones", [ProviderController::class, "reassignZones"]);
         // reassign mmda to a provider
-        Route::post("providers/{provider}/reassign_mmda", [ProviderController::class, "reassignMmda"]);
+        // Route::post("providers/{provider}/reassign_mmda", [ProviderController::class, "reassignMmda"]);
         // get all routerplanner records for a provider
-        Route::get("providers/{provider}/routerplanner_records", [RoutePlannerManagement::class, "routerplannerRecords"]);
-        Route::get("providers/{provider}/routerplanner_records/{routerplanner}", [RoutePlannerManagement::class, "routerplannerRecord"]);
+        // Route::get("providers/{provider}/routerplanner_records", [RoutePlannerManagement::class, "routerplannerRecords"]);
+        // Route::get("providers/{provider}/routerplanner_records/{routerplanner}", [RoutePlannerManagement::class, "routerplannerRecord"]);
         // get all pickup for a single routeplanner record
-        Route::get("providers/{provider}/routerplanner_records/{routerplanner}/pickups", [RoutePlannerManagement::class, "routerplannerPickups"]);
+        // Route::get("providers/{provider}/routerplanner_records/{routerplanner}/pickups", [RoutePlannerManagement::class, "routerplannerPickups"]);
 
 
         // Facility Management
         Route::post("register_facility", [FacilityController::class, "register"]);
         Route::get("all_facilities", [FacilityController::class, "index"]);
         Route::get("get_single_facility/{facility}", [FacilityController::class, "show"]);
-        Route::get("facilities/{facility}/weighbridge_records", [ActorRelatedDataController::class, "facilityWeighbridgeRecords"]);
+        // Route::get("facilities/{facility}/weighbridge_records", [ActorRelatedDataController::class, "facilityWeighbridgeRecords"]);
         Route::post("update_facility_status", [FacilityController::class, "updateStatus"]);
         Route::put("update_facility_details/{facility}", [FacilityController::class, "updateFacilityProfile"]);
         Route::delete("delete_facility/{facility}", [FacilityController::class, "deleteFacility"]);
@@ -475,27 +475,27 @@ Route::prefix("admin")->group(function () {
         Route::get("get_single_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "show"]);
         Route::post("update_district_assembly_status", [DistrictAssemblyController::class, "updateStatus"]);
         Route::put("update_district_assembly_details/{district_assembly}", [DistrictAssemblyController::class, "updateDistrictAssemblyProfile"]);
-        Route::get("district_assemblies/{district_assembly}/providers", [ActorRelatedDataController::class, "districtAssemblyProviders"]);
-        Route::get("district_assemblies/{district_assembly}/facilities", [ActorRelatedDataController::class, "districtAssemblyFacilities"]);
+        // Route::get("district_assemblies/{district_assembly}/providers", [ActorRelatedDataController::class, "districtAssemblyProviders"]);
+        // Route::get("district_assemblies/{district_assembly}/facilities", [ActorRelatedDataController::class, "districtAssemblyFacilities"]);
         Route::delete("delete_district_assembly/{district_assembly}", [DistrictAssemblyController::class, "deleteDistrictAssembly"]);
         // Get zones for a district assembly
-        Route::get("district_assemblies/{district_assembly}/zones", [ActorRelatedDataController::class, "districtAssemblyZones"]);
+        // Route::get("district_assemblies/{district_assembly}/zones", [ActorRelatedDataController::class, "districtAssemblyZones"]);
 
         // Zone Management
         Route::get('all_zones', [ZoneManagementController::class, 'listZones']);
         Route::get('get_single_zone/{zone}', [ZoneManagementController::class, 'zoneOverview']);
-        Route::get('zones/{zone}/providers', [ActorRelatedDataController::class, 'zoneProviders']);
-        Route::get('zones/{zone}/clients', [ActorRelatedDataController::class, 'zoneClients']);
-        Route::get('zones/{zone}/pickups', [ActorRelatedDataController::class, 'zonePickups']);
+        // Route::get('zones/{zone}/providers', [ActorRelatedDataController::class, 'zoneProviders']);
+        // Route::get('zones/{zone}/clients', [ActorRelatedDataController::class, 'zoneClients']);
+        // Route::get('zones/{zone}/pickups', [ActorRelatedDataController::class, 'zonePickups']);
         Route::post('create_zone', [ZoneManagementController::class, 'createZone']);
         Route::put('update_zone/{zone}', [ZoneManagementController::class, 'updateZone']);
         Route::post('update_zone_status', [ZoneManagementController::class, 'updateZoneStatus']);
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
 
         // Provider <-> Zone assignments (multi-zone support) (Super Admin)
-        Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
-        Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
-        Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
+        // Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
+        // Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
+        // Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
 
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);

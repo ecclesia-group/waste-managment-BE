@@ -49,14 +49,14 @@ class DashboardController extends Controller
     public function providerDashboard(Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = self::ownerProviderSlug($provider);
+        $effectiveProviderSlug = self::providerSlug($provider);
         $providerModel = Provider::query()->where('provider_slug', $effectiveProviderSlug)->first();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $providerModel?->district_assembly)->first();
         $zones = $providerModel?->zones()->get() ?? collect();
 
         $pendingHandover = WasteHandoverRequest::query()
             ->where(function ($q) use ($effectiveProviderSlug) {
-                $q->forProviderOrganisation($effectiveProviderSlug, 'requester_provider_slug')
+                $q->forProvider($effectiveProviderSlug, 'requester_provider_slug')
                     ->orWhere('target_provider_slug', $effectiveProviderSlug);
             })
             ->whereIn('status', ['pending', 'accepted'])
@@ -64,7 +64,7 @@ class DashboardController extends Controller
 
         $scannedBins = Pickup::query()
             ->whereNotNull('route_planner_id')
-            ->forProviderOrganisation($effectiveProviderSlug)
+            ->forProvider($effectiveProviderSlug)
             ->where('scan_status', 'scanned')
             ->count();
 
@@ -195,7 +195,7 @@ class DashboardController extends Controller
             ->orderByDesc('updated_at');
 
         if (isset($user->provider_slug)) {
-            $query->forProviderOrganisation((string) self::ownerProviderSlug($user));
+            $query->forProvider((string) self::providerSlug($user));
         } elseif (isset($user->district_assembly_slug)) {
             $query->whereIn('provider_slug', Provider::query()
                 ->where('district_assembly', $user->district_assembly_slug)

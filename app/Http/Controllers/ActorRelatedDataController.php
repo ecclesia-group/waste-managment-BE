@@ -32,7 +32,7 @@ class ActorRelatedDataController extends Controller
 
         $query = Pickup::query()
             ->where('client_slug', $client->client_slug)
-            ->when($client->provider_slug, fn ($q) => $q->forProviderOrganisation((string) self::ownerSlugForProviderRecord($client->provider_slug)))
+            ->when($client->provider_slug, fn ($q) => $q->forProvider((string) $client->provider_slug))
             ->with(['client', 'provider'])
             ->orderByDesc('created_at');
 
@@ -51,7 +51,7 @@ class ActorRelatedDataController extends Controller
 
         $query = Violation::query()
             ->where('client_slug', $client->client_slug)
-            ->when($client->provider_slug, fn ($q) => $q->forProviderOrganisation((string) self::ownerSlugForProviderRecord($client->provider_slug)))
+            ->when($client->provider_slug, fn ($q) => $q->forProvider((string) $client->provider_slug))
             ->with(['client', 'provider'])
             ->orderByDesc('created_at');
 
@@ -70,7 +70,7 @@ class ActorRelatedDataController extends Controller
 
         $query = Payment::query()
             ->where('client_slug', $client->client_slug)
-            ->when($client->provider_slug, fn ($q) => $q->forProviderOrganisation((string) self::ownerSlugForProviderRecord($client->provider_slug)))
+            ->when($client->provider_slug, fn ($q) => $q->forProvider((string) $client->provider_slug))
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -82,7 +82,7 @@ class ActorRelatedDataController extends Controller
     public function providerClients(Request $request, Provider $provider)
     {
         $query = Client::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['bins.product'])
             ->orderByDesc('created_at');
 
@@ -95,7 +95,7 @@ class ActorRelatedDataController extends Controller
     public function providerClient(Request $request, Provider $provider, Client $client)
     {
         $client = Client::where('client_slug', $client->client_slug)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->firstOrFail();
 
         return $this->apiResponse(
@@ -110,7 +110,7 @@ class ActorRelatedDataController extends Controller
     public function providerPickups(Request $request, Provider $provider)
     {
         $query = Pickup::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['client'])
             ->orderByDesc('created_at');
 
@@ -123,7 +123,7 @@ class ActorRelatedDataController extends Controller
     public function providerViolations(Request $request, Provider $provider)
     {
         $query = Violation::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['client'])
             ->orderByDesc('created_at');
 
@@ -136,7 +136,7 @@ class ActorRelatedDataController extends Controller
     public function providerViolation(Request $request, Provider $provider, Violation $violation)
     {
         $violation = Violation::where('code', $violation->code)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['client'])
             ->firstOrFail();
 
@@ -152,7 +152,7 @@ class ActorRelatedDataController extends Controller
     public function providerPayments(Request $request, Provider $provider)
     {
         $query = Payment::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['client', 'purchase', 'pickup'])
             ->orderByDesc('created_at');
 
@@ -165,7 +165,7 @@ class ActorRelatedDataController extends Controller
     public function providerPayment(Request $request, Provider $provider, string $transaction_id)
     {
         $payment = Payment::where('transaction_id', $transaction_id)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['client', 'purchase', 'pickup'])
             ->firstOrFail();
 
@@ -181,7 +181,7 @@ class ActorRelatedDataController extends Controller
     public function providerWeighbridgeRecords(Request $request, Provider $provider)
     {
         $query = WeighbridgeRecord::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['facility', 'provider', 'fleet'])
             ->orderBy('created_at', 'desc');
 
@@ -207,7 +207,7 @@ class ActorRelatedDataController extends Controller
     public function providerWeighbridgeRecord(Request $request, Provider $provider, WeighbridgeRecord $weighbridge)
     {
         $weighbridge = WeighbridgeRecord::where('code', $weighbridge->code)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->with(['facility', 'provider', 'fleet'])
             ->firstOrFail();
 
@@ -223,7 +223,7 @@ class ActorRelatedDataController extends Controller
     public function providerFleets(Request $request, Provider $provider)
     {
         $query = Fleet::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -235,7 +235,7 @@ class ActorRelatedDataController extends Controller
     public function providerFleet(Request $request, Provider $provider, Fleet $fleet)
     {
         $fleet = Fleet::where('fleet_slug', $fleet->fleet_slug)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->firstOrFail();
 
         return $this->apiResponse(
@@ -274,7 +274,7 @@ class ActorRelatedDataController extends Controller
     public function providerGroups(Request $request, Provider $provider)
     {
         $query = Group::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -286,7 +286,7 @@ class ActorRelatedDataController extends Controller
     public function providerGroup(Request $request, Provider $provider, Group $group)
     {
         $group = Group::where('group_slug', $group->group_slug)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->firstOrFail();
 
         return $this->apiResponse(
@@ -313,7 +313,7 @@ class ActorRelatedDataController extends Controller
     public function providerDrivers(Request $request, Provider $provider)
     {
         $query = Driver::query()
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -325,7 +325,7 @@ class ActorRelatedDataController extends Controller
     public function providerDriver(Request $request, Provider $provider, Driver $driver)
     {
         $driver = Driver::where('driver_slug', $driver->driver_slug)
-            ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($provider->provider_slug))
+            ->forProvider((string) $provider->provider_slug)
             ->firstOrFail();
 
         return $this->apiResponse(
@@ -389,7 +389,7 @@ class ActorRelatedDataController extends Controller
         $query = Client::query()->where('client_slug', $client->client_slug);
 
         if ($providerUser) {
-            $query->forProviderOrganisation((string) self::ownerProviderSlug($providerUser));
+            $query->forProvider((string) self::providerSlug($providerUser));
         } elseif ($clientUser) {
             $query->where('client_slug', $clientUser->client_slug);
         }

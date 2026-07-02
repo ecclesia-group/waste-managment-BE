@@ -27,8 +27,8 @@ class PickupController extends Controller
         $code                  = Str::random(5);
         $data                  = $request->validated();
         $data['driver_slug']   = Str::uuid();
-        $ownerSlug = self::ownerProviderSlug($user);
-        $data['provider_slug'] = self::actorProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
+        $data['provider_slug'] = self::providerSlug($user);
         $data['code']          = $code;
 
         if (empty($data['client_slug'])) {
@@ -43,7 +43,7 @@ class PickupController extends Controller
 
         // Tenant isolation: provider can only create pickups for their own clients.
         $client = Client::where('client_slug', $data['client_slug'])
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->first();
 
         if (! $client) {
@@ -80,7 +80,7 @@ class PickupController extends Controller
         return $this->paginatedApiResponse(
             Pickup::query()
                 ->where('client_slug', $user->client_slug)
-                ->forProviderOrganisation((string) self::ownerSlugForProviderRecord($user->provider_slug))
+                ->forProvider((string) $user->provider_slug)
                 ->where('status', 'completed')
                 ->with(['provider', 'client'])
                 ->latest()
@@ -94,7 +94,7 @@ class PickupController extends Controller
         $code                  = Str::upper(Str::random(8));
         $data                  = $request->validated();
         $user                  = request()->user();
-        $providerSlug = $user->provider_slug ?? self::resolveProviderScopeSlug($user);
+        $providerSlug = $user->provider_slug ?? self::providerSlug($user);
         // Scopes to authenticated client/provider.
         $data['client_slug'] = $user->client_slug;
         $data['provider_slug'] = $providerSlug;
@@ -238,10 +238,10 @@ class PickupController extends Controller
 
     public function providerBulkWasteRequests(Request $request)
     {
-        $providerSlug = self::ownerProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
         $query = BulkWasteRequest::query()
             ->with('client')
-            ->forProviderOrganisation((string) $providerSlug);
+            ->forProvider((string) $providerSlug);
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -260,10 +260,10 @@ class PickupController extends Controller
             'rejection_reason' => 'nullable|string|max:500',
         ]);
 
-        $providerSlug = self::ownerProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
-            ->forProviderOrganisation((string) $providerSlug)
+            ->forProvider((string) $providerSlug)
             ->first();
 
         if (! $bulkRequest) {
@@ -308,10 +308,10 @@ class PickupController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        $providerSlug = self::ownerProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
-            ->forProviderOrganisation((string) $providerSlug)
+            ->forProvider((string) $providerSlug)
             ->first();
 
         if (! $bulkRequest) {
@@ -339,10 +339,10 @@ class PickupController extends Controller
 
     public function providerBulkWasteRequestShow(Request $request, string $requestCode)
     {
-        $providerSlug = self::ownerProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->with('client')
-            ->forProviderOrganisation((string) $providerSlug)
+            ->forProvider((string) $providerSlug)
             ->where('request_code', $requestCode)
             ->first();
 
@@ -409,10 +409,10 @@ class PickupController extends Controller
 
     public function providerUpdatePickup(UpdatePickupRequest $request, string $pickupCode)
     {
-        $ownerSlug = self::ownerProviderSlug($request->user());
+        $ownerSlug = self::providerSlug($request->user());
         $pickup = Pickup::query()
             ->where('code', $pickupCode)
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->first();
 
         if (! $pickup) {
@@ -429,10 +429,10 @@ class PickupController extends Controller
 
     public function providerDeletePickup(Request $request, string $pickupCode)
     {
-        $ownerSlug = self::ownerProviderSlug($request->user());
+        $ownerSlug = self::providerSlug($request->user());
         $deleted = Pickup::query()
             ->where('code', $pickupCode)
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->delete();
 
         if ($deleted === 0) {
@@ -483,12 +483,12 @@ class PickupController extends Controller
     public function getAllPickups()
     {
         $user = request()->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
 
         return $this->paginatedApiResponseMapped(
             Pickup::query()
                 ->with(['client.group'])
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $ownerSlug)
                 ->latest()
                 ->paginate($this->perPage(request())),
             'Pickups retrieved successfully',
@@ -513,7 +513,7 @@ class PickupController extends Controller
         // Prevent cross-tenant leakage when fetching by `code`.
         if (isset($user->client_slug)) {
             if ((string) $pick_up->client_slug !== (string) $user->client_slug
-                || ! self::providerSlugsShareOrganisation($pick_up->provider_slug, $user->provider_slug)) {
+                || (string) $pick_up->provider_slug !== (string) $user->provider_slug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -523,7 +523,7 @@ class PickupController extends Controller
                 );
             }
         } elseif (isset($user->provider_slug)) {
-            if (! self::recordBelongsToProviderOrganisation($pick_up->provider_slug, $user)) {
+            if ((string) $pick_up->provider_slug !== (string) self::providerSlug($user)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -547,13 +547,13 @@ class PickupController extends Controller
     {
         $user = request()->user();
 
-        $clientOwnerSlug = self::ownerSlugForProviderRecord($user->provider_slug);
+        $clientOwnerSlug = $user->provider_slug;
 
         return $this->paginatedApiResponseMapped(
             Pickup::query()
                 ->with(['client.group'])
                 ->where('client_slug', $user->client_slug)
-                ->forProviderOrganisation((string) $clientOwnerSlug)
+                ->forProvider((string) $clientOwnerSlug)
                 ->latest()
                 ->paginate($this->perPage(request())),
             'Client pickups retrieved successfully',
@@ -577,7 +577,7 @@ class PickupController extends Controller
     //     }
 
     //     // Provider-scoped update.
-    //     $providerSlug = self::resolveProviderScopeSlug($user);
+    //     $providerSlug = self::providerSlug($user);
     //     if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
     //         return self::apiResponse(
     //             in_error: true,
@@ -617,7 +617,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($pickup->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -665,7 +665,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped scan updates.
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($pickup->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -717,7 +717,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped manual scan: ensure this bin belongs to the current provider.
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($bin->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

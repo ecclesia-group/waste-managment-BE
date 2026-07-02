@@ -16,7 +16,7 @@ class FleetManagementController extends Controller
         $data = static::formatPhoneNumbersInData($request->validated(), ['owner_phone_number']);
         $data['fleet_slug'] = Str::uuid();
         $user = Auth::guard('provider')->user();
-        $data['provider_slug'] = self::actorProviderSlug($user);
+        $data['provider_slug'] = self::providerSlug($user);
 
         $image_fields = [
             'vehicle_images',
@@ -51,11 +51,11 @@ class FleetManagementController extends Controller
     public function allFleets()
     {
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
 
         return $this->paginatedApiResponse(
             Fleet::query()
-                ->forProviderOrganisation((string) $ownerSlug)
+                ->forProvider((string) $ownerSlug)
                 ->with('provider')
                 ->latest()
                 ->paginate($this->perPage(request())),
@@ -66,7 +66,7 @@ class FleetManagementController extends Controller
     public function show(Fleet $fleet)
     {
         $user = Auth::guard('provider')->user();
-        if ($user && ! self::recordBelongsToProviderOrganisation($fleet->provider_slug, $user)) {
+        if ($user && (string) $fleet->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -89,10 +89,10 @@ class FleetManagementController extends Controller
     {
         $data = static::formatPhoneNumbersInData($request->validated(), ['owner_phone_number']);
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::ownerProviderSlug($user);
+        $ownerSlug = self::providerSlug($user);
         $fleet = Fleet::query()
             ->where('fleet_slug', $data['fleet_slug'])
-            ->forProviderOrganisation((string) $ownerSlug)
+            ->forProvider((string) $ownerSlug)
             ->first();
 
         if (! $fleet) {
@@ -120,7 +120,7 @@ class FleetManagementController extends Controller
     public function updateFleet(UpdateFleetRequest $request, Fleet $fleet)
     {
         $user = Auth::guard('provider')->user();
-        if (! self::recordBelongsToProviderOrganisation($fleet->provider_slug, $user)) {
+        if ((string) $fleet->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -155,7 +155,7 @@ class FleetManagementController extends Controller
     public function deleteFleet(Fleet $fleet)
     {
         $user = Auth::guard('provider')->user();
-        if (! self::recordBelongsToProviderOrganisation($fleet->provider_slug, $user)) {
+        if ((string) $fleet->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

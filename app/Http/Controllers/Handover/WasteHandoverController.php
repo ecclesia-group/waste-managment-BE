@@ -45,7 +45,7 @@ class WasteHandoverController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        $requesterSlug = self::actorProviderSlug($user);
+        $requesterSlug = self::providerSlug($user);
 
         if ($requesterSlug === '') {
             return self::apiResponse(true, 'Action Failed', 'Provider context is required', self::API_FAIL, []);
@@ -124,11 +124,11 @@ class WasteHandoverController extends Controller
     /** All handover requests created by the logged-in provider. */
     public function myRequests(Request $request)
     {
-        $ownerSlug = (string) self::ownerProviderSlug($request->user());
+        $ownerSlug = (string) self::providerSlug($request->user());
 
         $query = WasteHandoverRequest::query()
             ->with(['requester', 'acceptedProvider', 'driver', 'fleet'])
-            ->forProviderOrganisation($ownerSlug, 'requester_provider_slug')
+            ->forProvider($ownerSlug, 'requester_provider_slug')
             ->latest();
 
         if ($request->filled('status')) {
@@ -149,7 +149,7 @@ class WasteHandoverController extends Controller
         return $this->paginatedApiResponseMapped(
             WasteHandoverRequest::query()
                 ->with(['requester', 'acceptedProvider', 'driver', 'fleet'])
-                ->forProviderOrganisation((string) self::ownerProviderSlug($request->user()), 'requester_provider_slug')
+                ->forProvider((string) self::providerSlug($request->user()), 'requester_provider_slug')
                 ->where('status', 'accepted')
                 ->latest()
                 ->paginate($this->perPage($request)),
@@ -165,7 +165,7 @@ class WasteHandoverController extends Controller
         return $this->paginatedApiResponseMapped(
             WasteHandoverRequest::query()
                 ->with(['requester', 'acceptedProvider', 'driver', 'fleet'])
-                ->forProviderOrganisation((string) self::ownerProviderSlug($request->user()), 'requester_provider_slug')
+                ->forProvider((string) self::providerSlug($request->user()), 'requester_provider_slug')
                 ->where('status', 'completed')
                 ->latest()
                 ->paginate($this->perPage($request)),
@@ -178,11 +178,11 @@ class WasteHandoverController extends Controller
     /** Jobs the logged-in provider accepted as the collector. */
     public function acceptedJobs(Request $request)
     {
-        $ownerSlug = (string) self::ownerProviderSlug($request->user());
+        $ownerSlug = (string) self::providerSlug($request->user());
 
         $query = WasteHandoverRequest::query()
             ->with(['requester', 'acceptedProvider', 'driver', 'fleet'])
-            ->forProviderOrganisation($ownerSlug, 'target_provider_slug')
+            ->forProvider($ownerSlug, 'target_provider_slug')
             ->whereIn('status', ['accepted', 'completed'])
             ->latest();
 
@@ -201,7 +201,7 @@ class WasteHandoverController extends Controller
     /** Pending requests in the caller's zone(s) from other providers. */
     public function availableInZone(Request $request)
     {
-        $providerSlug = self::actorProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
         $zoneIds = $this->zoneIdsForProvider($providerSlug);
 
         if ($zoneIds === []) {
@@ -231,7 +231,7 @@ class WasteHandoverController extends Controller
             return self::apiResponse(true, 'Action Failed', 'Driver not found', self::API_NOT_FOUND, []);
         }
 
-        $callerSlug = self::actorProviderSlug($request->user());
+        $callerSlug = self::providerSlug($request->user());
         $callerZones = $this->zoneIdsForProvider($callerSlug);
         $driverZones = $this->zoneIdsForProvider($driver->provider_slug);
 
@@ -269,7 +269,7 @@ class WasteHandoverController extends Controller
     /** Update a pending request (requester only). */
     public function update(WasteHandoverRequest $handover, Request $request)
     {
-        if (! self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $request->user())) {
+        if ((string) $handover->requester_provider_slug !== (string) self::providerSlug($request->user())) {
             return self::apiResponse(true, 'Action Failed', 'Only the requester can update this handover', self::API_FAIL, []);
         }
 
@@ -339,7 +339,7 @@ class WasteHandoverController extends Controller
     /** Delete a pending request (requester only). */
     public function destroy(WasteHandoverRequest $handover, Request $request)
     {
-        if (! self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $request->user())) {
+        if ((string) $handover->requester_provider_slug !== (string) self::providerSlug($request->user())) {
             return self::apiResponse(true, 'Action Failed', 'Only the requester can delete this handover', self::API_FAIL, []);
         }
 
@@ -360,7 +360,7 @@ class WasteHandoverController extends Controller
 
     public function accept(WasteHandoverRequest $handover, Request $request)
     {
-        $providerSlug = self::actorProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
 
         $payload = $request->validate([
             'driver_slug' => ['nullable', 'string', 'exists:drivers,driver_slug'],
@@ -389,13 +389,13 @@ class WasteHandoverController extends Controller
 
                 if ($driverSlug) {
                     $driver = Driver::query()->where('driver_slug', $driverSlug)->first();
-                    if (! $driver || ! self::recordBelongsToProviderOrganisation($driver->provider_slug, $request->user())) {
+                    if (! $driver || (string) $driver->provider_slug !== (string) self::providerSlug($request->user())) {
                         throw new \RuntimeException('Driver must belong to your provider account');
                     }
                     if ($fleetSlug) {
                         $ok = Fleet::query()
                             ->where('fleet_slug', $fleetSlug)
-                            ->forProviderOrganisation((string) self::ownerProviderSlug($request->user()))
+                            ->forProvider((string) self::providerSlug($request->user()))
                             ->exists();
                         if (! $ok) {
                             throw new \RuntimeException('Fleet must belong to your provider account');
@@ -445,7 +445,7 @@ class WasteHandoverController extends Controller
 
     public function decline(WasteHandoverRequest $handover, Request $request)
     {
-        $providerSlug = self::actorProviderSlug($request->user());
+        $providerSlug = self::providerSlug($request->user());
 
         if ($handover->status !== 'pending') {
             return self::apiResponse(true, 'Action Failed', 'Request is not pending', self::API_FAIL, []);
@@ -474,7 +474,7 @@ class WasteHandoverController extends Controller
     /** Requester or accepting provider confirms payment; marks handover completed. */
     public function confirmPayment(WasteHandoverRequest $handover, Request $request)
     {
-        $actorSlug = self::actorProviderSlug($request->user());
+        $actorSlug = self::providerSlug($request->user());
         $isRequester = (string) $handover->requester_provider_slug === $actorSlug;
         $isCollector = (string) $handover->target_provider_slug === $actorSlug;
 
@@ -601,7 +601,7 @@ class WasteHandoverController extends Controller
         $feeAmount = (float) ($handover->fee_amount ?? 0);
         $latitude = $handover->latitude !== null ? (float) $handover->latitude : null;
         $longitude = $handover->longitude !== null ? (float) $handover->longitude : null;
-        $actorSlug = $user ? self::actorProviderSlug($user) : '';
+        $actorSlug = $user ? self::providerSlug($user) : '';
 
         return [
             'id' => $handover->id,
@@ -647,14 +647,14 @@ class WasteHandoverController extends Controller
             'created_at' => $handover->created_at?->toISOString(),
             'updated_at' => $handover->updated_at?->toISOString(),
             'can_update' => $user
-                && self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $user)
+                && (string) $handover->requester_provider_slug === (string) self::providerSlug($user)
                 && $handover->status === 'pending',
             'can_delete' => $user
-                && self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $user)
+                && (string) $handover->requester_provider_slug === (string) self::providerSlug($user)
                 && $handover->status === 'pending',
             'can_pay' => $user && $actorSlug !== ''
-                && (self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $user)
-                    || self::recordBelongsToProviderOrganisation($handover->target_provider_slug, $user))
+                && ((string) $handover->requester_provider_slug === (string) self::providerSlug($user)
+                    || (string) $handover->target_provider_slug === (string) self::providerSlug($user))
                 && $handover->status === 'accepted'
                 && $feeAmount > 0
                 && $handover->payment_status !== 'paid',
@@ -673,7 +673,7 @@ class WasteHandoverController extends Controller
     /** Zones for the actor; team members fall back to parent zones for notifications. */
     private function zoneIdsForActor(object $user): array
     {
-        $zones = $this->zoneIdsForProvider(self::actorProviderSlug($user));
+        $zones = $this->zoneIdsForProvider(self::providerSlug($user));
 
         if ($zones === [] && ! empty($user->parent_slug)) {
             $zones = $this->zoneIdsForProvider((string) $user->parent_slug);
@@ -697,10 +697,10 @@ class WasteHandoverController extends Controller
         object $user,
         bool $allowPaidOnly = false,
     ): bool {
-        $actorSlug = self::actorProviderSlug($user);
+        $actorSlug = self::providerSlug($user);
 
-        if (self::recordBelongsToProviderOrganisation($handover->requester_provider_slug, $user)
-            || self::recordBelongsToProviderOrganisation($handover->target_provider_slug, $user)) {
+        if ((string) $handover->requester_provider_slug === (string) self::providerSlug($user)
+            || (string) $handover->target_provider_slug === (string) self::providerSlug($user)) {
             return true;
         }
 

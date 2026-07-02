@@ -18,10 +18,10 @@ class ProductController extends Controller
 
         $query = Product::query();
         if (isset($user->client_slug)) {
-            $ownerSlug = self::ownerSlugForProviderRecord($user->provider_slug);
-            $query->forProviderOrganisation((string) $ownerSlug);
+            $ownerSlug = $user->provider_slug;
+            $query->forProvider((string) $ownerSlug);
         } elseif (isset($user->provider_slug)) {
-            $query->forProviderOrganisation((string) self::ownerProviderSlug($user));
+            $query->forProvider((string) self::providerSlug($user));
         }
 
         if (! empty($category)) {
@@ -41,7 +41,7 @@ class ProductController extends Controller
     public function getProductDetails(Request $request, Product $product)
     {
         $user = $request->user();
-        if (isset($user->client_slug) && ! self::providerSlugsShareOrganisation($product->provider_slug, $user->provider_slug)) {
+        if (isset($user->client_slug) && (string) $product->provider_slug !== (string) $user->provider_slug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -51,7 +51,7 @@ class ProductController extends Controller
             );
         }
 
-        if (isset($user->provider_slug) && ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -73,7 +73,7 @@ class ProductController extends Controller
     public function createProduct(ProductCreationRequest $request)
     {
         $data = $request->validated();
-        $actorSlug = self::actorProviderSlug($request->user());
+        $actorSlug = self::providerSlug($request->user());
         if (! $actorSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -108,7 +108,7 @@ class ProductController extends Controller
     public function updateProduct(ProductUpdateRequest $request, Product $product)
     {
         $user = $request->user();
-        if (! isset($user->provider_slug) || ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
+        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -136,7 +136,7 @@ class ProductController extends Controller
     public function deleteProduct(Product $product)
     {
         $user = request()->user();
-        if (! isset($user->provider_slug) || ! self::recordBelongsToProviderOrganisation($product->provider_slug, $user)) {
+        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

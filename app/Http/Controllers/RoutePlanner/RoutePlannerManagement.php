@@ -28,7 +28,7 @@ class RoutePlannerManagement extends Controller
 
     public function planOptions(Request $request)
     {
-        $providerSlug = $this->ownerProviderSlug($request->user());
+        $providerSlug = $this->providerSlug($request->user());
 
         return self::apiResponse(
             in_error: false,
@@ -119,7 +119,7 @@ class RoutePlannerManagement extends Controller
         $data = $request->validated();
 
         if (isset($user->provider_slug)) {
-            $data['provider_slug'] = $this->actorProviderSlug($user);
+            $data['provider_slug'] = $this->providerSlug($user);
         }
 
         if (empty($data['provider_slug'])) {
@@ -179,7 +179,7 @@ class RoutePlannerManagement extends Controller
                 'pickups as total_pickups',
                 'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
             ])
-            ->forProviderOrganisation((string) $this->ownerProviderSlug($user))
+            ->forProvider((string) $this->providerSlug($user))
             ->latest()
             ->paginate($this->perPage(request()));
 
@@ -269,7 +269,7 @@ class RoutePlannerManagement extends Controller
         $data = $request->validated();
         $user = $request->user();
 
-        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -319,7 +319,7 @@ class RoutePlannerManagement extends Controller
     public function deletePlan(RoutePlanner $plan)
     {
         $user = request()->user();
-        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -342,9 +342,9 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerRecords(Request $request, Provider $provider)
     {
-        $ownerSlug = (string) self::ownerSlugForProviderRecord($provider->provider_slug);
+        $ownerSlug = (string) $provider->provider_slug;
         $paginator = RoutePlanner::query()
-            ->forProviderOrganisation($ownerSlug)
+            ->forProvider($ownerSlug)
             ->with(['driver', 'fleet'])
             ->withCount([
                 'pickups as total_pickups',
@@ -362,7 +362,7 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerRecord(Request $request, Provider $provider, RoutePlanner $routerplanner)
     {
-        if (! self::recordBelongsToProviderOrganisation($routerplanner->provider_slug, $provider)) {
+        if ((string) $routerplanner->provider_slug !== (string) self::providerSlug($provider)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -382,7 +382,7 @@ class RoutePlannerManagement extends Controller
 
     public function routerplannerPickups(Request $request, Provider $provider, RoutePlanner $routerplanner)
     {
-        if (! self::recordBelongsToProviderOrganisation($routerplanner->provider_slug, $provider)) {
+        if ((string) $routerplanner->provider_slug !== (string) self::providerSlug($provider)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -413,7 +413,7 @@ class RoutePlannerManagement extends Controller
     {
         $user = request()->user();
 
-        if (isset($user->provider_slug) && ! $this->recordBelongsToProviderOrganisation($plan->provider_slug, $user)) {
+        if (isset($user->provider_slug) && (string) $plan->provider_slug !== (string) self::providerSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',

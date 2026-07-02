@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Provider;
 
-use App\Support\ProviderOrganisation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +14,7 @@ class StoreProviderFeeRequest extends FormRequest
 
     public function rules(): array
     {
-        $ownerSlug = (string) ProviderOrganisation::ownerSlugForUser(auth('provider')->user());
+        $ownerSlug = (string) auth('provider')->user()->provider_slug;
 
         return [
             'name' => [
