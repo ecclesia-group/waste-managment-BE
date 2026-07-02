@@ -12,7 +12,7 @@ class ProviderFeeController extends Controller
 {
     public function index(Request $request)
     {
-        $ownerSlug = (string) self::providerSlug($request->user());
+        $ownerSlug = (string) self::providerScopeSlug($request->user());
 
         return $this->paginatedApiResponse(
             ProviderFee::query()
@@ -26,7 +26,7 @@ class ProviderFeeController extends Controller
     public function store(StoreProviderFeeRequest $request)
     {
         $fee = ProviderFee::create([
-            'provider_slug' => (string) self::providerSlug($request->user()),
+            'provider_slug' => (string) self::providerScopeSlug($request->user()),
             'name' => $request->validated('name'),
             'amount' => $request->validated('amount'),
         ]);
@@ -42,7 +42,7 @@ class ProviderFeeController extends Controller
 
     public function update(UpdateProviderFeeRequest $request, ProviderFee $fee)
     {
-        if ((string) $fee->provider_slug !== (string) self::providerSlug($request->user())) {
+        if ((string) $fee->provider_slug !== (string) self::providerScopeSlug($request->user())) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
@@ -65,7 +65,7 @@ class ProviderFeeController extends Controller
 
     public function destroy(Request $request, ProviderFee $fee)
     {
-        if ((string) $fee->provider_slug !== (string) self::providerSlug($request->user())) {
+        if ((string) $fee->provider_slug !== (string) self::providerScopeSlug($request->user())) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',

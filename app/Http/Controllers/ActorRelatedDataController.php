@@ -389,7 +389,7 @@ class ActorRelatedDataController extends Controller
         $query = Client::query()->where('client_slug', $client->client_slug);
 
         if ($providerUser) {
-            $query->forProvider((string) self::providerSlug($providerUser));
+            $query->forProvider((string) self::providerScopeSlug($providerUser));
         } elseif ($clientUser) {
             $query->where('client_slug', $clientUser->client_slug);
         }

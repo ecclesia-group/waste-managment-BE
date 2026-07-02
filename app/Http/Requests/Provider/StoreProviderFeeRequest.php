@@ -14,14 +14,17 @@ class StoreProviderFeeRequest extends FormRequest
 
     public function rules(): array
     {
-        $ownerSlug = (string) auth('provider')->user()->provider_slug;
+        $provider = auth('provider')->user();
+        $scopeSlug = (bool) ($provider->is_main ?? true)
+            ? (string) $provider->provider_slug
+            : (string) ($provider->parent_slug ?: $provider->provider_slug);
 
         return [
             'name' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('provider_fees', 'name')->where('provider_slug', $ownerSlug),
+                Rule::unique('provider_fees', 'name')->where('provider_slug', $scopeSlug),
             ],
             'amount' => ['required', 'numeric', 'min:0'],
         ];

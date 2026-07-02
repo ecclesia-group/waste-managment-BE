@@ -21,7 +21,7 @@ class ReportsController extends Controller
     public function providerReports(Request $request)
     {
         $user = $request->user();
-        $providerSlug = self::providerSlug($user);
+        $providerSlug = self::providerScopeSlug($user);
 
         // Clients grouped by status for provider
         $activeStatuses = ['activate', 'active'];

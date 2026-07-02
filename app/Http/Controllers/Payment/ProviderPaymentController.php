@@ -12,7 +12,7 @@ class ProviderPaymentController extends Controller
 {
     public function listPayments(Request $request)
     {
-        $ownerSlug = (string) self::providerSlug($request->user());
+        $ownerSlug = (string) self::providerScopeSlug($request->user());
 
         $status = $request->query('status');
         $query = Payment::query()
@@ -34,7 +34,7 @@ class ProviderPaymentController extends Controller
     {
         $user = $request->user();
 
-        if ((string) $payment->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $payment->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -59,7 +59,7 @@ class ProviderPaymentController extends Controller
 
     public function binsPayments(Request $request)
     {
-        $ownerSlug = (string) self::providerSlug($request->user());
+        $ownerSlug = (string) self::providerScopeSlug($request->user());
 
         return $this->paginatedApiResponse(
             Payment::query()
@@ -73,7 +73,7 @@ class ProviderPaymentController extends Controller
 
     public function wasteHandoverRequestPayments(Request $request)
     {
-        $ownerSlug = (string) self::providerSlug($request->user());
+        $ownerSlug = (string) self::providerScopeSlug($request->user());
 
         return $this->paginatedApiResponse(
             Payment::query()
@@ -87,7 +87,7 @@ class ProviderPaymentController extends Controller
 
     public function weighbridgeRecords(Request $request)
     {
-        $ownerSlug = (string) self::providerSlug($request->user());
+        $ownerSlug = (string) self::providerScopeSlug($request->user());
 
         return $this->paginatedApiResponse(
             WeighbridgeRecord::query()
@@ -101,11 +101,11 @@ class ProviderPaymentController extends Controller
     public function clientPayments(Request $request, Client $client)
     {
         $user = $request->user();
-        if ((string) $client->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $client->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }
 
-        $ownerSlug = (string) self::providerSlug($user);
+        $ownerSlug = (string) self::providerScopeSlug($user);
 
         return $this->paginatedApiResponse(
             Payment::query()
@@ -120,11 +120,11 @@ class ProviderPaymentController extends Controller
     public function getClientPayment(Request $request, Client $client, Payment $payment)
     {
         $user = $request->user();
-        if ((string) $client->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $client->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }
 
-        $ownerSlug = (string) self::providerSlug($user);
+        $ownerSlug = (string) self::providerScopeSlug($user);
         $payment = Payment::query()
             ->where('client_slug', $client->client_slug)
             ->forProvider($ownerSlug)

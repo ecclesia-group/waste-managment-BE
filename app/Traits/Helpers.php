@@ -305,9 +305,25 @@ trait Helpers
         return $qrCodeUrl; // Return the API URL if download fails
     }
 
+    /** Logged-in provider account slug (who is acting). */
     protected static function providerSlug(object $user): ?string
     {
         return isset($user->provider_slug) ? (string) $user->provider_slug : null;
+    }
+
+    /**
+     * Provider slug used for queries and org-owned records.
+     * Team members (is_main=false) use parent_slug so they see the main provider's data.
+     */
+    protected static function providerScopeSlug(object $user): ?string
+    {
+        if (! isset($user->provider_slug)) {
+            return null;
+        }
+
+        return (bool) ($user->is_main ?? true)
+            ? (string) $user->provider_slug
+            : (string) ($user->parent_slug ?: $user->provider_slug);
     }
 
     // Ghana phone number formatting (stored as 233XXXXXXXXX — 12 digits).

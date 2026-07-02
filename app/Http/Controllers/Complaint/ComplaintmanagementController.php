@@ -14,7 +14,7 @@ class ComplaintmanagementController extends Controller
     public function listClientComplaints()
     {
         $user = request()->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         return $this->paginatedApiResponse(
             Complaint::query()
@@ -204,7 +204,7 @@ class ComplaintmanagementController extends Controller
         $user = request()->user();
 
         // Provider-scoped status updates.
-            if (isset($user->provider_slug) && (string) $complaint->provider_slug !== (string) self::providerSlug($user)) {
+            if (isset($user->provider_slug) && (string) $complaint->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

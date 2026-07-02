@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissionSeederV3::class,
             CreateSuperAdministrator::class,
+            DemoFlowSeeder::class,
         ]);
     }
 }

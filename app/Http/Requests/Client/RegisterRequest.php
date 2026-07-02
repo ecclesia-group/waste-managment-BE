@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Client;
 
 use App\Models\Product;
+use App\Models\Provider;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,11 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
-        $ownerSlug = (string) auth('provider')->user()->provider_slug;
+        /** @var Provider $provider */
+        $provider = auth('provider')->user();
+        $scopeSlug = (bool) ($provider->is_main ?? true)
+            ? (string) $provider->provider_slug
+            : (string) ($provider->parent_slug ?: $provider->provider_slug);
 
         return [
             'first_name'      => 'required|string',
@@ -31,14 +36,18 @@ class RegisterRequest extends FormRequest
                 'string',
                 Rule::exists('products', 'product_slug')
                     ->where('category', Product::CATEGORY_BIN)
-                    ->where('provider_slug', $ownerSlug),
+                    ->where('provider_slug', $scopeSlug),
             ],
             'fee_id'          => [
                 'required',
                 'integer',
-                Rule::exists('provider_fees', 'id')->where('provider_slug', $ownerSlug),
+                Rule::exists('provider_fees', 'id')->where('provider_slug', $scopeSlug),
             ],
-            'group_slug'      => 'nullable|string|exists:groups,group_slug',
+            'group_slug'      => [
+                'nullable',
+                'string',
+                Rule::exists('groups', 'group_slug')->where('provider_slug', $scopeSlug),
+            ],
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',
         ];
     }

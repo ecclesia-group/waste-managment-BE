@@ -49,7 +49,7 @@ class DashboardController extends Controller
     public function providerDashboard(Request $request)
     {
         $provider = $request->user();
-        $effectiveProviderSlug = self::providerSlug($provider);
+        $effectiveProviderSlug = self::providerScopeSlug($provider);
         $providerModel = Provider::query()->where('provider_slug', $effectiveProviderSlug)->first();
         $district = DistrictAssembly::query()->where('district_assembly_slug', $providerModel?->district_assembly)->first();
         $zones = $providerModel?->zones()->get() ?? collect();
@@ -195,7 +195,7 @@ class DashboardController extends Controller
             ->orderByDesc('updated_at');
 
         if (isset($user->provider_slug)) {
-            $query->forProvider((string) self::providerSlug($user));
+            $query->forProvider((string) self::providerScopeSlug($user));
         } elseif (isset($user->district_assembly_slug)) {
             $query->whereIn('provider_slug', Provider::query()
                 ->where('district_assembly', $user->district_assembly_slug)

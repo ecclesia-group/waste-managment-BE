@@ -16,8 +16,8 @@ class WeighBridgeController extends Controller
 
     public function createRecord(Request $request)
     {
-        // $providerSlug = self::providerSlug($request->user());
-        $providerSlug = self::providerSlug($request->user());
+        // $providerSlug = self::providerScopeSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $data = $request->validate([
             'facility_slug' => ['required', 'string', 'exists:facilities,facility_slug'],
             'fleet_slug' => ['nullable', 'string', 'exists:fleets,fleet_slug'],
@@ -68,7 +68,7 @@ class WeighBridgeController extends Controller
 
     public function allRecords(Request $request)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $query = WeighbridgeRecord::query()
             ->forProvider((string) $providerSlug)
             ->latest();
@@ -91,7 +91,7 @@ class WeighBridgeController extends Controller
 
     public function showRecord(Request $request, string $record)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $entry = WeighbridgeRecord::query()
             ->forProvider((string) $providerSlug)
             ->where('code', $record)
@@ -106,7 +106,7 @@ class WeighBridgeController extends Controller
 
     public function updateRecordStatus(Request $request)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $data = $request->validate([
             'code' => ['required', 'string', 'exists:weighbridge_records,code'],
             'scan_status' => ['required', 'string', 'in:handover,unscanned,scanned'],
@@ -129,7 +129,7 @@ class WeighBridgeController extends Controller
 
     public function updateRecord(Request $request, string $record)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $entry = WeighbridgeRecord::query()
             ->forProvider((string) $providerSlug)
             ->where('code', $record)
@@ -158,7 +158,7 @@ class WeighBridgeController extends Controller
 
     public function deleteRecord(Request $request, string $record)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $entry = WeighbridgeRecord::query()
             ->forProvider((string) $providerSlug)
             ->where('code', $record)

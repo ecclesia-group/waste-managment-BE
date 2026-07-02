@@ -27,8 +27,8 @@ class PickupController extends Controller
         $code                  = Str::random(5);
         $data                  = $request->validated();
         $data['driver_slug']   = Str::uuid();
-        $ownerSlug = self::providerSlug($user);
-        $data['provider_slug'] = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
+        $data['provider_slug'] = self::providerScopeSlug($user);
         $data['code']          = $code;
 
         if (empty($data['client_slug'])) {
@@ -94,7 +94,7 @@ class PickupController extends Controller
         $code                  = Str::upper(Str::random(8));
         $data                  = $request->validated();
         $user                  = request()->user();
-        $providerSlug = $user->provider_slug ?? self::providerSlug($user);
+        $providerSlug = $user->provider_slug ?? self::providerScopeSlug($user);
         // Scopes to authenticated client/provider.
         $data['client_slug'] = $user->client_slug;
         $data['provider_slug'] = $providerSlug;
@@ -238,7 +238,7 @@ class PickupController extends Controller
 
     public function providerBulkWasteRequests(Request $request)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $query = BulkWasteRequest::query()
             ->with('client')
             ->forProvider((string) $providerSlug);
@@ -260,7 +260,7 @@ class PickupController extends Controller
             'rejection_reason' => 'nullable|string|max:500',
         ]);
 
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->forProvider((string) $providerSlug)
@@ -308,7 +308,7 @@ class PickupController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->forProvider((string) $providerSlug)
@@ -339,7 +339,7 @@ class PickupController extends Controller
 
     public function providerBulkWasteRequestShow(Request $request, string $requestCode)
     {
-        $providerSlug = self::providerSlug($request->user());
+        $providerSlug = self::providerScopeSlug($request->user());
         $bulkRequest = BulkWasteRequest::query()
             ->with('client')
             ->forProvider((string) $providerSlug)
@@ -409,7 +409,7 @@ class PickupController extends Controller
 
     public function providerUpdatePickup(UpdatePickupRequest $request, string $pickupCode)
     {
-        $ownerSlug = self::providerSlug($request->user());
+        $ownerSlug = self::providerScopeSlug($request->user());
         $pickup = Pickup::query()
             ->where('code', $pickupCode)
             ->forProvider((string) $ownerSlug)
@@ -429,7 +429,7 @@ class PickupController extends Controller
 
     public function providerDeletePickup(Request $request, string $pickupCode)
     {
-        $ownerSlug = self::providerSlug($request->user());
+        $ownerSlug = self::providerScopeSlug($request->user());
         $deleted = Pickup::query()
             ->where('code', $pickupCode)
             ->forProvider((string) $ownerSlug)
@@ -483,7 +483,7 @@ class PickupController extends Controller
     public function getAllPickups()
     {
         $user = request()->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         return $this->paginatedApiResponseMapped(
             Pickup::query()
@@ -523,7 +523,7 @@ class PickupController extends Controller
                 );
             }
         } elseif (isset($user->provider_slug)) {
-            if ((string) $pick_up->provider_slug !== (string) self::providerSlug($user)) {
+            if ((string) $pick_up->provider_slug !== (string) self::providerScopeSlug($user)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -577,7 +577,7 @@ class PickupController extends Controller
     //     }
 
     //     // Provider-scoped update.
-    //     $providerSlug = self::providerSlug($user);
+    //     $providerSlug = self::providerScopeSlug($user);
     //     if ($providerSlug && (string) $pickup->provider_slug !== (string) $providerSlug) {
     //         return self::apiResponse(
     //             in_error: true,
@@ -617,7 +617,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped update.
-        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerSlug($user)) {
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -665,7 +665,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped scan updates.
-        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerSlug($user)) {
+        if (isset($user->provider_slug) && (string) $pickup->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -717,7 +717,7 @@ class PickupController extends Controller
         }
 
         // Provider-scoped manual scan: ensure this bin belongs to the current provider.
-        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) self::providerSlug($user)) {
+        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

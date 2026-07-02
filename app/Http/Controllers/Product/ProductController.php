@@ -21,7 +21,7 @@ class ProductController extends Controller
             $ownerSlug = $user->provider_slug;
             $query->forProvider((string) $ownerSlug);
         } elseif (isset($user->provider_slug)) {
-            $query->forProvider((string) self::providerSlug($user));
+            $query->forProvider((string) self::providerScopeSlug($user));
         }
 
         if (! empty($category)) {
@@ -51,7 +51,7 @@ class ProductController extends Controller
             );
         }
 
-        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) self::providerSlug($user)) {
+        if (isset($user->provider_slug) && (string) $product->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -73,7 +73,7 @@ class ProductController extends Controller
     public function createProduct(ProductCreationRequest $request)
     {
         $data = $request->validated();
-        $actorSlug = self::providerSlug($request->user());
+        $actorSlug = self::providerScopeSlug($request->user());
         if (! $actorSlug) {
             return self::apiResponse(
                 in_error: true,
@@ -108,7 +108,7 @@ class ProductController extends Controller
     public function updateProduct(ProductUpdateRequest $request, Product $product)
     {
         $user = $request->user();
-        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerSlug($user)) {
+        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -136,7 +136,7 @@ class ProductController extends Controller
     public function deleteProduct(Product $product)
     {
         $user = request()->user();
-        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerSlug($user)) {
+        if (! isset($user->provider_slug) || (string) $product->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",

@@ -18,7 +18,7 @@ class ViolationManagementController extends Controller
     public function listClientViolations()
     {
         $user = request()->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         return $this->paginatedApiResponse(
             Violation::query()
@@ -74,7 +74,7 @@ class ViolationManagementController extends Controller
                 );
             }
         } else {
-            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) self::providerSlug($user)) {
+            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) self::providerScopeSlug($user)) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -151,7 +151,7 @@ class ViolationManagementController extends Controller
         }
 
         $client = Client::where('client_slug', $clientSlug)
-            ->forProvider((string) self::providerSlug($user))
+            ->forProvider((string) self::providerScopeSlug($user))
             ->first();
 
         if (! $client) {
@@ -167,7 +167,7 @@ class ViolationManagementController extends Controller
         $code                  = Str::random(5);
         $data['code']          = $code;
         $data['client_slug']   = $client->client_slug;
-        $data['provider_slug'] = self::providerSlug($user);
+        $data['provider_slug'] = self::providerScopeSlug($user);
 
         $image_fields = ['images'];
         // $video_fields = ['videos'];
@@ -349,7 +349,7 @@ class ViolationManagementController extends Controller
         $user = request()->user();
 
         // Provider-scoped update: only allow changing status for violations of this provider.
-            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) self::providerSlug($user)) {
+            if (isset($user->provider_slug) && (string) $violation->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -377,7 +377,7 @@ class ViolationManagementController extends Controller
     public function providerUpdateViolation(ViolationUpdateRequest $request, Violation $violation)
     {
         $user = request()->user();
-        if ((string) $violation->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $violation->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(true, "Action Failed", "Unauthorized to update this violation", self::API_FAIL, []);
         }
 
@@ -391,7 +391,7 @@ class ViolationManagementController extends Controller
     public function providerDeleteViolation(Violation $violation)
     {
         $user = request()->user();
-        if ((string) $violation->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $violation->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(true, "Action Failed", "Unauthorized to delete this violation", self::API_FAIL, []);
         }
 

@@ -25,7 +25,17 @@ class ClientController extends Controller
         $user = Auth::user();
         $password = Str::random(8);
         $data = static::formatPhoneNumbersInData($request->validated());
-        $providerSlug = (string) self::providerSlug($user);
+        $providerSlug = (string) self::providerScopeSlug($user);
+
+        if (! ProviderFee::query()->forProvider($providerSlug)->exists()) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Set up registration fees before onboarding clients',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
 
         $fee = ProviderFee::query()
             ->where('id', $data['fee_id'])
@@ -99,7 +109,7 @@ class ClientController extends Controller
     public function allClients()
     {
         $user = Auth::user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
         $clients = Client::query()
             ->forProvider((string) $ownerSlug)
             ->with(['bins.product'])
@@ -116,7 +126,7 @@ class ClientController extends Controller
         if ($providerUser) {
             $client = Client::query()
                 ->where('client_slug', $client->client_slug)
-                ->forProvider((string) self::providerSlug($providerUser))
+                ->forProvider((string) self::providerScopeSlug($providerUser))
                 ->first();
         } else {
             $client = Client::where('client_slug', $client->client_slug)->first();
@@ -146,7 +156,7 @@ class ClientController extends Controller
         $data = $request->validated();
 
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         $client = Client::query()
             ->where('client_slug', $data['client_slug'])
@@ -183,7 +193,7 @@ class ClientController extends Controller
         $query = Client::query()->where('client_slug', $client->client_slug);
 
         if ($providerUser) {
-            $query->forProvider((string) self::providerSlug($providerUser));
+            $query->forProvider((string) self::providerScopeSlug($providerUser));
         } elseif ($clientUser) {
             $query->where('client_slug', $clientUser->client_slug);
         }
@@ -260,7 +270,7 @@ class ClientController extends Controller
     public function deleteClient(Client $client)
     {
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         $deleted = Client::query()
             ->where('client_slug', $client->client_slug)
@@ -307,7 +317,7 @@ class ClientController extends Controller
                 );
             }
 
-            $ownerSlug = self::providerSlug($providerUser);
+            $ownerSlug = self::providerScopeSlug($providerUser);
 
             $bin = Bin::query()
                 ->where('bin_code', $qrData['bin_code'])
@@ -356,5 +366,22 @@ class ClientController extends Controller
                 data: []
             );
         }
+    }
+
+    public function myBins()
+    {
+        $client = Client::query()
+            ->where('client_slug', request()->user()->client_slug)
+            ->firstOrFail();
+
+        $bins = $client->bins()->with('product')->orderByDesc('id')->get();
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Bins retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $bins->toArray()
+        );
     }
 }

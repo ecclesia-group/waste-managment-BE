@@ -15,7 +15,7 @@ class DriverController extends Controller
     public function register(RegisterRequest $request)
     {
         $user = Auth::guard('provider')->user();
-        $actorSlug = self::providerSlug($user);
+        $actorSlug = self::providerScopeSlug($user);
         $password = Str::random(8);
         $data = static::formatPhoneNumbersInData($request->validated(), ['phone_number', 'emergency_phone_number']);
         $data['driver_slug'] = Str::uuid();
@@ -55,7 +55,7 @@ class DriverController extends Controller
     public function allDrivers()
     {
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         return $this->paginatedApiResponseMapped(
             Driver::query()
@@ -71,7 +71,7 @@ class DriverController extends Controller
     public function show(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if ((string) $driver->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $driver->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -96,7 +96,7 @@ class DriverController extends Controller
     {
         $data = static::formatPhoneNumbersInData($request->validated(), ['phone_number', 'emergency_phone_number']);
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
 
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
@@ -128,7 +128,7 @@ class DriverController extends Controller
     public function updateDriverProfile(UpdateProfileRequest $request, Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if ((string) $driver->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $driver->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -161,7 +161,7 @@ class DriverController extends Controller
     public function deleteDriver(Driver $driver)
     {
         $user = Auth::guard('provider')->user();
-        if ((string) $driver->provider_slug !== (string) self::providerSlug($user)) {
+        if ((string) $driver->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -194,7 +194,7 @@ class DriverController extends Controller
         ]);
 
         $user = Auth::guard('provider')->user();
-        $ownerSlug = self::providerSlug($user);
+        $ownerSlug = self::providerScopeSlug($user);
         $driver = Driver::query()
             ->where('driver_slug', $data['driver_slug'])
             ->forProvider((string) $ownerSlug)
