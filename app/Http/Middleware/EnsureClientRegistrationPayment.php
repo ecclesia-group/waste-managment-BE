@@ -21,7 +21,8 @@ class EnsureClientRegistrationPayment
                     'status_code' => self::API_FAIL,
                     'message' => 'Action Unsuccessful',
                     'in_error' => true,
-                    'reason' => 'Registration fee payment is required. Use POST /api/client/payments/registration or POST /api/client/payments/calpay/initiate.',
+                    'reason' => 'Registration fee payment is required. Please pay the registration fee to continue.',
+                    // 'reason' => 'Registration fee payment is required. Use POST /api/client/payments/registration or POST /api/client/payments/calpay/initiate.',
                     'data' => [
                         'requires_registration_payment' => true,
                         'registration_fee' => (float) ($client->registration_fee ?? 0),

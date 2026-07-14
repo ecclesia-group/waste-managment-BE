@@ -34,7 +34,7 @@ class DistrictAssemblyManagementController extends Controller
 
         return $this->paginatedApiResponse(
             Provider::query()
-                ->where('district_assembly', $districtSlug)
+                ->where('district_assembly_slug', $districtSlug)
                 ->latest()
                 ->paginate($this->perPage($request)),
             'Providers retrieved successfully'
@@ -44,7 +44,7 @@ class DistrictAssemblyManagementController extends Controller
     public function getProvider(Request $request, Provider $provider)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $provider->district_assembly !== $districtSlug) {
+        if ((string) $provider->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -104,7 +104,7 @@ class DistrictAssemblyManagementController extends Controller
 
         return $this->paginatedApiResponse(
             Zone::query()
-                ->where('district_assembly', $districtSlug)
+                ->where('district_assembly_slug', $districtSlug)
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->paginate($this->perPage($request)),
@@ -115,7 +115,7 @@ class DistrictAssemblyManagementController extends Controller
     public function getZone(Request $request, Zone $zone)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $zone->district_assembly !== $districtSlug) {
+        if ((string) $zone->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -148,7 +148,7 @@ class DistrictAssemblyManagementController extends Controller
         $zone = Zone::create([
             ...$data,
             'status' => $data['status'] ?? 'active',
-            'district_assembly' => $districtSlug,
+            'district_assembly_slug' => $districtSlug,
         ]);
 
         return self::apiResponse(
@@ -163,7 +163,7 @@ class DistrictAssemblyManagementController extends Controller
     public function updateZone(Request $request, Zone $zone)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $zone->district_assembly !== $districtSlug) {
+        if ((string) $zone->district_assembly_slug !== $districtSlug) {
             return $this->unauthorizedDistrictActorResponse('Zone');
         }
 
@@ -218,7 +218,7 @@ class DistrictAssemblyManagementController extends Controller
         $districtSlug = $this->districtSlug($request);
 
         $providerSlugs = Provider::query()
-            ->where('district_assembly', $districtSlug)
+            ->where('district_assembly_slug', $districtSlug)
             ->pluck('provider_slug')
             ->toArray();
 
@@ -243,7 +243,7 @@ class DistrictAssemblyManagementController extends Controller
         $districtSlug = $this->districtSlug($request);
 
         $provider = $complaint->provider;
-        if (! $provider || (string) $provider->district_assembly !== $districtSlug) {
+        if (! $provider || (string) $provider->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -267,7 +267,7 @@ class DistrictAssemblyManagementController extends Controller
         $districtSlug = $this->districtSlug($request);
 
         $provider = $complaint->provider;
-        if (! $provider || (string) $provider->district_assembly !== $districtSlug) {
+        if (! $provider || (string) $provider->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -442,12 +442,12 @@ class DistrictAssemblyManagementController extends Controller
 
     private function providerBelongsToDistrict(Request $request, Provider $provider): bool
     {
-        return (string) $provider->district_assembly === $this->districtSlug($request);
+        return (string) $provider->district_assembly_slug === $this->districtSlug($request);
     }
 
     private function facilityBelongsToDistrict(Request $request, Facility $facility): bool
     {
-        return (string) $facility->district_assembly === $this->districtSlug($request);
+        return (string) $facility->district_assembly_slug === $this->districtSlug($request);
     }
 
     private function unauthorizedDistrictActorResponse(string $actor)
