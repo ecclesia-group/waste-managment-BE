@@ -62,26 +62,25 @@ Route::get('test_sms', function () {
 /** CalPay server-to-server callback (no auth). */
 Route::post('payment_callback', [CalPayCallbackController::class, 'handle']);
 
-/** Registration fee checkout before client login. */
-Route::post('payments/calpay/initiate-registration', [CalPayPaymentController::class, 'initiateRegistration']);
-
 Route::prefix("client")->group(function () {
+    // Public — no token required
     Route::post("login", [ClientAuthenticationController::class, "login"]);
     Route::post("reset_password_notification", [ClientPasswordController::class, "sendResetPasswordNotification"]);
     Route::post("reset_password", [ClientPasswordController::class, "resetPassword"]);
     Route::post("resend_verificationCode", [ClientPasswordController::class, "sendResetPasswordNotification"]);
 
+    // Logged in but registration unpaid — logout + pay registration only
     Route::middleware(["auth:client"])->group(function () {
-        Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
-
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
         Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
         Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
     });
 
+    // Full access after registration fee is paid
     Route::middleware(["auth:client", "client.registration_paid"])->group(function () {
+        Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
         Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
 
         // Bulk Waste Request Management
@@ -182,11 +181,9 @@ Route::prefix("provider")->group(function () {
 
         // Clients Management
         Route::post("register_client", [ClientController::class, "register"]);
+        Route::post("assign_client_bin", [ClientController::class, "assignBin"]);
         Route::get("all_clients", [ClientController::class, "allClients"]);
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
-        // Route::get("clients/{client}/pickups", [ActorRelatedDataController::class, "clientPickups"]);
-        // Route::get("clients/{client}/violations", [ActorRelatedDataController::class, "clientViolations"]);
-        // Route::get("clients/{client}/payments", [ActorRelatedDataController::class, "clientPayments"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
         Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
@@ -377,9 +374,12 @@ Route::prefix("district_assembly")->group(function () {
         Route::get("get_single_facility/{facility}", [DistrictAssemblyManagementController::class, "getFacility"]);
 
         Route::get("zones", [DistrictAssemblyManagementController::class, "listZones"]);
+        Route::get("get_single_zone/{zone}", [DistrictAssemblyManagementController::class, "getZone"]);
+        Route::post("zones", [DistrictAssemblyManagementController::class, "createZone"]);
+        Route::put("zones/{zone}", [DistrictAssemblyManagementController::class, "updateZone"]);
         Route::get("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "listProviderZones"]);
         Route::post("providers/{provider}/zones", [DistrictAssemblyManagementController::class, "assignProviderZones"]);
-        Route::delete("providers/{provider}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeProviderZone"]);
+        Route::put("providers/{provider}/zones/{zone}", [DistrictAssemblyManagementController::class, "revokeProviderZone"]);
 
         Route::get("complaints", [DistrictAssemblyManagementController::class, "listComplaints"]);
         Route::get("get_single_complaint/{complaint}", [DistrictAssemblyManagementController::class, "getComplaint"]);
@@ -494,9 +494,9 @@ Route::prefix("admin")->group(function () {
         Route::delete('delete_zone/{zone}', [ZoneManagementController::class, 'deleteZone']);
 
         // Provider <-> Zone assignments (multi-zone support) (Super Admin)
-        // Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
-        // Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
-        // Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
+        Route::get('providers/{provider}/zones', [ZoneManagementController::class, 'listProviderZones']);
+        Route::post('providers/{provider}/zones', [ZoneManagementController::class, 'assignProviderZones']);
+        Route::delete('providers/{provider}/zones/{zone}', [ZoneManagementController::class, 'revokeProviderZone']);
 
         // Complaint Management
         Route::get('all_complaints', [ComplaintmanagementController::class, 'listComplaints']);

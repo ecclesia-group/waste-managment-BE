@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,11 +25,12 @@ class Facility extends Actor
         'last_name',
         'business_registration_name',
         'business_certificate_image',
-        'district_assembly',
+        'district_assembly_slug',
         'district_assembly_contract_image',
         'tax_certificate_image',
         'epa_permit_image',
         'profile_image',
+        'admin_slug',
         'type',
         'ownership',
         'status',
@@ -68,5 +70,10 @@ class Facility extends Actor
     public function admin()
     {
         return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
+    }
+
+    public function districtAssembly()
+    {
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly_slug', 'district_assembly_slug');
     }
 }

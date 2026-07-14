@@ -12,17 +12,6 @@ use Illuminate\Validation\Rule;
 
 class CalPayPaymentController extends Controller
 {
-    /** Public registration checkout (reference = client_slug). */
-    public function initiateRegistration(Request $request)
-    {
-        $request->merge([
-            'payment_type' => Payment::PAYMENT_TYPE_REGISTRATION_FEE,
-            'reference' => $request->input('reference') ?? $request->input('client_slug'),
-        ]);
-
-        return $this->initiate($request);
-    }
-
     /**
      * Start a CalPay invoice. Frontend redirects the user to checkout_url.
      * Callback: POST /api/payment_callback (server-to-server).
@@ -42,15 +31,7 @@ class CalPayPaymentController extends Controller
                     Payment::PAYMENT_TYPE_WEIGHBRIDGE,
                 ]),
             ],
-            'reference' => [
-                'required',
-                'string',
-                'max:128',
-                Rule::when(
-                    fn () => $request->input('payment_type') === Payment::PAYMENT_TYPE_REGISTRATION_FEE,
-                    ['exists:clients,client_slug']
-                ),
-            ],
+            'reference' => ['required', 'string', 'max:128'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_contact' => ['required', 'string', 'max:50'],
@@ -58,8 +39,15 @@ class CalPayPaymentController extends Controller
             'datacancelurl' => ['required', 'url', 'max:500'],
         ]);
 
-        if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE && ! $request->user()) {
-            // Public registration flow allowed.
+        if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE) {
+            $client = $request->user('client');
+            if (! $client) {
+                return self::apiResponse(true, 'Action Failed', 'Login required to pay registration fee', self::API_FAIL, []);
+            }
+            $data['reference'] = (string) $client->client_slug;
+            if (! $client->requiresRegistrationPayment()) {
+                return self::apiResponse(true, 'Action Failed', 'Registration payment is not required', self::API_FAIL, []);
+            }
         } elseif (! $request->user()) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }

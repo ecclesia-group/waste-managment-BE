@@ -266,7 +266,7 @@ class ViolationManagementController extends Controller
 
         Notification::create([
             'actor' => 'client',
-            'actor_id' => (string) $client->id,
+            'admin_slug' => auth('admin')->user()->admin_slug ?? null,
             'actor_slug' => $client->client_slug,
             'title' => $notificationType === 'bin_damage' ? 'Bin damaged - QR regenerated' : 'Violation report',
             'message' => $msg,

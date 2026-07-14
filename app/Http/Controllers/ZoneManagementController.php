@@ -44,17 +44,17 @@ class ZoneManagementController extends Controller
             status_code: self::API_SUCCESS,
             data: [
                 'zone' => $zone->toArray(),
-                'providers_count' => count($providerSlugs),
-                'clients_count' => Client::query()
-                    ->whereIn('provider_slug', $providerSlugs)
-                    ->where('status', 'active')
-                    ->count(),
-                'pickups_count' => Pickup::query()
-                    ->whereIn('provider_slug', $providerSlugs)
-                    ->count(),
-                'route_plans_count' => RoutePlanner::query()
-                    ->whereIn('provider_slug', $providerSlugs)
-                    ->count(),
+                // 'providers_count' => count($providerSlugs),
+                // 'clients_count' => Client::query()
+                //     ->whereIn('provider_slug', $providerSlugs)
+                //     ->where('status', 'active')
+                //     ->count(),
+                // 'pickups_count' => Pickup::query()
+                //     ->whereIn('provider_slug', $providerSlugs)
+                //     ->count(),
+                // 'route_plans_count' => RoutePlanner::query()
+                //     ->whereIn('provider_slug', $providerSlugs)
+                //     ->count(),
             ]
         );
     }

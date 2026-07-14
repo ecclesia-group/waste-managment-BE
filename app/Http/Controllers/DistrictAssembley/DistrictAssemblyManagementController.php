@@ -69,7 +69,7 @@ class DistrictAssemblyManagementController extends Controller
 
         return $this->paginatedApiResponse(
             Facility::query()
-                ->where('district_assembly', $districtSlug)
+                ->where('district_assembly_slug', $districtSlug)
                 ->latest()
                 ->paginate($this->perPage($request)),
             'Facilities retrieved successfully'
@@ -79,7 +79,7 @@ class DistrictAssemblyManagementController extends Controller
     public function getFacility(Request $request, Facility $facility)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $facility->district_assembly !== $districtSlug) {
+        if ((string) $facility->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -100,12 +100,89 @@ class DistrictAssemblyManagementController extends Controller
 
     public function listZones(Request $request)
     {
+        $districtSlug = $this->districtSlug($request);
+
         return $this->paginatedApiResponse(
             Zone::query()
+                ->where('district_assembly', $districtSlug)
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->paginate($this->perPage($request)),
-            'Available zones for provider and facility assignment'
+            'District assembly zones retrieved successfully'
+        );
+    }
+
+    public function getZone(Request $request, Zone $zone)
+    {
+        $districtSlug = $this->districtSlug($request);
+        if ((string) $zone->district_assembly !== $districtSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Failed",
+                reason: "Zone not found in this district assembly",
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: "Action Successful",
+            reason: "Zone details retrieved successfully",
+            status_code: self::API_SUCCESS,
+            data: $zone->toArray()
+        );
+    }
+
+    public function createZone(Request $request)
+    {
+        $districtSlug = $this->districtSlug($request);
+        $data = $request->validate([
+            'name' => 'required|string|unique:zones,name',
+            'region' => 'required|string',
+            'description' => 'nullable|string',
+            'locations' => 'required|array',
+            'status' => 'nullable|string|in:active,inactive',
+        ]);
+
+        $zone = Zone::create([
+            ...$data,
+            'status' => $data['status'] ?? 'active',
+            'district_assembly' => $districtSlug,
+        ]);
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Zone created successfully',
+            status_code: self::API_SUCCESS,
+            data: $zone->toArray()
+        );
+    }
+
+    public function updateZone(Request $request, Zone $zone)
+    {
+        $districtSlug = $this->districtSlug($request);
+        if ((string) $zone->district_assembly !== $districtSlug) {
+            return $this->unauthorizedDistrictActorResponse('Zone');
+        }
+
+        $data = $request->validate([
+            'name' => 'sometimes|string|unique:zones,name,' . $zone->id,
+            'region' => 'sometimes|string',
+            'description' => 'nullable|string',
+            'locations' => 'nullable|array',
+            'status' => 'nullable|string|in:active,inactive',
+        ]);
+
+        $zone->update($data);
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Zone updated successfully',
+            status_code: self::API_SUCCESS,
+            data: $zone->fresh()->toArray()
         );
     }
 
@@ -222,7 +299,7 @@ class DistrictAssemblyManagementController extends Controller
 
         $data = static::formatPhoneNumbersInData($request->validated());
         $data['provider_slug'] = Str::uuid();
-        $data['district_assembly'] = $userDistrictSlug;
+        $data['district_assembly_slug'] = $userDistrictSlug;
         $data['password'] = $password;
         $data['email_verified_at'] = now();
 
@@ -271,7 +348,7 @@ class DistrictAssemblyManagementController extends Controller
 
         $data = static::formatPhoneNumbersInData($request->validated());
         $data['facility_slug'] = Str::uuid();
-        $data['district_assembly'] = $userDistrictSlug;
+        $data['district_assembly_slug'] = $userDistrictSlug;
         $data['password'] = $password;
 
         $image_fields = [
@@ -308,7 +385,7 @@ class DistrictAssemblyManagementController extends Controller
     public function updateProviderStatus(Request $request, Provider $provider)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $provider->district_assembly !== $districtSlug) {
+        if ((string) $provider->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -337,7 +414,7 @@ class DistrictAssemblyManagementController extends Controller
     public function updateFacilityStatus(Request $request, Facility $facility)
     {
         $districtSlug = $this->districtSlug($request);
-        if ((string) $facility->district_assembly !== $districtSlug) {
+        if ((string) $facility->district_assembly_slug !== $districtSlug) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
@@ -384,4 +461,3 @@ class DistrictAssemblyManagementController extends Controller
         );
     }
 }
-

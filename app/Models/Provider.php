@@ -11,7 +11,7 @@ class Provider extends Actor
         'first_name',
         'last_name',
         'business_name',
-        'district_assembly',
+        'district_assembly_slug',
         'business_registration_number',
         'gps_address',
         'email',
@@ -119,7 +119,7 @@ class Provider extends Actor
 
     public function mmda()
     {
-        return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly_slug', 'district_assembly_slug');
     }
 
     public function admin()

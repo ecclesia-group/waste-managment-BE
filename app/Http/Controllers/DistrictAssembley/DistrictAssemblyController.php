@@ -82,7 +82,7 @@ class DistrictAssemblyController extends Controller
 
             Notification::create([
                 'actor' => 'district_assembly',
-                'actor_id' => (string) $district_assembly->id,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $district_assembly->district_assembly_slug,
                 'title' => 'Account suspended',
                 'message' => trim(

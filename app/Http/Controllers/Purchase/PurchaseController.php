@@ -286,11 +286,11 @@ class PurchaseController extends Controller
         if ($client) {
             Notification::create([
                 'actor' => 'client',
-                'actor_id' => (string) $client->id,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $client->client_slug,
                 'title' => 'Order status updated',
                 'message' => "Your order status changed from {$old} to {$data['status']}.",
-                'type' => 'order_status',
+                'type' => 'order_status_update',
             ]);
         }
 

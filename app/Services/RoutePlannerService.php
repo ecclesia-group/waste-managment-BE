@@ -7,9 +7,11 @@ use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Fleet;
 use App\Models\Group;
+use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Pickup;
 use App\Models\RoutePlanner;
+use App\Traits\AppNotifications;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,8 @@ use RuntimeException;
 
 class RoutePlannerService
 {
+    use AppNotifications;
+
     public const PICKUP_TYPE_NORMAL = 'normal';
 
     public const PICKUP_TYPE_BULK = 'bulk_waste_request';
@@ -135,12 +139,48 @@ class RoutePlannerService
 
             $this->createPickupsForPlan($routePlanner, $clients, $bulkByClient, $pickupType, $pickupDate);
 
-            return $routePlanner->load([
+            $plan = $routePlanner->load([
                 'driver',
                 'fleet',
                 'pickups.client.group',
             ]);
+
+            $this->notifyDriverOfAssignment($plan);
+
+            return $plan;
         });
+    }
+
+    private function notifyDriverOfAssignment(RoutePlanner $plan): void
+    {
+        $driver = $plan->driver ?? Driver::query()->where('driver_slug', $plan->driver_slug)->first();
+        if (! $driver) {
+            return;
+        }
+
+        $pickupDate = $plan->pickup_date
+            ? Carbon::parse($plan->pickup_date)->toDateTimeString()
+            : 'scheduled';
+        $type = $plan->pickup_type ?? 'normal';
+        $message = "Route assigned: {$type} pickup on {$pickupDate}. Fleet: ".($plan->fleet_slug ?? 'N/A');
+
+        Notification::create([
+            'actor' => 'driver',
+            'admin_slug' => auth('admin')->user()->admin_slug ?? null,
+            'actor_slug' => $driver->driver_slug,
+            'title' => 'New route assignment',
+            'message' => $message,
+            'type' => 'route_assignment',
+            'is_read' => false,
+        ]);
+
+        if (! empty($driver->phone_number)) {
+            try {
+                self::sendSms($driver->phone_number, $message, 'WMS', 'route_assignment');
+            } catch (\Throwable) {
+                // SMS is best-effort.
+            }
+        }
     }
 
     /**
@@ -503,14 +543,6 @@ class RoutePlannerService
 
     private function maybeCreatePickupPayment(Pickup $pickup): void
     {
-        $pickup->loadMissing('routePlanner');
-        $pickupType = $pickup->routePlanner?->pickup_type
-            ?? ($pickup->routePlanner?->route_meta['pickup_type'] ?? self::PICKUP_TYPE_NORMAL);
-
-        if ($pickupType !== self::PICKUP_TYPE_BULK) {
-            return;
-        }
-
         $amount = round((float) ($pickup->amount ?? 0), 2);
         if ($amount <= 0) {
             return;
@@ -529,6 +561,10 @@ class RoutePlannerService
         if ($exists) {
             return;
         }
+
+        $pickup->loadMissing('routePlanner');
+        $pickupType = $pickup->routePlanner?->pickup_type
+            ?? ($pickup->routePlanner?->route_meta['pickup_type'] ?? self::PICKUP_TYPE_NORMAL);
 
         $client = $pickup->relationLoaded('client')
             ? $pickup->client
@@ -554,6 +590,13 @@ class RoutePlannerService
             'pickup_id' => (string) $pickup->id,
             'purchase_id' => null,
         ]);
+
+        if ($pickupType === self::PICKUP_TYPE_BULK && $pickup->bulk_waste_request_code) {
+            BulkWasteRequest::query()
+                ->where('request_code', $pickup->bulk_waste_request_code)
+                ->where('payment_status', '!=', 'paid')
+                ->update(['payment_status' => 'unpaid']);
+        }
     }
 
     private function syncRoutePlannerCompletion(int $routePlannerId): void

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,8 +11,8 @@ class Notification extends Model
 
     protected $fillable = [
         'actor',
-        'admin_slug',
         'actor_slug',
+        'admin_slug',
         'title',
         'message',
         'type',

@@ -14,7 +14,7 @@ class NotificationController extends Controller
             Notification::query()
                 ->where('actor', 'client')
                 ->where('actor_slug', (string) $user->client_slug)
-                ->where('actor_id', (string) $user->id)
+                ->where('admin_slug', auth('admin')->user()->admin_slug ?? null)
                 ->orderByDesc('created_at')
                 ->paginate($this->perPage(request())),
             'Notifications retrieved successfully'

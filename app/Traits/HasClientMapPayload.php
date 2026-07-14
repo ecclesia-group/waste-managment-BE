@@ -97,17 +97,41 @@ trait HasClientMapPayload
      */
     protected static function enrichPickupForPickupUi(Pickup $pickup): array
     {
-        $pickup->loadMissing(['client.group']);
+        $pickup->loadMissing(['client.group', 'routePlanner']);
         $client = $pickup->client;
         $coords = static::clientCoordinatesForMap($client);
+        $isBulk = ! empty($pickup->bulk_waste_request_code);
+        $pickupType = $pickup->routePlanner?->pickup_type
+            ?? ($isBulk ? 'bulk_waste_request' : 'normal');
+
+        $payment = \App\Models\Payment::query()
+            ->where('pickup_id', (string) $pickup->id)
+            ->where('payment_type', \App\Models\Payment::PAYMENT_TYPE_PICKUP)
+            ->latest()
+            ->first();
+
+        $bulkPaymentStatus = null;
+        if ($isBulk && $pickup->bulk_waste_request_code) {
+            $bulkPaymentStatus = \App\Models\BulkWasteRequest::query()
+                ->where('request_code', $pickup->bulk_waste_request_code)
+                ->value('payment_status');
+        }
+
+        $isPaid = $pickup->status === 'paid'
+            || in_array($payment?->status, [\App\Models\Payment::STATUS_PAID, \App\Models\Payment::STATUS_SUCCESSFUL], true)
+            || ($isBulk && $bulkPaymentStatus === 'paid');
 
         return array_merge($pickup->toArray(), [
+            'pickup_type' => $pickupType,
             'map' => [
                 'coordinates' => $coords,
                 'gps_address' => $client?->gps_address,
                 'pickup_location' => $client?->pickup_location,
             ],
-            'requires_payment_before_pickup' => ! empty($pickup->bulk_waste_request_code),
+            'requires_payment' => (float) ($pickup->amount ?? 0) > 0 && ! $isPaid,
+            'payment_status' => $payment?->status ?? $bulkPaymentStatus,
+            'is_paid' => $isPaid,
+            'requires_payment_before_pickup' => $isBulk && $bulkPaymentStatus !== 'paid',
             'provider' => $pickup->provider?->toArray(),
         ]);
     }

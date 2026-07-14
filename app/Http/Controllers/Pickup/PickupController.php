@@ -91,7 +91,31 @@ class PickupController extends Controller
 
     public function bulkWasteRequest(PickupCreationRequest $request)
     {
-        $code                  = Str::upper(Str::random(8));
+        $user = request()->user();
+
+        $hasUnpaidCompletedBulk = Pickup::query()
+            ->where('client_slug', $user->client_slug)
+            ->where('status', 'completed')
+            ->whereNotNull('bulk_waste_request_code')
+            ->whereIn('bulk_waste_request_code', function ($query) use ($user) {
+                $query->select('request_code')
+                    ->from('bulk_waste_requests')
+                    ->where('client_slug', $user->client_slug)
+                    ->where('payment_status', '!=', 'paid');
+            })
+            ->exists();
+
+        if ($hasUnpaidCompletedBulk) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Pay for your completed bulk waste pickup before submitting a new request',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $code = Str::upper(Str::random(8));
         $data                  = $request->validated();
         $user                  = request()->user();
         $providerSlug = $user->provider_slug ?? self::providerScopeSlug($user);
@@ -547,13 +571,11 @@ class PickupController extends Controller
     {
         $user = request()->user();
 
-        $clientOwnerSlug = $user->provider_slug;
-
         return $this->paginatedApiResponseMapped(
             Pickup::query()
-                ->with(['client.group'])
+                ->with(['client.group', 'routePlanner'])
                 ->where('client_slug', $user->client_slug)
-                ->forProvider((string) $clientOwnerSlug)
+                ->forProvider((string) $user->provider_slug)
                 ->latest()
                 ->paginate($this->perPage(request())),
             'Client pickups retrieved successfully',
@@ -767,32 +789,13 @@ class PickupController extends Controller
 
         return $this->paginatedApiResponseMapped(
             Pickup::query()
+                ->with(['routePlanner'])
                 ->where('client_slug', $user->client_slug)
                 ->whereNotNull('pickup_date')
                 ->orderByDesc('pickup_date')
                 ->paginate($this->perPage(request())),
-            'Pickup dates retrieved successfully',
-            function (Pickup $pickup) {
-                $requiresPayment = ! empty($pickup->bulk_waste_request_code);
-                $paymentStatus = null;
-                if ($requiresPayment && $pickup->bulk_waste_request_code) {
-                    $paymentStatus = BulkWasteRequest::query()
-                        ->where('request_code', $pickup->bulk_waste_request_code)
-                        ->value('payment_status');
-                }
-
-                return [
-                    'code' => $pickup->code,
-                    'pickup_date' => $pickup->pickup_date,
-                    'amount' => $pickup->amount,
-                    'status' => $pickup->status,
-                    'scan_status' => $pickup->scan_status,
-                    'category' => $pickup->category,
-                    'requires_payment_before_pickup' => $requiresPayment,
-                    'payment_status' => $paymentStatus,
-                    'can_be_serviced' => ! $requiresPayment || $paymentStatus === 'paid',
-                ];
-            }
+            'Pickup schedules retrieved successfully',
+            fn (Pickup $pickup) => self::enrichPickupForPickupUi($pickup)
         );
     }
 

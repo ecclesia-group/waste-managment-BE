@@ -39,79 +39,69 @@ class RoutePlannerManagement extends Controller
         );
     }
 
-    // public function assignmentLogs(Request $request)
-    // {
-    //     $user = $request->user();
+    public function assignmentLogs(Request $request)
+    {
+        $user = $request->user();
 
-    //     $query = Pickup::query()
-    //         ->whereNotNull('route_planner_id')
-    //         ->with(['client', 'routePlanner']);
+        $query = Pickup::query()
+            ->whereNotNull('route_planner_id')
+            ->with(['client', 'routePlanner.driver', 'routePlanner.fleet']);
 
-    //     if (isset($user->provider_slug)) {
-    //         $query->where('provider_slug', $this->resolveProviderScopeSlug($user));
-    //     }
+        if (isset($user->provider_slug)) {
+            $query->forProvider((string) $this->providerScopeSlug($user));
+        }
 
-    //     if (isset($user->driver_slug)) {
-    //         $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $user->driver_slug));
-    //     }
+        if (isset($user->district_assembly_slug)) {
+            $query->whereIn('provider_slug', function ($q) use ($user) {
+                $q->select('provider_slug')
+                    ->from('providers')
+                    ->where('district_assembly', $user->district_assembly_slug);
+            });
+        }
 
-    //     if (isset($user->district_assembly_slug)) {
-    //         $query->whereIn('provider_slug', function ($q) use ($user) {
-    //             $q->select('provider_slug')
-    //                 ->from('providers')
-    //                 ->where('district_assembly', $user->district_assembly);
-    //         });
-    //     }
+        if ($request->filled('provider_slug')) {
+            $query->where('provider_slug', $request->string('provider_slug'));
+        }
+        if ($request->filled('driver_slug')) {
+            $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $request->string('driver_slug')));
+        }
+        if ($request->filled('group_slug')) {
+            $query->where('group_slug', $request->string('group_slug'));
+        }
+        if ($request->filled('route_planner_id')) {
+            $query->where('route_planner_id', $request->integer('route_planner_id'));
+        }
+        if ($request->filled('pickup_type')) {
+            $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
+        }
 
-    //     if ($request->filled('provider_slug')) {
-    //         $query->where('provider_slug', $request->string('provider_slug'));
-    //     }
-    //     if ($request->filled('driver_slug')) {
-    //         $query->whereHas('routePlanner', fn ($q) => $q->where('driver_slug', $request->string('driver_slug')));
-    //     }
-    //     if ($request->filled('group_slug')) {
-    //         $query->where('group_slug', $request->string('group_slug'));
-    //     }
-    //     if ($request->filled('route_planner_id')) {
-    //         $query->where('route_planner_id', $request->integer('route_planner_id'));
-    //     }
-    //     if ($request->filled('pickup_type')) {
-    //         $query->whereHas('routePlanner', fn ($q) => $q->where('pickup_type', $request->string('pickup_type')));
-    //     }
+        if ($request->filled('status')) {
+            $status = (string) $request->string('status');
+            if ($status === 'scanned') {
+                $query->where('scan_status', 'scanned');
+            } elseif ($status === 'unscanned') {
+                $query->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned']);
+            }
+        }
 
-    //     if ($request->filled('status')) {
-    //         $status = $request->string('status');
-    //         if ($status === 'scanned') {
-    //             $query->where('scan_status', 'scanned');
-    //         } elseif ($status === 'unscanned') {
-    //             $query->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned']);
-    //         }
-    //     }
+        if ($request->filled('from') || $request->filled('to')) {
+            $from = $request->filled('from') ? $request->date('from') : null;
+            $to = $request->filled('to') ? $request->date('to') : null;
+            $timestampColumn = (string) $request->string('status') === 'scanned' ? 'scanned_at' : 'created_at';
 
-    //     if ($request->filled('from') || $request->filled('to')) {
-    //         $from = $request->filled('from') ? $request->date('from') : null;
-    //         $to = $request->filled('to') ? $request->date('to') : null;
-    //         $timestampColumn = $request->string('status') === 'scanned' ? 'scanned_at' : 'created_at';
+            if ($from) {
+                $query->whereDate($timestampColumn, '>=', $from);
+            }
+            if ($to) {
+                $query->whereDate($timestampColumn, '<=', $to);
+            }
+        }
 
-    //         if ($from) {
-    //             $query->whereDate($timestampColumn, '>=', $from);
-    //         }
-    //         if ($to) {
-    //             $query->whereDate($timestampColumn, '<=', $to);
-    //         }
-    //     }
-
-    //     $perPage = max(1, min(100, $request->integer('limit', 20)));
-    //     $logs = $query->latest()->paginate($perPage);
-
-    //     return self::apiResponse(
-    //         in_error: false,
-    //         message: 'Action Successful',
-    //         reason: 'Assignment logs retrieved successfully',
-    //         status_code: self::API_SUCCESS,
-    //         data: $logs->toArray()
-    //     );
-    // }
+        return $this->paginatedApiResponse(
+            $query->latest()->paginate($this->perPage($request)),
+            'Assignment logs retrieved successfully'
+        );
+    }
 
     public function register(RegisterRoute $request)
     {

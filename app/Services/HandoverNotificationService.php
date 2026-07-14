@@ -176,7 +176,7 @@ class HandoverNotificationService
     ): void {
         Notification::create([
             'actor' => 'provider',
-            'actor_id' => (string) $provider->id,
+            'admin_slug' => auth('admin')->user()->admin_slug ?? null,
             'actor_slug' => $provider->provider_slug,
             'title' => 'New provider handover request',
             'message' => "{$handover->code}: {$requesterName} at {$location}. Tap to view and accept.",

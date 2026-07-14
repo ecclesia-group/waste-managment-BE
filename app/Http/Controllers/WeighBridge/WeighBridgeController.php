@@ -5,10 +5,13 @@ namespace App\Http\Controllers\WeighBridge;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Weighbridge\CreateTicket;
 use App\Models\Facility;
+use App\Models\Payment;
+use App\Models\Provider;
 use App\Models\WeighbridgeRecord;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Traits\Helpers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class WeighBridgeController extends Controller
 {
@@ -195,25 +198,61 @@ class WeighBridgeController extends Controller
             );
         }
 
-        $record = WeighbridgeRecord::create([
-            'code' => Str::upper(Str::random(10)),
-            'facility_slug' => $effectiveFacilitySlug ?? null,
-            'provider_slug' => $data['provider_slug'],
-            'fleet_slug' => $data['fleet_slug'] ?? null,
-            'fleet_code' => $data['fleet_code'] ?? null,
-            'gross_weight' => $data['gross_weight'] ?? null,
-            'amount' => $data['amount'],
-            'payment_status' => $data['payment_status'],
-            'scan_status' => $data['scan_status'] ?? 'scanned',
-            'notes' => $data['notes'] ?? null,
-        ]);
+        $payment = null;
+
+        $record = DB::transaction(function () use ($data, $effectiveFacilitySlug, &$payment) {
+            $record = WeighbridgeRecord::create([
+                'code' => 'WB-'.Str::upper(Str::random(8)),
+                'facility_slug' => $effectiveFacilitySlug ?? null,
+                'provider_slug' => $data['provider_slug'],
+                'fleet_slug' => $data['fleet_slug'] ?? null,
+                'fleet_code' => $data['fleet_code'] ?? null,
+                'gross_weight' => $data['gross_weight'] ?? null,
+                'amount' => $data['amount'],
+                'payment_status' => $data['payment_status'],
+                'scan_status' => $data['scan_status'] ?? 'scanned',
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            // Desk payment selected at create time — store Payment without CalPay.
+            if (($data['payment_status'] ?? null) === 'paid') {
+                $provider = Provider::query()->where('provider_slug', $data['provider_slug'])->first();
+                $name = $data['name']
+                    ?? trim(($provider->first_name ?? '').' '.($provider->last_name ?? ''))
+                    ?: ($provider->business_name ?? 'Provider');
+
+                $payment = Payment::create([
+                    'provider_slug' => $data['provider_slug'],
+                    'payment_type' => Payment::PAYMENT_TYPE_WEIGHBRIDGE,
+                    'payable_reference' => $record->code,
+                    'transaction_id' => $data['transaction_id'] ?? ('WB-OFF-'.Str::upper(Str::random(10))),
+                    'payment_method' => $data['payment_method'] ?? 'offline',
+                    'network' => $data['network'] ?? 'offline',
+                    'phone_number' => $data['phone_number'] ?? $provider?->phone_number,
+                    'name' => $name,
+                    'client_email' => $data['client_email'] ?? $provider?->email,
+                    'amount' => round((float) $data['amount'], 2),
+                    'currency' => config('services.calpay.defaults.currency', 'GHS'),
+                    'status' => Payment::STATUS_PAID,
+                    'gateway_payload' => [
+                        'source' => 'facility_desk_create',
+                        'weighbridge_code' => $record->code,
+                    ],
+                ]);
+            }
+
+            return $record;
+        });
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Weighbridge entry recorded successfully",
+            message: 'Action Successful',
+            reason: 'Weighbridge entry recorded successfully',
             status_code: self::API_CREATED,
-            data: $record->toArray()
+            data: [
+                'weighbridge' => $record->toArray(),
+                'payment' => $payment?->toArray(),
+            ]
         );
     }
 
@@ -368,12 +407,22 @@ class WeighBridgeController extends Controller
         );
     }
 
+    /**
+     * Facility confirms offline/bank payment (or credit).
+     * Creates a Payment row without initiating CalPay.
+     */
     public function verifyByTicketCode(Request $request)
     {
         $facility = $request->user();
         $data = $request->validate([
             'code' => ['required', 'string', 'exists:weighbridge_records,code'],
             'payment_status' => ['required', 'string', 'in:paid,credit'],
+            'payment_method' => ['nullable', 'string', 'in:cash,bank,momo,card,offline,credit'],
+            'network' => ['nullable', 'string', 'max:50'],
+            'phone_number' => ['nullable', 'string', 'max:50'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'client_email' => ['nullable', 'email', 'max:255'],
+            'transaction_id' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -383,22 +432,72 @@ class WeighBridgeController extends Controller
             ->first();
 
         if (! $entry) {
-            return self::apiResponse(true, "Action Failed", "Record not found for this facility", self::API_NOT_FOUND, []);
+            return self::apiResponse(true, 'Action Failed', 'Record not found for this facility', self::API_NOT_FOUND, []);
         }
 
-        $entry->payment_status = $data['payment_status'];
-        $entry->scan_status = 'scanned';
-        if (! empty($data['notes'])) {
-            $entry->notes = $data['notes'];
+        if ($entry->payment_status === 'paid') {
+            return self::apiResponse(true, 'Action Failed', 'Weighbridge ticket is already paid', self::API_FAIL, []);
         }
-        $entry->save();
+
+        $payment = null;
+
+        DB::transaction(function () use ($entry, $data, &$payment) {
+            $entry->payment_status = $data['payment_status'];
+            $entry->scan_status = 'scanned';
+            if (! empty($data['notes'])) {
+                $entry->notes = $data['notes'];
+            }
+            $entry->save();
+
+            if ($data['payment_status'] === 'paid') {
+                $provider = Provider::query()->where('provider_slug', $entry->provider_slug)->first();
+                $name = $data['name']
+                    ?? trim(($provider->first_name ?? '').' '.($provider->last_name ?? ''))
+                    ?: ($provider->business_name ?? 'Provider');
+
+                $payment = Payment::create([
+                    'provider_slug' => $entry->provider_slug,
+                    'payment_type' => Payment::PAYMENT_TYPE_WEIGHBRIDGE,
+                    'payable_reference' => $entry->code,
+                    'transaction_id' => $data['transaction_id'] ?? ('WB-OFF-'.Str::upper(Str::random(10))),
+                    'payment_method' => $data['payment_method'] ?? 'offline',
+                    'network' => $data['network'] ?? 'offline',
+                    'phone_number' => $data['phone_number'] ?? $provider?->phone_number,
+                    'name' => $name,
+                    'client_email' => $data['client_email'] ?? $provider?->email,
+                    'amount' => round((float) ($entry->amount ?? 0), 2),
+                    'currency' => config('services.calpay.defaults.currency', 'GHS'),
+                    'status' => Payment::STATUS_PAID,
+                    'gateway_payload' => [
+                        'source' => 'facility_offline_confirm',
+                        'weighbridge_code' => $entry->code,
+                    ],
+                ]);
+            }
+        });
+
+        if ($payment && ! empty($payment->phone_number)) {
+            try {
+                self::sendSms(
+                    $payment->phone_number,
+                    "Weighbridge {$entry->code} marked paid. Amount: GHS {$payment->amount}. Ref: {$payment->transaction_id}",
+                    'WMS',
+                    'weighbridge_receipt'
+                );
+            } catch (\Throwable) {
+                // SMS is best-effort.
+            }
+        }
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Ticket verified and payment mode recorded successfully",
+            message: 'Action Successful',
+            reason: 'Ticket verified and offline payment recorded successfully',
             status_code: self::API_SUCCESS,
-            data: $entry->toArray()
+            data: [
+                'weighbridge' => $entry->fresh()->toArray(),
+                'payment' => $payment?->toArray(),
+            ]
         );
     }
 }

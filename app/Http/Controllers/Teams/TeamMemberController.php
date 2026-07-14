@@ -130,6 +130,8 @@ class TeamMemberController extends Controller
             'phone_number' => ['sometimes', 'string', 'max:50', Rule::unique($context['table'], 'phone_number')->ignore($member->id)],
             'role_slug' => ['sometimes', 'string', 'exists:roles,role_slug'],
             'status' => ['sometimes', 'string', 'in:active,inactive,suspended'],
+            'region' => ['sometimes', 'string', 'max:100'],
+            'district' => ['sometimes', 'string', 'max:100'],
         ]);
 
         if ($validator->fails()) {
@@ -202,7 +204,7 @@ class TeamMemberController extends Controller
 
             Notification::create([
                 'actor' => $context['actor'],
-                'admin_slug' => auth('admin')->user()->admin_slug,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $member->{$context['slug_column']},
                 'title' => 'Account suspended',
                 'message' => trim(
@@ -219,7 +221,7 @@ class TeamMemberController extends Controller
 
             Notification::create([
                 'actor' => $context['actor'],
-                'admin_slug' => auth('admin')->user()->admin_slug,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $member->{$context['slug_column']},
                 'title' => 'Account reactivated',
                 'message' => 'Your account is active again.',
@@ -293,12 +295,12 @@ class TeamMemberController extends Controller
     private function addActorRequiredDefaults(array $context, object $owner, array $payload): array
     {
         if ($context['actor'] === 'facility') {
-            $payload['region'] = $owner->region ?: 'Unknown';
+            $payload['region'] = $owner->region ?: null;
         }
 
         if ($context['actor'] === 'district_assembly') {
-            $payload['region'] = $owner->region ?: 'Unknown';
-            $payload['district'] = $owner->district ?: 'Unknown';
+            $payload['region'] = $owner->region ?: null;
+            $payload['district'] = $owner->district ?: null;
         }
 
         return $payload;

@@ -42,24 +42,6 @@ class ClientController extends Controller
             ->forProvider($providerSlug)
             ->firstOrFail();
 
-        $product = Product::query()
-            ->where('product_slug', $data['product_slug'])
-            ->where('category', Product::CATEGORY_BIN)
-            ->forProvider($providerSlug)
-            ->firstOrFail();
-
-        if ((int) $product->quantity < 1) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'Selected bin product is out of stock',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        unset($data['product_slug']);
-
         $data['client_slug'] = Str::uuid();
         $data['password'] = $password;
         $data['provider_slug'] = $providerSlug;
@@ -71,18 +53,8 @@ class ClientController extends Controller
         $data = static::processImage($image_fields, $data);
         $data = $this->applyGeocodedCoordinates($data);
 
-        $client = DB::transaction(function () use ($data, $product) {
-            $client = Client::create($data);
-
-            BinService::createRegistrationBin(
-                $client,
-                $product,
-                active: (bool) $data['registration_status']
-            );
-            $product->decrement('quantity');
-
-            return $client->fresh(['fee', 'bins.product']);
-        });
+        // Bin is assigned by provider after registration payment succeeds.
+        $client = Client::create($data)->fresh(['fee', 'group', 'bins.product']);
 
         self::sendEmail(
             $client->email,
@@ -97,12 +69,81 @@ class ClientController extends Controller
 
         return self::apiResponse(
             in_error: false,
-            message: "Action Successful",
-            reason: "Client registered successfully",
+            message: 'Action Successful',
+            reason: 'Client registered successfully. Assign a bin after registration payment.',
             status_code: self::API_SUCCESS,
             data: array_merge($client->toArray(), [
                 'requires_registration_payment' => $client->requiresRegistrationPayment(),
             ])
+        );
+    }
+
+    /**
+     * Provider assigns a bin product to a client after registration fee is paid.
+     * Decrements product quantity unless stock is unlimited (-1).
+     */
+    public function assignBin()
+    {
+        $user = Auth::guard('provider')->user();
+        $providerSlug = (string) self::providerScopeSlug($user);
+
+        $data = request()->validate([
+            'client_slug' => ['required', 'string', 'exists:clients,client_slug'],
+            'product_slug' => ['required', 'string', 'exists:products,product_slug'],
+        ]);
+
+        $client = Client::query()
+            ->where('client_slug', $data['client_slug'])
+            ->forProvider($providerSlug)
+            ->first();
+
+        if (! $client) {
+            return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
+        }
+
+        if ($client->requiresRegistrationPayment()) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Client must pay registration fee before a bin can be assigned',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        $product = Product::query()
+            ->where('product_slug', $data['product_slug'])
+            ->where('category', Product::CATEGORY_BIN)
+            ->forProvider($providerSlug)
+            ->first();
+
+        if (! $product) {
+            return self::apiResponse(true, 'Action Failed', 'Bin product not found for this provider', self::API_NOT_FOUND, []);
+        }
+
+        $unlimited = (int) $product->quantity === -1;
+        if (! $unlimited && (int) $product->quantity < 1) {
+            return self::apiResponse(true, 'Action Failed', 'Selected bin product is out of stock', self::API_FAIL, []);
+        }
+
+        $bin = DB::transaction(function () use ($client, $product, $unlimited) {
+            $bin = BinService::assignBinToClient($client, $product, Bin::SOURCE_REGISTRATION);
+            if (! $unlimited) {
+                $product->decrement('quantity');
+            }
+
+            return $bin;
+        });
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Bin assigned to client successfully',
+            status_code: self::API_SUCCESS,
+            data: [
+                'client' => $client->fresh(['fee', 'group', 'bins.product'])->toArray(),
+                'bin' => $bin->load('product')->toArray(),
+            ]
         );
     }
 

@@ -14,11 +14,15 @@ class ZoneAssignmentService
             ->join('zones', 'zones.id', '=', 'provider_zones.zone_id')
             ->where('provider_zones.provider_slug', $providerSlug)
             ->select(
-                'provider_zones.*',
-                'zones.name',
-                'zones.region',
-                'zones.description',
-                'zones.locations',
+                'provider_zones.id as provider_zone_id',
+                'provider_zones.provider_slug as provider_slug',
+                'provider_zones.zone_id as zone_id',
+                'provider_zones.assigned_at as assigned_at',
+                'provider_zones.status as status',
+                'zones.name as zone_name',
+                'zones.region as zone_region',
+                'zones.description as zone_description',
+                'zones.locations as zone_locations',
                 'zones.status as zone_status'
             )
             ->orderByDesc('provider_zones.assigned_at')

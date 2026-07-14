@@ -62,6 +62,7 @@ class CalPayPaymentFinalizer
         if ($client) {
             $client->registration_status = true;
             $client->save();
+            // Bin is assigned by the provider after payment (not auto-created here).
             BinService::activateRegistrationBins($client);
         }
 
@@ -81,8 +82,21 @@ class CalPayPaymentFinalizer
 
     private function finalizePickup(Payment $payment): void
     {
-        if ($payment->pickup_id) {
-            Pickup::query()->where('id', $payment->pickup_id)->update(['status' => 'paid']);
+        if (! $payment->pickup_id) {
+            return;
+        }
+
+        $pickup = Pickup::query()->find($payment->pickup_id);
+        if (! $pickup) {
+            return;
+        }
+
+        $pickup->update(['status' => 'paid']);
+
+        if ($pickup->bulk_waste_request_code) {
+            BulkWasteRequest::query()
+                ->where('request_code', $pickup->bulk_waste_request_code)
+                ->update(['payment_status' => 'paid']);
         }
     }
 

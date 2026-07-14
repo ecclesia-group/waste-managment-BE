@@ -12,19 +12,18 @@ class ZoneUpdationRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $zone = $this->route('zone');
         $zoneId = $zone instanceof Zone ? $zone->id : $zone;
 
         return [
-            'name'        => ['sometimes', Rule::unique('zones')->ignore($zoneId)],
-            'region'      => 'sometimes|string',
+            'name' => ['sometimes', Rule::unique('zones')->ignore($zoneId)],
+            'region' => 'sometimes|string',
             'description' => 'nullable|string',
-            'locations'   => 'nullable|array',
+            'locations' => 'nullable|array',
+            'district_assembly' => 'nullable|string|exists:district_assemblies,district_assembly_slug',
+            'status' => 'nullable|string|in:active,inactive',
         ];
     }
 }

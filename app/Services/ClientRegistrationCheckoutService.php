@@ -33,11 +33,6 @@ class ClientRegistrationCheckoutService
         return DB::transaction(function () use ($client, $checkoutData) {
             $amount = round((float) $client->registration_fee, 2);
             $feeName = $client->fee?->name ?? 'Registration fee';
-            $registrationBin = $client->registrationBin();
-
-            if (! $registrationBin?->product_slug) {
-                throw new \RuntimeException('Registration bin not found for this client');
-            }
 
             $purchase = Purchase::create([
                 'client_slug' => $client->client_slug,
@@ -48,7 +43,7 @@ class ClientRegistrationCheckoutService
 
             PurchaseItem::create([
                 'purchase_id' => $purchase->id,
-                'product_slug' => $registrationBin->product_slug,
+                'product_slug' => 'registration-fee',
                 'name' => $feeName,
                 'price' => $amount,
                 'quantity' => 1,

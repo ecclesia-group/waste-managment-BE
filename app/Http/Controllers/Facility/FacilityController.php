@@ -30,6 +30,7 @@ class FacilityController extends Controller
         $data                  = static::formatPhoneNumbersInData($request->validated());
         $data['facility_slug'] = Str::uuid();
         $data['password']      = $password;
+        $data['admin_slug']    = auth('admin')->user()->admin_slug;
 
         // get all images and check for bases 64 or url business_certificate_image, district_assembly_contract_image, tax_certificate_image, epa_permit_image, profile_image
         $image_fields = [
@@ -76,8 +77,8 @@ class FacilityController extends Controller
         $query = Facility::query();
 
         // Super Admin can filter facilities by MMDA slug.
-        if ($request->filled('district_assembly')) {
-            $query->where('district_assembly', (string) $request->string('district_assembly'));
+        if ($request->filled('district_assembly_slug')) {
+            $query->where('district_assembly_slug', (string) $request->string('district_assembly_slug'));
         }
 
         return $this->paginatedApiResponse(
@@ -110,7 +111,7 @@ class FacilityController extends Controller
 
             Notification::create([
                 'actor' => 'facility',
-                'actor_id' => (string) $facility->id,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $facility->facility_slug,
                 'title' => 'Account suspended',
                 'message' => trim(
@@ -127,7 +128,7 @@ class FacilityController extends Controller
 
             Notification::create([
                 'actor' => 'facility',
-                'actor_id' => (string) $facility->id,
+                'admin_slug' => auth('admin')->user()->admin_slug ?? null,
                 'actor_slug' => $facility->facility_slug,
                 'title' => 'Account reactivated',
                 'message' => 'Your facility account is active again.',

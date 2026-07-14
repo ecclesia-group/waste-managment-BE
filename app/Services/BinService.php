@@ -21,13 +21,27 @@ class BinService
 
     public static function createRegistrationBin(Client $client, Product $product, bool $active = false): Bin
     {
+        return self::assignBinToClient(
+            $client,
+            $product,
+            Bin::SOURCE_REGISTRATION,
+            $active ? Bin::STATUS_ACTIVE : Bin::STATUS_INACTIVE
+        );
+    }
+
+    public static function assignBinToClient(
+        Client $client,
+        Product $product,
+        string $source = Bin::SOURCE_REGISTRATION,
+        string $status = Bin::STATUS_ACTIVE
+    ): Bin {
         return Bin::query()->create([
             'bin_code' => self::uniqueBinCode(),
             'client_slug' => $client->client_slug,
             'provider_slug' => $client->provider_slug,
             'product_slug' => $product->product_slug,
-            'source' => Bin::SOURCE_REGISTRATION,
-            'status' => $active ? Bin::STATUS_ACTIVE : Bin::STATUS_INACTIVE,
+            'source' => $source,
+            'status' => $status,
         ]);
     }
 
