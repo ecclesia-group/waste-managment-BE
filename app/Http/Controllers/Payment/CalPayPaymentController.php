@@ -40,15 +40,16 @@ class CalPayPaymentController extends Controller
         ]);
 
         if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE) {
-            $client = $request->user('client');
-            if (! $client) {
-                return self::apiResponse(true, 'Action Failed', 'Login required to pay registration fee', self::API_FAIL, []);
-            }
-            $data['reference'] = (string) $client->client_slug;
-            if (! $client->requiresRegistrationPayment()) {
-                return self::apiResponse(true, 'Action Failed', 'Registration payment is not required', self::API_FAIL, []);
-            }
-        } elseif (! $request->user()) {
+            return self::apiResponse(
+                true,
+                'Action Failed',
+                'Use POST /api/client/payments/registration for registration fee',
+                self::API_FAIL,
+                []
+            );
+        }
+
+        if (! $request->user()) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }
 

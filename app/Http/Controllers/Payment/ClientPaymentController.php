@@ -9,20 +9,25 @@ use Illuminate\Http\Request;
 
 class ClientPaymentController extends Controller
 {
+    /**
+     * One-step registration fee payment for the logged-in client.
+     * payment_type + reference are set on the server — client only sends optional contact/redirect overrides.
+     */
     public function createRegistrationPayment(Request $request)
     {
         $data = $request->validate([
-            'datacompleteurl' => ['required', 'url', 'max:500'],
-            'datacancelurl' => ['required', 'url', 'max:500'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_contact' => ['nullable', 'string', 'max:50'],
+            // Optional — auto-built from CLIENT_URL if omitted
+            'datacompleteurl' => ['nullable', 'url', 'max:500'],
+            'datacancelurl' => ['nullable', 'url', 'max:500'],
         ]);
 
         /** @var Client $client */
         $client = Client::query()
             ->where('client_slug', $request->user()->client_slug)
-            ->with(['fee', 'bins.product'])
+            ->with(['fee', 'bins.product', 'group'])
             ->firstOrFail();
 
         if (! $client->requiresRegistrationPayment()) {
@@ -33,12 +38,23 @@ class ClientPaymentController extends Controller
                 status_code: self::API_FAIL,
                 data: [
                     'registration_status' => (bool) $client->registration_status,
+                    'requires_registration_payment' => false,
                 ]
             );
         }
 
+        $clientBase = rtrim((string) (config('custom.urls.backend_url') ?: config('app.url')), '/');
+
+        $checkoutData = [
+            'customer_name' => $data['customer_name'] ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')),
+            'customer_email' => $data['customer_email'] ?? $client->email,
+            'customer_contact' => $data['customer_contact'] ?? $client->phone_number,
+            'datacompleteurl' => $data['datacompleteurl'] ?? ($clientBase . '/payment/success'),
+            'datacancelurl' => $data['datacancelurl'] ?? ($clientBase . '/payment/cancelled'),
+        ];
+
         try {
-            $checkout = app(ClientRegistrationCheckoutService::class)->startCheckout($client, $data);
+            $checkout = app(ClientRegistrationCheckoutService::class)->startCheckout($client, $checkoutData);
         } catch (\Throwable $e) {
             return self::apiResponse(
                 in_error: true,
@@ -52,7 +68,7 @@ class ClientPaymentController extends Controller
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Registration checkout created — redirect user to payment_url',
+            reason: 'Registration payment created — redirect user to payment_url',
             status_code: self::API_CREATED,
             data: array_merge($checkout, [
                 'client' => $client->fresh(['group', 'bins.product', 'fee'])->toArray(),

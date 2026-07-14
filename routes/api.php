@@ -72,16 +72,19 @@ Route::prefix("client")->group(function () {
     // Logged in but registration unpaid — logout + pay registration only
     Route::middleware(["auth:client"])->group(function () {
         Route::post("logout", [ClientAuthenticationController::class, "logout"]);
+        // One API: creates payment + CalPay checkout (payment_type/reference set server-side)
         Route::post("payments/registration", [ClientPaymentController::class, "createRegistrationPayment"]);
         Route::get("payments/registration/status", [ClientPaymentController::class, "registrationPaymentStatus"]);
-        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
-        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
     });
 
     // Full access after registration fee is paid
     Route::middleware(["auth:client", "client.registration_paid"])->group(function () {
         Route::post("change_password", [ClientPasswordController::class, "changePassword"]);
         Route::put("update_profile/{client}", [ClientController::class, "updateClientProfile"]);
+
+        // Other CalPay payments (pickup, purchase, bulk) after registration is paid
+        Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
+        Route::get('payments/calpay/status', [CalPayPaymentController::class, 'status']);
 
         // Bulk Waste Request Management
         Route::post('create_bulk_waste_request', [PickupController::class, 'bulkWasteRequest']);
