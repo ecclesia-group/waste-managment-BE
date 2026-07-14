@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->string('actor');
-            $table->string('actor_id');
+            $table->string('admin_slug');
             $table->string('actor_slug');
             $table->string('title');
             $table->text('message');
