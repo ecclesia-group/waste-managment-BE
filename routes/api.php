@@ -126,7 +126,8 @@ Route::prefix("client")->group(function () {
         Route::post('create_purchase', [PurchaseController::class, 'createPurchase']);
         Route::get('get_purchases', [PurchaseController::class, 'listPurchases']);
         Route::get('get_single_purchase/{purchase}', [PurchaseController::class, 'getPurchaseDetails']);
-        Route::get('get_bins', [ClientController::class, 'myBins']);
+        Route::get('get_items', [ClientController::class, 'myItems']);
+        Route::get('get_bins', [ClientController::class, 'myItems']); // alias
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
         Route::get('get_payment_history', [PurchaseController::class, 'getPaymentHistory']);
 
@@ -160,7 +161,8 @@ Route::prefix("provider")->group(function () {
         // Provider payment management
         Route::get("payments", [ProviderPaymentController::class, "listPayments"]);
         Route::get("get_single_payment/{payment}", [ProviderPaymentController::class, "getPayment"]);
-        Route::get("payments/bins", [ProviderPaymentController::class, "binsPayments"]);
+        Route::get("payments/items", [ProviderPaymentController::class, "itemPayments"]);
+        Route::get("payments/bins", [ProviderPaymentController::class, "binsPayments"]); // alias
         Route::get("payments/waste_handover_request", [ProviderPaymentController::class, "wasteHandoverRequestPayments"]);
         Route::get("payments/weighbridge_records", [ProviderPaymentController::class, "weighbridgeRecords"]);
         Route::post('payments/calpay/initiate', [CalPayPaymentController::class, 'initiate']);
@@ -184,7 +186,8 @@ Route::prefix("provider")->group(function () {
 
         // Clients Management
         Route::post("register_client", [ClientController::class, "register"]);
-        Route::post("assign_client_bin", [ClientController::class, "assignBin"]);
+        Route::post("assign_client_item", [ClientController::class, "assignItem"]);
+        Route::post("assign_client_bin", [ClientController::class, "assignItem"]); // alias
         Route::get("all_clients", [ClientController::class, "allClients"]);
         Route::get("get_single_client/{client}", [ClientController::class, "show"]);
         Route::post("update_client_status", [ClientController::class, "updateStatus"]);
@@ -330,6 +333,7 @@ Route::prefix("facility")->group(function () {
         Route::post("update_weigh_bridge_entry_status", [WeighBridgeController::class, "updateStatus"]);
         Route::put("update_weigh_bridge_entry_details/{entry}", [WeighBridgeController::class, "updateEntry"]);
         Route::delete("delete_weigh_bridge_entry/{entry}", [WeighBridgeController::class, "deleteEntry"]);
+        Route::get("payment_records", [WeighBridgeController::class, "paymentRecords"]);
         Route::get("dashboard", [DashboardController::class, "facilityDashboard"]);
 
         // Team RBAC (facility only)

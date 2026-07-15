@@ -407,6 +407,29 @@ class WeighBridgeController extends Controller
         );
     }
 
+    public function paymentRecords(Request $request)
+    {
+        $facility = $request->user();
+        $codes = WeighbridgeRecord::query()
+            ->where('facility_slug', $facility->facility_slug)
+            ->pluck('code')
+            ->all();
+
+        $query = Payment::query()
+            ->where('payment_type', Payment::PAYMENT_TYPE_WEIGHBRIDGE)
+            ->when($codes !== [], fn ($q) => $q->whereIn('payable_reference', $codes), fn ($q) => $q->whereRaw('1 = 0'))
+            ->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return $this->paginatedApiResponse(
+            $query->paginate($this->perPage($request)),
+            'Facility payment records retrieved successfully'
+        );
+    }
+
     /**
      * Facility confirms offline/bank payment (or credit).
      * Creates a Payment row without initiating CalPay.

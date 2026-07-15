@@ -6,7 +6,7 @@ use App\Http\Requests\Pickup\PickupCreationRequest;
 use App\Http\Requests\Pickup\SetPickupDateRequest;
 use App\Http\Requests\Pickup\SetPickupPriceRequest;
 use App\Http\Requests\Pickup\UpdatePickupRequest;
-use App\Models\Bin;
+use App\Models\Item;
 use App\Models\BulkWasteRequest;
 use App\Models\Client;
 use App\Models\Payment;
@@ -715,35 +715,40 @@ class PickupController extends Controller
 
     public function manualCodeScan()
     {
-        $data = request()->validate([
-            'bin_code' => 'required|string|exists:bins,bin_code',
+        $request = request();
+        $request->merge([
+            'item_code' => $request->input('item_code') ?? $request->input('bin_code'),
+        ]);
+
+        $data = $request->validate([
+            'item_code' => 'required|string|exists:items,item_code',
             'pickup_code' => 'required|string|exists:pickups,code',
             'comment' => 'nullable|string|max:2000',
         ]);
 
-        $user = request()->user();
+        $user = $request->user();
 
-        $bin = Bin::query()
-            ->where('bin_code', $data['bin_code'])
-            ->where('status', 'active')
+        $item = Item::query()
+            ->where('item_code', $data['item_code'])
+            ->where('status', Item::STATUS_ACTIVE)
             ->first();
 
-        if (! $bin) {
+        if (! $item) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Bin not found",
+                reason: "Item not found",
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
         }
 
-        // Provider-scoped manual scan: ensure this bin belongs to the current provider.
-        if (isset($user->provider_slug) && (string) $bin->provider_slug !== (string) self::providerScopeSlug($user)) {
+        // Provider-scoped manual scan: ensure this item belongs to the current provider.
+        if (isset($user->provider_slug) && (string) $item->provider_slug !== (string) self::providerScopeSlug($user)) {
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "Unauthorized to scan this bin",
+                reason: "Unauthorized to scan this item",
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -752,8 +757,8 @@ class PickupController extends Controller
         $pickup = Pickup::with(['provider', 'client.group', 'routePlanner'])
             ->where('code', $data['pickup_code'])
             ->whereNotNull('route_planner_id')
-            ->where('client_slug', $bin->client_slug)
-            ->where('provider_slug', $bin->provider_slug)
+            ->where('client_slug', $item->client_slug)
+            ->where('provider_slug', $item->provider_slug)
             ->whereIn('status', ['pending', 'scheduled'])
             ->whereIn('scan_status', ['unscanned', 'pending', 'not_scanned'])
             ->first();
@@ -762,7 +767,7 @@ class PickupController extends Controller
             return self::apiResponse(
                 in_error: true,
                 message: "Action Failed",
-                reason: "No pending pickup found for this bin and pickup",
+                reason: "No pending pickup found for this item and pickup",
                 status_code: self::API_NOT_FOUND,
                 data: []
             );
@@ -779,7 +784,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Pickup scanned successfully",
             status_code: self::API_SUCCESS,
-            data: self::manualScanPickupPayload($pickup, $data['bin_code'])
+            data: self::manualScanPickupPayload($pickup, $data['item_code'])
         );
     }
 

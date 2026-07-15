@@ -27,7 +27,15 @@ class ClientRegistrationCheckoutService
             ->first();
 
         if ($existing) {
-            return $this->formatCheckoutResponse($existing);
+            $existing->fill([
+                'payment_method' => $checkoutData['payment_method'] ?? $existing->payment_method,
+                'network' => $checkoutData['network'] ?? $existing->network,
+                'phone_number' => $checkoutData['customer_contact'] ?? $existing->phone_number,
+                'name' => $checkoutData['customer_name'] ?? $existing->name,
+                'client_email' => $checkoutData['customer_email'] ?? $existing->client_email,
+            ])->save();
+
+            return $this->formatCheckoutResponse($existing->fresh());
         }
 
         return DB::transaction(function () use ($client, $checkoutData) {
@@ -62,8 +70,8 @@ class ClientRegistrationCheckoutService
                 'payable_reference' => $client->client_slug,
                 'transaction_id' => $ctx->orderCode,
                 'calpay_order_code' => $ctx->orderCode,
-                'payment_method' => 'calpay',
-                'network' => 'calpay',
+                'payment_method' => $checkoutData['payment_method'],
+                'network' => $checkoutData['network'],
                 'phone_number' => $checkoutData['customer_contact'] ?? $client->phone_number,
                 'name' => $checkoutData['customer_name'] ?? trim(($client->first_name ?? '').' '.($client->last_name ?? '')),
                 'client_email' => $checkoutData['customer_email'] ?? $client->email,
@@ -95,21 +103,37 @@ class ClientRegistrationCheckoutService
             );
             $payment->save();
 
-            return $this->formatCheckoutResponse($payment->fresh()->load('purchase.items'));
+            return $this->formatCheckoutResponse($payment->fresh());
         });
     }
 
     private function formatCheckoutResponse(Payment $payment): array
     {
         $checkoutUrl = data_get($payment->gateway_payload, 'checkout_url');
+        $orderCode = data_get($payment->gateway_payload, 'request_order_code') ?? $payment->calpay_order_code;
+        $paymentCode = data_get($payment->gateway_payload, 'payment_code');
+
+        $payment->unsetRelations();
+        $paymentData = $payment->makeHidden([
+            'gateway_payload',
+            'callback_payload',
+        ])->toArray();
+
+        unset(
+            $paymentData['gateway_payload'],
+            $paymentData['callback_payload'],
+            $paymentData['client'],
+            $paymentData['purchase'],
+            $paymentData['pickup'],
+            $paymentData['provider'],
+        );
 
         return [
-            'payment' => $payment->toArray(),
-            'purchase' => $payment->purchase?->load('items')?->toArray(),
+            'payment' => $paymentData,
             'payment_url' => $checkoutUrl,
             'checkout_url' => $checkoutUrl,
-            'order_code' => data_get($payment->gateway_payload, 'request_order_code') ?? $payment->calpay_order_code,
-            'payment_code' => data_get($payment->gateway_payload, 'payment_code'),
+            'order_code' => $orderCode,
+            'payment_code' => $paymentCode,
         ];
     }
 }

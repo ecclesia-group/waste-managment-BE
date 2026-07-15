@@ -9,7 +9,7 @@ use App\Models\Pickup;
 use App\Models\Purchase;
 use App\Models\WasteHandoverRequest;
 use App\Models\WeighbridgeRecord;
-use App\Services\BinService;
+use App\Services\ItemService;
 use Illuminate\Support\Facades\DB;
 
 class CalPayPaymentFinalizer
@@ -62,8 +62,7 @@ class CalPayPaymentFinalizer
         if ($client) {
             $client->registration_status = true;
             $client->save();
-            // Bin is assigned by the provider after payment (not auto-created here).
-            BinService::activateRegistrationBins($client);
+            // Item is assigned by the provider after payment (not auto-created here).
         }
 
         if ($payment->purchase_id) {
@@ -113,7 +112,7 @@ class CalPayPaymentFinalizer
         }
 
         $purchase->update(['status' => 'confirmed']);
-        BinService::createBinsForPaidPurchase($purchase);
+        ItemService::createItemsForPaidPurchase($purchase);
     }
 
     private function finalizeHandover(Payment $payment): void

@@ -9,7 +9,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
-use App\Services\BinService;
+use App\Services\ItemService;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseController extends Controller
@@ -214,7 +214,7 @@ class PurchaseController extends Controller
             ]);
 
             $purchase->save();
-            BinService::createBinsForPaidPurchase($purchase);
+            ItemService::createItemsForPaidPurchase($purchase);
 
             // Generate QR code for the bin if this is a bin purchase
             // $client = Client::where('client_slug', $user->client_slug)->first();
@@ -306,7 +306,7 @@ class PurchaseController extends Controller
     protected static function generateQRCode(string $clientSlug, Client $client): ?string
     {
         try {
-            $bin = $client->primaryBin();
+            $item = $client->primaryItem();
 
             $qrData = json_encode([
                 'client_slug' => $clientSlug,
@@ -314,7 +314,8 @@ class PurchaseController extends Controller
                 'phone' => $client->phone_number,
                 'email' => $client->email,
                 'location' => $client->gps_address,
-                'bin_code' => $bin?->bin_code,
+                'item_code' => $item?->item_code,
+                'bin_code' => $item?->item_code,
             ]);
 
             return static::generateQRCodeImage($qrData, $clientSlug);

@@ -5,12 +5,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\RegisterRequest;
 use App\Http\Requests\Client\StatusRequest;
 use App\Http\Requests\Client\UpdateClientProfileRequest;
-use App\Models\Bin;
 use App\Models\Client;
+use App\Models\Item;
 use App\Models\Product;
 use App\Models\ProviderFee;
-use App\Services\BinService;
 use App\Services\ClientLocationGeocodingService;
+use App\Services\ItemService;
 use App\Traits\PaginatesApiResults;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -53,8 +53,8 @@ class ClientController extends Controller
         $data = static::processImage($image_fields, $data);
         $data = $this->applyGeocodedCoordinates($data);
 
-        // Bin is assigned by provider after registration payment succeeds.
-        $client = Client::create($data)->fresh(['fee', 'group', 'bins.product']);
+        // Item is assigned by provider after registration payment succeeds.
+        $client = Client::create($data)->fresh(['fee', 'group', 'items.product']);
 
         self::sendEmail(
             $client->email,
@@ -70,7 +70,7 @@ class ClientController extends Controller
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Client registered successfully. Assign a bin after registration payment.',
+            reason: 'Client registered successfully. Assign an item after registration payment.',
             status_code: self::API_SUCCESS,
             data: array_merge($client->toArray(), [
                 'requires_registration_payment' => $client->requiresRegistrationPayment(),
@@ -79,10 +79,10 @@ class ClientController extends Controller
     }
 
     /**
-     * Provider assigns a bin product to a client after registration fee is paid.
+     * Provider assigns a product to a client after registration fee is paid.
      * Decrements product quantity unless stock is unlimited (-1).
      */
-    public function assignBin()
+    public function assignItem()
     {
         $user = Auth::guard('provider')->user();
         $providerSlug = (string) self::providerScopeSlug($user);
@@ -105,7 +105,7 @@ class ClientController extends Controller
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
-                reason: 'Client must pay registration fee before a bin can be assigned',
+                reason: 'Client must pay registration fee before an item can be assigned',
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -113,36 +113,35 @@ class ClientController extends Controller
 
         $product = Product::query()
             ->where('product_slug', $data['product_slug'])
-            ->where('category', Product::CATEGORY_BIN)
             ->forProvider($providerSlug)
             ->first();
 
         if (! $product) {
-            return self::apiResponse(true, 'Action Failed', 'Bin product not found for this provider', self::API_NOT_FOUND, []);
+            return self::apiResponse(true, 'Action Failed', 'Product not found for this provider', self::API_NOT_FOUND, []);
         }
 
         $unlimited = (int) $product->quantity === -1;
         if (! $unlimited && (int) $product->quantity < 1) {
-            return self::apiResponse(true, 'Action Failed', 'Selected bin product is out of stock', self::API_FAIL, []);
+            return self::apiResponse(true, 'Action Failed', 'Selected product is out of stock', self::API_FAIL, []);
         }
 
-        $bin = DB::transaction(function () use ($client, $product, $unlimited) {
-            $bin = BinService::assignBinToClient($client, $product, Bin::SOURCE_REGISTRATION);
+        $item = DB::transaction(function () use ($client, $product, $unlimited) {
+            $item = ItemService::assignItemToClient($client, $product, Item::SOURCE_ASSIGNED);
             if (! $unlimited) {
                 $product->decrement('quantity');
             }
 
-            return $bin;
+            return $item;
         });
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Bin assigned to client successfully',
+            reason: 'Item assigned to client successfully',
             status_code: self::API_SUCCESS,
             data: [
-                'client' => $client->fresh(['fee', 'group', 'bins.product'])->toArray(),
-                'bin' => $bin->load('product')->toArray(),
+                'client' => $client->fresh(['fee', 'group', 'items.product'])->toArray(),
+                'item' => $item->load('product')->toArray(),
             ]
         );
     }
@@ -153,7 +152,7 @@ class ClientController extends Controller
         $ownerSlug = self::providerScopeSlug($user);
         $clients = Client::query()
             ->forProvider((string) $ownerSlug)
-            ->with(['bins.product'])
+            ->with(['items.product'])
             ->orderByDesc('created_at')
             ->paginate($this->perPage(request()));
 
@@ -188,7 +187,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load(['bins.product'])->toArray()
+            data: $client->load(['items.product'])->toArray()
         );
     }
 
@@ -222,7 +221,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client status updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->load(['bins.product'])->toArray()
+            data: $client->load(['items.product'])->toArray()
         );
     }
 
@@ -281,7 +280,7 @@ class ClientController extends Controller
             message: "Action Successful",
             reason: "Client details updated successfully",
             status_code: self::API_SUCCESS,
-            data: $client->fresh()->load(['bins.product'])->toArray()
+            data: $client->fresh()->load(['items.product'])->toArray()
         );
     }
 
@@ -348,7 +347,9 @@ class ClientController extends Controller
         try {
             $qrData = json_decode($data['qrcode_data'], true);
 
-            if (! $qrData || ! isset($qrData['client_slug']) || ! isset($qrData['bin_code'])) {
+            $itemCode = $qrData['item_code'] ?? $qrData['bin_code'] ?? null;
+
+            if (! $qrData || ! isset($qrData['client_slug']) || ! $itemCode) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
@@ -360,10 +361,10 @@ class ClientController extends Controller
 
             $ownerSlug = self::providerScopeSlug($providerUser);
 
-            $bin = Bin::query()
-                ->where('bin_code', $qrData['bin_code'])
+            $item = Item::query()
+                ->where('item_code', $itemCode)
                 ->forProvider((string) $ownerSlug)
-                ->where('status', Bin::STATUS_ACTIVE)
+                ->where('status', Item::STATUS_ACTIVE)
                 ->first();
 
             $client = Client::query()
@@ -371,11 +372,11 @@ class ClientController extends Controller
                 ->forProvider((string) $ownerSlug)
                 ->first();
 
-            if (! $client || ! $bin || $bin->client_slug !== $client->client_slug) {
+            if (! $client || ! $item || $item->client_slug !== $client->client_slug) {
                 return self::apiResponse(
                     in_error: true,
                     message: "Action Failed",
-                    reason: "Client or bin not found",
+                    reason: "Client or item not found",
                     status_code: self::API_NOT_FOUND,
                     data: []
                 );
@@ -393,9 +394,10 @@ class ClientController extends Controller
                     'email'           => $client->email,
                     'gps_address'     => $client->gps_address,
                     'pickup_location' => $client->pickup_location,
-                    'bin_code'        => $bin->bin_code,
-                    'bin_size'        => $bin->product?->size,
-                    'bin'             => $bin->load('product')->toArray(),
+                    'item_code'       => $item->item_code,
+                    'bin_code'        => $item->item_code,
+                    'bin_size'        => $item->product?->size,
+                    'item'            => $item->load('product')->toArray(),
                 ]
             );
         } catch (\Exception $e) {
@@ -409,20 +411,20 @@ class ClientController extends Controller
         }
     }
 
-    public function myBins()
+    public function myItems()
     {
         $client = Client::query()
             ->where('client_slug', request()->user()->client_slug)
             ->firstOrFail();
 
-        $bins = $client->bins()->with('product')->orderByDesc('id')->get();
+        $items = $client->items()->with('product')->orderByDesc('id')->get();
 
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
-            reason: 'Bins retrieved successfully',
+            reason: 'Items retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $bins->toArray()
+            data: $items->toArray()
         );
     }
 }

@@ -57,7 +57,7 @@ class ProviderPaymentController extends Controller
         );
     }
 
-    public function binsPayments(Request $request)
+    public function itemPayments(Request $request)
     {
         $ownerSlug = (string) self::providerScopeSlug($request->user());
 
@@ -67,8 +67,14 @@ class ProviderPaymentController extends Controller
                 ->where('payment_type', 'pickup')
                 ->latest()
                 ->paginate($this->perPage($request)),
-            'Bin payments retrieved successfully'
+            'Item payments retrieved successfully'
         );
+    }
+
+    /** @deprecated Prefer itemPayments */
+    public function binsPayments(Request $request)
+    {
+        return $this->itemPayments($request);
     }
 
     public function wasteHandoverRequestPayments(Request $request)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\Payment;
 use App\Services\ClientRegistrationCheckoutService;
 use Illuminate\Http\Request;
 
@@ -11,11 +12,14 @@ class ClientPaymentController extends Controller
 {
     /**
      * One-step registration fee payment for the logged-in client.
-     * payment_type + reference are set on the server — client only sends optional contact/redirect overrides.
+     * After paying on CalPay, open the client success/cancel page, then call
+     * GET payments/registration/status before unlocking the dashboard.
      */
     public function createRegistrationPayment(Request $request)
     {
         $data = $request->validate([
+            'payment_method' => ['required', 'string', 'in:momo,card'],
+            'network' => ['nullable', 'string', 'max:50'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_contact' => ['nullable', 'string', 'max:50'],
@@ -24,10 +28,20 @@ class ClientPaymentController extends Controller
             'datacancelurl' => ['nullable', 'url', 'max:500'],
         ]);
 
+        if ($data['payment_method'] === 'momo' && empty($data['network'])) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'network is required when payment_method is momo',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
         /** @var Client $client */
         $client = Client::query()
             ->where('client_slug', $request->user()->client_slug)
-            ->with(['fee', 'bins.product', 'group'])
+            ->with(['fee'])
             ->firstOrFail();
 
         if (! $client->requiresRegistrationPayment()) {
@@ -43,9 +57,15 @@ class ClientPaymentController extends Controller
             );
         }
 
-        $clientBase = rtrim((string) (config('custom.urls.backend_url') ?: config('app.url')), '/');
+        $clientBase = rtrim((string) (
+            config('custom.urls.client_url')
+            ?: config('custom.urls.frontend_url')
+            ?: config('app.url')
+        ), '/');
 
         $checkoutData = [
+            'payment_method' => $data['payment_method'],
+            'network' => $data['network'] ?? ($data['payment_method'] === 'card' ? 'card' : null),
             'customer_name' => $data['customer_name'] ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')),
             'customer_email' => $data['customer_email'] ?? $client->email,
             'customer_contact' => $data['customer_contact'] ?? $client->phone_number,
@@ -70,9 +90,7 @@ class ClientPaymentController extends Controller
             message: 'Action Successful',
             reason: 'Registration payment created — redirect user to payment_url',
             status_code: self::API_CREATED,
-            data: array_merge($checkout, [
-                'client' => $client->fresh(['group', 'bins.product', 'fee'])->toArray(),
-            ])
+            data: $checkout
         );
     }
 
@@ -89,14 +107,24 @@ class ClientPaymentController extends Controller
         $client->syncRegistrationStatusFromPayments();
         $client->refresh();
 
+        $latestPayment = Payment::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
+            ->latest()
+            ->first();
+
         return self::apiResponse(
             in_error: false,
             message: 'Action Successful',
             reason: 'Registration payment status retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: array_merge($client->load('group', 'bins.product', 'fee')->toArray(), [
+            data: [
+                'client_slug' => $client->client_slug,
+                'registration_status' => (bool) $client->registration_status,
                 'requires_registration_payment' => $client->requiresRegistrationPayment(),
-            ]),
+                'payment_status' => $latestPayment?->status,
+                'order_code' => $latestPayment?->calpay_order_code,
+            ],
         );
     }
 }

@@ -73,16 +73,19 @@ class CalPayService
         $rawBody = $response->json() ?? [];
 
         if (! $response->successful()) {
+            $plainBody = trim((string) $response->body());
+
             Log::error('CalPay CreateInvoice HTTP error', [
                 'status' => $response->status(),
-                'body' => $rawBody,
+                'body' => $rawBody ?: $plainBody,
                 'order_code' => $ctx->orderCode,
             ]);
 
-            throw new \RuntimeException(
-                CalPayResponseParser::message($rawBody)
-                ?? 'CalPay payment gateway error (HTTP '.$response->status().')'
-            );
+            $gatewayMessage = CalPayResponseParser::message($rawBody)
+                ?? (strlen($plainBody) > 0 && strlen($plainBody) < 300 ? $plainBody : null)
+                ?? 'CalPay payment gateway error (HTTP '.$response->status().')';
+
+            throw new \RuntimeException($gatewayMessage);
         }
 
         if (! CalPayResponseParser::isSuccess($rawBody)) {

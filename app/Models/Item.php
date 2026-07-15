@@ -6,11 +6,11 @@ use App\Traits\ScopesProviderOrganisation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Bin extends Model
+class Item extends Model
 {
     use ScopesProviderOrganisation, SoftDeletes;
 
-    public const SOURCE_REGISTRATION = 'registration';
+    public const SOURCE_ASSIGNED = 'assigned';
 
     public const SOURCE_PURCHASE = 'purchase';
 
@@ -21,10 +21,11 @@ class Bin extends Model
     public const STATUS_INACTIVE = 'inactive';
 
     protected $fillable = [
-        'bin_code',
+        'item_code',
         'client_slug',
         'provider_slug',
         'product_slug',
+        'purchase_id',
         'source',
         'status',
     ];
@@ -52,6 +53,6 @@ class Bin extends Model
 
     public function getRouteKeyName(): string
     {
-        return 'bin_code';
+        return 'item_code';
     }
 }

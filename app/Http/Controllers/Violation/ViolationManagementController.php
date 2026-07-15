@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Violation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Violation\ViolationCreationRequest;
 use App\Http\Requests\Violation\ViolationUpdateRequest;
-use App\Models\Bin;
+use App\Models\Item;
 use App\Models\Notification;
 use App\Models\Client;
 use App\Models\Violation;
-use App\Services\BinService;
+use App\Services\ItemService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -185,15 +185,15 @@ class ViolationManagementController extends Controller
             violationCode: $data['code'] ?? null
         );
 
-        // If the violation indicates bin damage, regenerate the bin QR + bin_code.
+        // If the violation indicates bin damage, regenerate the item QR + item_code.
         if ($this->isBinDamageType((string) ($data['type'] ?? ''))) {
-            $this->regenerateClientBinQrAndCode($client);
+            $this->regenerateClientItemQrAndCode($client);
 
             $this->createClientViolationNotification(
                 client: $client,
                 violationType: (string) ($data['type'] ?? 'Bin damaged'),
                 location: (string) ($data['location'] ?? ''),
-                description: $data['description'] ?? 'Bin QR code was regenerated due to reported damage.',
+                description: $data['description'] ?? 'Item QR code was regenerated due to reported damage.',
                 violationCode: $data['code'] ?? null,
                 notificationType: 'bin_damage'
             );
@@ -219,21 +219,22 @@ class ViolationManagementController extends Controller
             || str_contains($t, 'bin_damage');
     }
 
-    protected function regenerateClientBinQrAndCode(Client $client): void
+    protected function regenerateClientItemQrAndCode(Client $client): void
     {
-        $oldBin = $client->primaryBin();
+        $oldItem = $client->primaryItem();
 
-        if ($oldBin) {
-            $oldBin->update(['status' => Bin::STATUS_INACTIVE]);
+        if ($oldItem) {
+            $oldItem->update(['status' => Item::STATUS_INACTIVE]);
         }
 
-        $newBin = Bin::query()->create([
-            'bin_code' => BinService::uniqueBinCode(),
+        $newItem = Item::query()->create([
+            'item_code' => ItemService::uniqueItemCode(),
             'client_slug' => $client->client_slug,
             'provider_slug' => $client->provider_slug,
-            'product_slug' => $oldBin?->product_slug,
-            'source' => $oldBin?->source ?? Bin::SOURCE_MANUAL,
-            'status' => Bin::STATUS_ACTIVE,
+            'product_slug' => $oldItem?->product_slug,
+            'purchase_id' => $oldItem?->purchase_id,
+            'source' => $oldItem?->source ?? Item::SOURCE_MANUAL,
+            'status' => Item::STATUS_ACTIVE,
         ]);
 
         $qrData = json_encode([
@@ -242,7 +243,8 @@ class ViolationManagementController extends Controller
             'phone' => $client->phone_number,
             'email' => $client->email,
             'location' => $client->gps_address,
-            'bin_code' => $newBin->bin_code,
+            'item_code' => $newItem->item_code,
+            'bin_code' => $newItem->item_code,
         ]);
 
         static::generateQRCodeImage($qrData, $client->client_slug);

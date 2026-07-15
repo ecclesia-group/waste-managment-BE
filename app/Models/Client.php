@@ -57,7 +57,7 @@ class Client extends Actor
         $paid = Payment::query()
             ->where('client_slug', $this->client_slug)
             ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
-            ->where('status', Payment::STATUS_PAID)
+            ->whereIn('status', [Payment::STATUS_PAID, Payment::STATUS_SUCCESSFUL])
             ->exists();
 
         if ($paid && ! $this->registration_status) {
@@ -113,32 +113,33 @@ class Client extends Actor
         return $this->belongsTo(Group::class, 'group_slug', 'group_slug');
     }
 
-    public function bins()
+    public function items()
     {
-        return $this->hasMany(Bin::class, 'client_slug', 'client_slug');
+        return $this->hasMany(Item::class, 'client_slug', 'client_slug');
     }
 
-    public function activeBins()
+    public function activeItems()
     {
-        return $this->bins()->where('status', Bin::STATUS_ACTIVE);
+        return $this->items()->where('status', Item::STATUS_ACTIVE);
     }
 
-    public function registrationBin(): ?Bin
+    public function primaryItem(): ?Item
     {
-        return $this->bins()
-            ->where('source', Bin::SOURCE_REGISTRATION)
+        return $this->activeItems()
+            ->whereHas('product', fn ($q) => $q->where('category', Product::CATEGORY_BIN))
             ->orderByDesc('id')
             ->first();
     }
 
-    public function primaryBin(): ?Bin
+    public function getItemCodeAttribute(): ?string
     {
-        return $this->activeBins()->orderByDesc('id')->first();
+        return $this->primaryItem()?->item_code;
     }
 
+    /** @deprecated Prefer item_code; kept for pickup/QR compatibility. */
     public function getBinCodeAttribute(): ?string
     {
-        return $this->primaryBin()?->bin_code;
+        return $this->item_code;
     }
 
     public function getPickupLocationAttribute(): ?string
@@ -148,7 +149,7 @@ class Client extends Actor
 
     public function getBinSizeAttribute(): ?string
     {
-        return $this->primaryBin()?->product?->size;
+        return $this->primaryItem()?->product?->size;
     }
 
     public function getCoordinatesAttribute(): array

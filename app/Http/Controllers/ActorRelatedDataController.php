@@ -83,7 +83,7 @@ class ActorRelatedDataController extends Controller
     {
         $query = Client::query()
             ->forProvider((string) $provider->provider_slug)
-            ->with(['bins.product'])
+            ->with(['items.product'])
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(
@@ -103,7 +103,7 @@ class ActorRelatedDataController extends Controller
             message: 'Action Successful',
             reason: 'Client retrieved successfully',
             status_code: self::API_SUCCESS,
-            data: $client->load(['bins.product'])->toArray()
+            data: $client->load(['items.product'])->toArray()
         );
     }
 
@@ -357,7 +357,7 @@ class ActorRelatedDataController extends Controller
 
         $query = Client::query()
             ->whereIn('provider_slug', $providerSlugs)
-            ->with(['bins.product'])
+            ->with(['items.product'])
             ->orderByDesc('created_at');
 
         return $this->paginatedApiResponse(

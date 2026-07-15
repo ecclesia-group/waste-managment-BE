@@ -54,26 +54,28 @@ trait HasClientMapPayload
             'category' => $client->type,
             'latitude' => $coords['latitude'],
             'longitude' => $coords['longitude'],
-            'bin_code' => $client->bin_code,
+            'item_code' => $client->item_code,
+            'bin_code' => $client->item_code,
             'group_slug' => $client->group_slug,
             'group_name' => $group?->name,
         ];
     }
 
     /**
-     * Manual bin scan + change_scan_status: pickup_id, bin_code, pickup record, and client.
+     * Manual item scan + change_scan_status: pickup_id, item_code, pickup record, and client.
      */
-    protected static function manualScanPickupPayload(Pickup $pickup, ?string $binCode = null): array
+    protected static function manualScanPickupPayload(Pickup $pickup, ?string $itemCode = null): array
     {
         $pickup->loadMissing(['client.group', 'routePlanner']);
         $client = $pickup->client;
-        $resolvedBinCode = $binCode ?? $client?->bin_code;
+        $resolvedItemCode = $itemCode ?? $client?->item_code;
 
         $routePlanner = $pickup->routePlanner;
 
         return [
             'pickup_id' => $pickup->id,
-            'bin_code' => $resolvedBinCode,
+            'item_code' => $resolvedItemCode,
+            'bin_code' => $resolvedItemCode,
             'id' => $pickup->id,
             'code' => $pickup->code,
             'route_planner_id' => $pickup->route_planner_id,
