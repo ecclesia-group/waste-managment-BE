@@ -52,6 +52,16 @@ class CalPayCallbackController extends Controller
         );
     }
 
+    /**
+     * Called by GET /client/payments/registration/status when the client app
+     * forwards CalPay return query params (ordercode, paytoken, status).
+     */
+    public function confirmFromClient(array $payload): void
+    {
+        $request = Request::create('/internal/calpay-confirm', 'POST', $payload);
+        $this->process($request, source: 'client_confirm');
+    }
+
     private function process(Request $request, string $source)
     {
         $payload = array_merge($request->query(), $request->all());
@@ -196,10 +206,12 @@ class CalPayCallbackController extends Controller
         }
 
         // Browser success landing without an explicit status: treat as paid.
-        // Do NOT treat browser_cancelled as cancelled by itself — CalPay often
-        // lands on cancel URLs even after a successful charge; trust callback payload.
-        if (str_contains($source, 'browser_success')) {
-            return 'paid';
+        // Client confirm with paytoken/orderCode and no status also means success path.
+        if (str_contains($source, 'browser_success') || $source === 'client_confirm') {
+            $explicit = data_get($payload, 'status') ?? data_get($payload, 'STATUS');
+            if ($explicit === null || $explicit === '') {
+                return 'paid';
+            }
         }
 
         return 'pending';

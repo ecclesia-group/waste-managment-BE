@@ -58,13 +58,32 @@ class ClientPaymentController extends Controller
             );
         }
 
-        $clientBase = rtrim((string) (
-            config('custom.urls.client_url')
-            ?: config('custom.urls.frontend_url')
+        // Browser returns MUST hit the backend first so we can finalize the payment
+        // (CalPay server callback often never fires). Backend then redirects to CLIENT_URL.
+        $backendBase = rtrim((string) (
+            config('custom.urls.backend_url')
             ?: config('app.url')
         ), '/');
 
-        Log::info('Client base URL: ' . $clientBase);
+        // If APP_URL is local but CalPay callback is public, derive backend from callback host.
+        $callbackUrl = (string) config('services.calpay.callback_url');
+        if (
+            $callbackUrl !== ''
+            && (str_contains($backendBase, 'localhost') || str_contains($backendBase, '127.0.0.1'))
+        ) {
+            $backendBase = rtrim((string) preg_replace('#/api/payment_callback/?$#i', '', $callbackUrl), '/');
+        }
+
+        $completeUrl = $data['datacompleteurl'] ?? ($backendBase.'/payment/success');
+        $cancelUrl = $data['datacancelurl'] ?? ($backendBase.'/payment/cancelled');
+
+        Log::info('Registration payment redirect URLs', [
+            'backend_base' => $backendBase,
+            'client_base' => config('custom.urls.client_url'),
+            'datacompleteurl' => $completeUrl,
+            'datacancelurl' => $cancelUrl,
+            'callback_url' => $callbackUrl,
+        ]);
 
         $checkoutData = [
             'payment_method' => $data['payment_method'],
@@ -72,8 +91,8 @@ class ClientPaymentController extends Controller
             'customer_name' => $data['customer_name'] ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')),
             'customer_email' => $data['customer_email'] ?? $client->email,
             'customer_contact' => $data['customer_contact'] ?? $client->phone_number,
-            'datacompleteurl' => $data['datacompleteurl'] ?? ($clientBase . '/payment/success'),
-            'datacancelurl' => $data['datacancelurl'] ?? ($clientBase . '/payment/cancelled'),
+            'datacompleteurl' => $completeUrl,
+            'datacancelurl' => $cancelUrl,
         ];
 
         try {
@@ -105,6 +124,24 @@ class ClientPaymentController extends Controller
 
         if (! $client) {
             return self::apiResponse(true, 'Action Failed', 'Client not found', self::API_NOT_FOUND, []);
+        }
+
+        // Client success page can forward CalPay query params so we finalize
+        // even when the server callback never arrives.
+        $confirm = array_filter([
+            'orderCode' => $request->query('ordercode') ?? $request->query('orderCode') ?? $request->input('order_code'),
+            'paytoken' => $request->query('paytoken') ?? $request->input('paytoken'),
+            'status' => $request->query('status') ?? $request->input('status'),
+            'PAYMENTCODE' => $request->query('paymentcode') ?? $request->input('payment_code'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($confirm !== []) {
+            Log::info('Registration status confirm from client', [
+                'client_slug' => $client->client_slug,
+                'confirm' => $confirm,
+            ]);
+
+            app(CalPayCallbackController::class)->confirmFromClient($confirm);
         }
 
         $client->syncRegistrationStatusFromPayments();

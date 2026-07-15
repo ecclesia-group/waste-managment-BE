@@ -21,6 +21,14 @@ class CalPayService
         $amount = round($ctx->amount, 2);
         $callback = rtrim($callbackUrl ?? config('services.calpay.callback_url'), '/ ');
 
+        Log::info('CalPay CreateInvoice request', [
+            'order_code' => $ctx->orderCode,
+            'amount' => $amount,
+            'callbackurl' => $callback,
+            'datacompleteurl' => $completeUrl,
+            'datacancelurl' => $cancelUrl,
+        ]);
+
         $payload = [
             'requestType' => 'CreateInvoice',
             'merchant' => [

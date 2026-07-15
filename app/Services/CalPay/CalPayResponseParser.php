@@ -86,9 +86,9 @@ class CalPayResponseParser
         $candidates = [
             data_get($payload, 'orderCode'),
             data_get($payload, 'ORDERCODE'),
+            data_get($payload, 'ordercode'),
             data_get($payload, 'order.orderCode'),
             data_get($payload, 'order_code'),
-            data_get($payload, 'ordercode'),
             data_get($payload, 'OrderCode'),
             data_get($payload, 'transaction_id'),
             data_get($payload, 'TRANSACTIONID'),
@@ -115,6 +115,7 @@ class CalPayResponseParser
             data_get($payload, 'PAYMENTTOKEN'),
             data_get($payload, 'paymentToken'),
             data_get($payload, 'paytoken'),
+            data_get($payload, 'payToken'),
             data_get(self::firstResult($payload), 'PAYMENTCODE'),
             data_get(self::firstResult($payload), 'PAYMENTTOKEN'),
         ];
