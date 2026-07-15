@@ -121,6 +121,8 @@ class CalPayPaymentController extends Controller
                     $data['customer_contact'],
                     $data['datacompleteurl'],
                     $data['datacancelurl'],
+                    null,
+                    $data['datacompleteurl'],
                 );
 
                 $gatewayPayload = array_merge(

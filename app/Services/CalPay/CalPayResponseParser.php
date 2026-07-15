@@ -72,13 +72,78 @@ class CalPayResponseParser
         }
 
         return [
-            'payment_token' => $row['PAYMENTTOKEN'] ?? null,
-            'payment_code' => $row['PAYMENTCODE'] ?? null,
+            'payment_token' => $row['PAYMENTTOKEN'] ?? $row['payToken'] ?? $row['PAYTOKEN'] ?? null,
+            'pay_token' => $row['payToken'] ?? $row['PAYTOKEN'] ?? $row['PAYMENTTOKEN'] ?? null,
+            'payment_code' => $row['PAYMENTCODE'] ?? $row['paymentCode'] ?? null,
             'short_pay_code' => $row['SHORTPAYCODE'] ?? null,
-            'order_code' => $row['ORDERCODE'] ?? null,
-            'qr_code_url' => isset($row['QRLCODEURL']) ? str_replace('\\/', '/', (string) $row['QRLCODEURL']) : null,
-            'description' => $row['DESCRIPTION'] ?? null,
+            'order_code' => $row['ORDERCODE'] ?? $row['orderCode'] ?? null,
+            'qr_code_url' => isset($row['QRLCODEURL'])
+                ? str_replace('\\/', '/', (string) $row['QRLCODEURL'])
+                : (isset($row['qrCodeUrl']) ? str_replace('\\/', '/', (string) $row['qrCodeUrl']) : null),
+            'description' => $row['DESCRIPTION'] ?? $row['description'] ?? null,
+            'status' => $row['STATUS'] ?? $row['status'] ?? $row['FINALSTATUS'] ?? null,
         ];
+    }
+
+    /** Normalize invoice STATUS/FINALSTATUS/GSTATUS from GetInvoiceDetails. */
+    public static function invoiceStatus(mixed $body): ?string
+    {
+        $row = self::firstResult($body);
+        if ($row === null) {
+            return null;
+        }
+
+        foreach (['FINALSTATUS', 'GSTATUS', 'TRFINALSTATUS', 'STATUS', 'status'] as $key) {
+            if (! empty($row[$key])) {
+                return (string) $row[$key];
+            }
+        }
+
+        return null;
+    }
+
+    public static function invoiceLooksPaid(mixed $body): bool
+    {
+        $row = self::firstResult($body);
+        if ($row === null) {
+            return false;
+        }
+
+        $candidates = [
+            $row['FINALSTATUS'] ?? null,
+            $row['GSTATUS'] ?? null,
+            $row['TRFINALSTATUS'] ?? null,
+            $row['STATUS'] ?? null,
+            $row['status'] ?? null,
+            $row['GMESSAGE'] ?? null,
+        ];
+
+        foreach ($candidates as $value) {
+            $v = strtoupper(trim((string) $value));
+            if ($v === '') {
+                continue;
+            }
+
+            if (in_array($v, [
+                'PAID',
+                'SUCCESS',
+                'SUCCESSFUL',
+                'COMPLETED',
+                'COMPLETE',
+                'APPROVED',
+                'MMCAPTURED',
+                'MM-CAPTURED',
+                'CAPTURED',
+            ], true)) {
+                return true;
+            }
+
+            if (str_contains($v, 'CAPTURED') || str_contains($v, 'SUCCESS')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function extractOrderCodeFromCallback(array $payload): ?string

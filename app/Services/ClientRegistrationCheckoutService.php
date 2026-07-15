@@ -61,6 +61,8 @@ class ClientRegistrationCheckoutService
                 (string) ($checkoutData['customer_contact'] ?? $payment->phone_number),
                 (string) $checkoutData['datacompleteurl'],
                 (string) $checkoutData['datacancelurl'],
+                null,
+                (string) ($checkoutData['approveurl'] ?? $checkoutData['datacompleteurl']),
             );
 
             $payment->gateway_payload = [
@@ -146,6 +148,7 @@ class ClientRegistrationCheckoutService
 
         return [
             'payment' => $paymentData,
+            'payment_link' => $checkoutUrl,
             'payment_url' => $checkoutUrl,
             'checkout_url' => $checkoutUrl,
             'order_code' => $orderCode,

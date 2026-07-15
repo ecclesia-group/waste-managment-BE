@@ -9,6 +9,15 @@ return [
         'api_key' => env('CALPAY_MERCHANT_API_KEY'),
         'type' => env('CALPAY_MERCHANT_TYPE', 'EMAIL'),
         'env' => env('CALPAY_MERCHANT_ENV', 'LIVE'),
+        // Optional settlement fields (docs mark required; sample often uses empty string)
+        'destination_account' => env('CALPAY_DESTINATION_ACCOUNT', ''),
+        'sb_merchant_id' => env('CALPAY_SB_MERCHANT_ID', ''),
+    ],
+
+    'payment' => [
+        'account_type' => env('CALPAY_PAYMENT_ACCOUNT_TYPE', ''),
+        'account_number' => env('CALPAY_PAYMENT_ACCOUNT_NUMBER', ''),
+        'mode' => env('CALPAY_PAYMENT_MODE', ''),
     ],
 
     'callback_url' => env('CALPAY_CALLBACK_URL', env('APP_URL').'/api/payment_callback'),

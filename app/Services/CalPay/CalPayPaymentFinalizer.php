@@ -49,7 +49,11 @@ class CalPayPaymentFinalizer
 
         return match (true) {
             in_array($value, ['0', '00', '000'], true) => Payment::STATUS_PAID,
-            in_array($value, ['paid', 'success', 'successful', 'completed', 'complete', 'approved', 'accept', 'accepted'], true) => Payment::STATUS_PAID,
+            in_array($value, [
+                'paid', 'success', 'successful', 'completed', 'complete', 'approved',
+                'accept', 'accepted', 'mmcaptured', 'mm-captured', 'captured',
+            ], true) => Payment::STATUS_PAID,
+            str_contains($value, 'captured') || str_contains($value, 'success') => Payment::STATUS_PAID,
             in_array($value, ['failed', 'fail', 'declined', 'rejected', 'error'], true) => Payment::STATUS_FAILED,
             in_array($value, ['cancelled', 'canceled', 'cancel'], true) => Payment::STATUS_CANCELLED,
             default => Payment::STATUS_PENDING,
