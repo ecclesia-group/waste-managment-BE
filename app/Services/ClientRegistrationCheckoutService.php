@@ -12,50 +12,23 @@ use Illuminate\Support\Facades\DB;
 
 class ClientRegistrationCheckoutService
 {
+    /**
+     * Always issues a fresh CalPay invoice.
+     * Reuses the pending registration purchase/items; abandons stale pending payments
+     * (old checkout URLs expire and can cause ERR_TOO_MANY_REDIRECTS).
+     */
     public function startCheckout(Client $client, array $checkoutData): array
     {
         if (! $client->requiresRegistrationPayment()) {
             throw new \RuntimeException('Registration payment is not required for this client');
         }
 
-        $existing = Payment::query()
-            ->where('client_slug', $client->client_slug)
-            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
-            ->where('status', Payment::STATUS_PENDING)
-            ->whereNotNull('calpay_order_code')
-            ->latest()
-            ->first();
-
-        if ($existing) {
-            $existing->fill([
-                'payment_method' => $checkoutData['payment_method'] ?? $existing->payment_method,
-                'network' => $checkoutData['network'] ?? $existing->network,
-                'phone_number' => $checkoutData['customer_contact'] ?? $existing->phone_number,
-                'name' => $checkoutData['customer_name'] ?? $existing->name,
-                'client_email' => $checkoutData['customer_email'] ?? $existing->client_email,
-            ])->save();
-
-            return $this->formatCheckoutResponse($existing->fresh());
-        }
-
         return DB::transaction(function () use ($client, $checkoutData) {
+            $this->abandonPendingRegistrationPayments($client);
+
             $amount = round((float) $client->registration_fee, 2);
             $feeName = $client->fee?->name ?? 'Registration fee';
-
-            $purchase = Purchase::create([
-                'client_slug' => $client->client_slug,
-                'number_of_items' => 1,
-                'total_price' => $amount,
-                'status' => 'pending',
-            ]);
-
-            PurchaseItem::create([
-                'purchase_id' => $purchase->id,
-                'product_slug' => 'registration-fee',
-                'name' => $feeName,
-                'price' => $amount,
-                'quantity' => 1,
-            ]);
+            $purchase = $this->resolveRegistrationPurchase($client, $amount, $feeName);
 
             $ctx = app(CalPayPaymentResolver::class)->resolve(
                 Payment::PAYMENT_TYPE_REGISTRATION_FEE,
@@ -90,21 +63,64 @@ class ClientRegistrationCheckoutService
                 (string) $checkoutData['datacancelurl'],
             );
 
-            $payment->gateway_payload = array_merge(
-                ['raw' => $invoice['gateway_response']],
-                ['parsed' => $invoice['gateway_parsed'] ?? []],
-                [
-                    'checkout_url' => $invoice['checkout_url'],
-                    'request_order_code' => $invoice['order_code'],
-                    'result_order_code' => $invoice['calpay_order_code'] ?? null,
-                    'payment_token' => $invoice['payment_token'] ?? null,
-                    'payment_code' => $invoice['payment_code'] ?? null,
-                ]
-            );
+            $payment->gateway_payload = [
+                'raw' => $invoice['gateway_response'],
+                'parsed' => $invoice['gateway_parsed'] ?? [],
+                'checkout_url' => $invoice['checkout_url'],
+                'request_order_code' => $invoice['order_code'],
+                'result_order_code' => $invoice['calpay_order_code'] ?? null,
+                'payment_token' => $invoice['payment_token'] ?? null,
+                'payment_code' => $invoice['payment_code'] ?? null,
+            ];
             $payment->save();
 
             return $this->formatCheckoutResponse($payment->fresh());
         });
+    }
+
+    private function abandonPendingRegistrationPayments(Client $client): void
+    {
+        Payment::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
+            ->where('status', Payment::STATUS_PENDING)
+            ->update(['status' => Payment::STATUS_CANCELLED]);
+    }
+
+    private function resolveRegistrationPurchase(Client $client, float $amount, string $feeName): Purchase
+    {
+        $purchase = Purchase::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('status', 'pending')
+            ->whereHas('items', fn ($q) => $q->where('product_slug', 'registration-fee'))
+            ->latest('id')
+            ->first();
+
+        if ($purchase) {
+            $purchase->update([
+                'total_price' => $amount,
+                'number_of_items' => 1,
+            ]);
+
+            return $purchase;
+        }
+
+        $purchase = Purchase::create([
+            'client_slug' => $client->client_slug,
+            'number_of_items' => 1,
+            'total_price' => $amount,
+            'status' => 'pending',
+        ]);
+
+        PurchaseItem::create([
+            'purchase_id' => $purchase->id,
+            'product_slug' => 'registration-fee',
+            'name' => $feeName,
+            'price' => $amount,
+            'quantity' => 1,
+        ]);
+
+        return $purchase;
     }
 
     private function formatCheckoutResponse(Payment $payment): array
