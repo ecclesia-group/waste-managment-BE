@@ -14,7 +14,11 @@ class ForceJsonResponse
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $request->headers->set('Accept', 'application/json');
+        // Keep browser payment return pages as HTML, not forced JSON.
+        if (! $request->is('payment/*')) {
+            $request->headers->set('Accept', 'application/json');
+        }
+
         return $next($request);
     }
 }

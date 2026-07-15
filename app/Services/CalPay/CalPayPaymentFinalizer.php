@@ -17,6 +17,13 @@ class CalPayPaymentFinalizer
     public function apply(Payment $payment, string $normalizedStatus): void
     {
         DB::transaction(function () use ($payment, $normalizedStatus) {
+            $currentStatus = (string) $payment->status;
+
+            // Do not downgrade a paid payment (e.g. late cancel browser hit).
+            if ($this->isPaid($currentStatus) && ! $this->isPaid($normalizedStatus)) {
+                return;
+            }
+
             $payment->status = $normalizedStatus;
             $payment->save();
 
@@ -38,10 +45,11 @@ class CalPayPaymentFinalizer
 
     public function normalizeStatus(mixed $raw): string
     {
-        $value = strtolower((string) $raw);
+        $value = strtolower(trim((string) $raw));
 
         return match (true) {
-            in_array($value, ['paid', 'success', 'successful', 'completed', 'complete', 'approved'], true) => Payment::STATUS_PAID,
+            in_array($value, ['0', '00', '000'], true) => Payment::STATUS_PAID,
+            in_array($value, ['paid', 'success', 'successful', 'completed', 'complete', 'approved', 'accept', 'accepted'], true) => Payment::STATUS_PAID,
             in_array($value, ['failed', 'fail', 'declined', 'rejected', 'error'], true) => Payment::STATUS_FAILED,
             in_array($value, ['cancelled', 'canceled', 'cancel'], true) => Payment::STATUS_CANCELLED,
             default => Payment::STATUS_PENDING,

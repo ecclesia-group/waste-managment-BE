@@ -59,8 +59,8 @@ Route::get('test_sms', function () {
     return response()->json(['queued' => true, 'queue' => 'sms']);
 });
 
-/** CalPay server-to-server callback (no auth). */
-Route::post('payment_callback', [CalPayCallbackController::class, 'handle']);
+/** CalPay server-to-server callback (no auth). Accept GET or POST. */
+Route::match(['get', 'post'], 'payment_callback', [CalPayCallbackController::class, 'handle']);
 
 Route::prefix("client")->group(function () {
     // Public — no token required

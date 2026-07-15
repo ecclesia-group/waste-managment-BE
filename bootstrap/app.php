@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(App\Http\Middleware\ForceJsonResponse::class);
         $middleware->append(App\Http\Middleware\CrossOrigin::class);
+        $middleware->validateCsrfTokens(except: [
+            'payment/*',
+            'api/payment_callback',
+            'payment_callback',
+        ]);
         $middleware->alias([
             'permission' => App\Http\Middleware\CheckPermission::class,
             'client.registration_paid' => App\Http\Middleware\EnsureClientRegistrationPayment::class,

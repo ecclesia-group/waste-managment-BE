@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Services\ClientRegistrationCheckoutService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ClientPaymentController extends Controller
 {
@@ -63,6 +64,8 @@ class ClientPaymentController extends Controller
             ?: config('app.url')
         ), '/');
 
+        Log::info('Client base URL: ' . $clientBase);
+
         $checkoutData = [
             'payment_method' => $data['payment_method'],
             'network' => $data['network'] ?? ($data['payment_method'] === 'card' ? 'card' : null),
@@ -107,10 +110,17 @@ class ClientPaymentController extends Controller
         $client->syncRegistrationStatusFromPayments();
         $client->refresh();
 
-        $latestPayment = Payment::query()
+        $paidPayment = Payment::query()
             ->where('client_slug', $client->client_slug)
             ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
-            ->latest()
+            ->whereIn('status', [Payment::STATUS_PAID, Payment::STATUS_SUCCESSFUL])
+            ->latest('id')
+            ->first();
+
+        $latestPayment = $paidPayment ?? Payment::query()
+            ->where('client_slug', $client->client_slug)
+            ->where('payment_type', Payment::PAYMENT_TYPE_REGISTRATION_FEE)
+            ->latest('id')
             ->first();
 
         return self::apiResponse(
