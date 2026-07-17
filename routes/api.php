@@ -326,6 +326,7 @@ Route::prefix("facility")->group(function () {
         Route::get("all_fleets", [FleetManagementController::class, "getAllFleets"]);
 
         // Weigh Bridge Management
+        Route::match(['get', 'post'], 'lookup_fleet_by_plate', [WeighBridgeController::class, 'lookupFleetByPlate']);
         Route::post("register_weigh_bridge_entry", [WeighBridgeController::class, "registerEntry"]);
         Route::post("verify_weigh_bridge_ticket", [WeighBridgeController::class, "verifyByTicketCode"]);
         Route::get("all_weigh_bridge_entries", [WeighBridgeController::class, "allEntries"]);

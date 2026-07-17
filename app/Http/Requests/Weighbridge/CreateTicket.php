@@ -14,9 +14,8 @@ class CreateTicket extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_slug' => ['required', 'string', 'exists:providers,provider_slug'],
-            'fleet_slug' => ['nullable', 'string', 'exists:fleets,fleet_slug'],
-            'fleet_code' => ['nullable', 'string'],
+            // fleet_code = fleets.license_plate — provider is resolved from that fleet
+            'fleet_code' => ['required', 'string', 'max:50'],
             'gross_weight' => ['nullable', 'numeric', 'min:0'],
             'amount' => ['required', 'numeric', 'min:0'],
             // credit = pay later; pending_payment = unpaid; paid = already settled offline at desk

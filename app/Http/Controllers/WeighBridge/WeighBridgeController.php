@@ -5,6 +5,7 @@ namespace App\Http\Controllers\WeighBridge;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Weighbridge\CreateTicket;
 use App\Models\Facility;
+use App\Models\Fleet;
 use App\Models\Payment;
 use App\Models\Provider;
 use App\Models\WeighbridgeRecord;
@@ -32,10 +33,10 @@ class WeighBridgeController extends Controller
 
         $facilityDistrict = Facility::query()
             ->where('facility_slug', $data['facility_slug'])
-            ->value('district_assembly');
-        $providerDistrict = \App\Models\Provider::query()
+            ->value('district_assembly_slug');
+        $providerDistrict = Provider::query()
             ->where('provider_slug', $providerSlug)
-            ->value('district_assembly');
+            ->value('district_assembly_slug');
 
         if ($facilityDistrict !== null && $providerDistrict !== null && (string) $facilityDistrict !== (string) $providerDistrict) {
             return self::apiResponse(
@@ -176,23 +177,120 @@ class WeighBridgeController extends Controller
         return self::apiResponse(false, "Action Successful", "Weighbridge record deleted successfully", self::API_SUCCESS, []);
     }
 
+    /**
+     * Resolve provider from fleet license plate (fleet_code).
+     * GET/POST /api/facility/lookup_fleet_by_plate?fleet_code=GR-1234-21
+     */
+    public function lookupFleetByPlate(Request $request)
+    {
+        $data = $request->validate([
+            'fleet_code' => ['required', 'string', 'max:50'],
+        ]);
+
+        $facility = $request->user();
+        $licensePlate = trim((string) $data['fleet_code']);
+
+        $fleet = Fleet::query()
+            ->whereRaw('LOWER(license_plate) = ?', [Str::lower($licensePlate)])
+            ->with('provider')
+            ->first();
+
+        if (! $fleet || ! $fleet->provider) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'No fleet/provider found for this license plate',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $provider = $fleet->provider;
+        $facilityDistrict = $facility->district_assembly_slug;
+        $providerDistrict = $provider->district_assembly_slug;
+
+        if ($facilityDistrict !== null && $providerDistrict !== null
+            && (string) $facilityDistrict !== (string) $providerDistrict) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Provider for this fleet is not in this facility\'s district assembly',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Fleet and provider resolved from license plate',
+            status_code: self::API_SUCCESS,
+            data: [
+                'fleet' => [
+                    'fleet_slug' => $fleet->fleet_slug,
+                    'license_plate' => $fleet->license_plate,
+                    'vehicle_make' => $fleet->vehicle_make,
+                    'model' => $fleet->model,
+                    'provider_slug' => $fleet->provider_slug,
+                ],
+                'provider' => [
+                    'provider_slug' => $provider->provider_slug,
+                    'business_name' => $provider->business_name ?? null,
+                    'first_name' => $provider->first_name ?? null,
+                    'last_name' => $provider->last_name ?? null,
+                    'phone_number' => $provider->phone_number ?? null,
+                    'email' => $provider->email ?? null,
+                    'district_assembly_slug' => $provider->district_assembly_slug ?? null,
+                ],
+            ]
+        );
+    }
+
     public function registerEntry(CreateTicket $request)
     {
         $facility = $request->user();
         $effectiveFacilitySlug = $facility->facility_slug;
-        $effectiveDistrictSlug = $facility->district_assembly;
+        $effectiveDistrictSlug = $facility->district_assembly_slug;
         $data = $request->validated();
 
-        // Tenant isolation: facility can only scan providers within its district assembly.
-        $providerDistrict = \App\Models\Provider::query()
-            ->where('provider_slug', $data['provider_slug'])
-            ->value('district_assembly');
+        // fleet_code is the vehicle license plate — resolve owning provider from fleets.
+        $licensePlate = trim((string) $data['fleet_code']);
+        $fleet = Fleet::query()
+            ->whereRaw('LOWER(license_plate) = ?', [Str::lower($licensePlate)])
+            ->with('provider')
+            ->first();
 
-        if ($providerDistrict !== null && (string) $providerDistrict !== (string) $effectiveDistrictSlug) {
+        if (! $fleet) {
             return self::apiResponse(
                 in_error: true,
-                message: "Action Failed",
-                reason: "Provider is not in this facility's district assembly",
+                message: 'Action Failed',
+                reason: 'No fleet found for this license plate',
+                status_code: self::API_NOT_FOUND,
+                data: []
+            );
+        }
+
+        $providerSlug = (string) $fleet->provider_slug;
+        $provider = $fleet->provider;
+
+        if (! $provider) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Fleet has no provider assigned',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+
+        // Tenant isolation: facility can only record fleets whose provider is in its MMDA.
+        $providerDistrict = $provider->district_assembly_slug;
+        if ($providerDistrict !== null && $effectiveDistrictSlug !== null
+            && (string) $providerDistrict !== (string) $effectiveDistrictSlug) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Provider for this fleet is not in this facility\'s district assembly',
                 status_code: self::API_FAIL,
                 data: []
             );
@@ -200,13 +298,13 @@ class WeighBridgeController extends Controller
 
         $payment = null;
 
-        $record = DB::transaction(function () use ($data, $effectiveFacilitySlug, &$payment) {
+        $record = DB::transaction(function () use ($data, $effectiveFacilitySlug, $providerSlug, $fleet, $licensePlate, $provider, &$payment) {
             $record = WeighbridgeRecord::create([
                 'code' => 'WB-'.Str::upper(Str::random(8)),
                 'facility_slug' => $effectiveFacilitySlug ?? null,
-                'provider_slug' => $data['provider_slug'],
-                'fleet_slug' => $data['fleet_slug'] ?? null,
-                'fleet_code' => $data['fleet_code'] ?? null,
+                'provider_slug' => $providerSlug,
+                'fleet_slug' => $fleet->fleet_slug,
+                'fleet_code' => $licensePlate,
                 'gross_weight' => $data['gross_weight'] ?? null,
                 'amount' => $data['amount'],
                 'payment_status' => $data['payment_status'],
@@ -216,27 +314,27 @@ class WeighBridgeController extends Controller
 
             // Desk payment selected at create time — store Payment without CalPay.
             if (($data['payment_status'] ?? null) === 'paid') {
-                $provider = Provider::query()->where('provider_slug', $data['provider_slug'])->first();
                 $name = $data['name']
                     ?? trim(($provider->first_name ?? '').' '.($provider->last_name ?? ''))
                     ?: ($provider->business_name ?? 'Provider');
 
                 $payment = Payment::create([
-                    'provider_slug' => $data['provider_slug'],
+                    'provider_slug' => $providerSlug,
                     'payment_type' => Payment::PAYMENT_TYPE_WEIGHBRIDGE,
                     'payable_reference' => $record->code,
                     'transaction_id' => $data['transaction_id'] ?? ('WB-OFF-'.Str::upper(Str::random(10))),
                     'payment_method' => $data['payment_method'] ?? 'offline',
                     'network' => $data['network'] ?? 'offline',
-                    'phone_number' => $data['phone_number'] ?? $provider?->phone_number,
+                    'phone_number' => $data['phone_number'] ?? $provider->phone_number,
                     'name' => $name,
-                    'client_email' => $data['client_email'] ?? $provider?->email,
+                    'client_email' => $data['client_email'] ?? $provider->email,
                     'amount' => round((float) $data['amount'], 2),
                     'currency' => config('services.calpay.defaults.currency', 'GHS'),
                     'status' => Payment::STATUS_PAID,
                     'gateway_payload' => [
                         'source' => 'facility_desk_create',
                         'weighbridge_code' => $record->code,
+                        'license_plate' => $licensePlate,
                     ],
                 ]);
             }
@@ -251,7 +349,22 @@ class WeighBridgeController extends Controller
             status_code: self::API_CREATED,
             data: [
                 'weighbridge' => $record->toArray(),
-                'payment' => $payment?->toArray(),
+                'provider' => [
+                    'provider_slug' => $provider->provider_slug,
+                    'business_name' => $provider->business_name ?? null,
+                    'first_name' => $provider->first_name ?? null,
+                    'last_name' => $provider->last_name ?? null,
+                    'phone_number' => $provider->phone_number ?? null,
+                    'email' => $provider->email ?? null,
+                    'district_assembly_slug' => $provider->district_assembly_slug ?? null,
+                ],
+                'fleet' => [
+                    'fleet_slug' => $fleet->fleet_slug,
+                    'license_plate' => $fleet->license_plate,
+                    'vehicle_make' => $fleet->vehicle_make,
+                    'model' => $fleet->model,
+                ],
+                'payment' => $payment?->makeHidden(['gateway_payload', 'callback_payload', 'client'])?->toArray() ?? [],
             ]
         );
     }
