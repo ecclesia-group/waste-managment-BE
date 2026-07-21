@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use ScopesProviderOrganisation;
+    use ScopesProviderOrganisation, SoftDeletes;
 
     public const CATEGORY_BIN = 'bin';
 
@@ -15,8 +15,6 @@ class Product extends Model
     protected $with = [
         'provider',
     ];
-
-    use SoftDeletes;
 
     protected $fillable = [
         'product_slug',

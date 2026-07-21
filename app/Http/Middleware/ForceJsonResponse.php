@@ -18,7 +18,6 @@ class ForceJsonResponse
         if (! $request->is('payment/*')) {
             $request->headers->set('Accept', 'application/json');
         }
-
         return $next($request);
     }
 }

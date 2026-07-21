@@ -45,7 +45,6 @@ class UpdateClientProfileRequest extends FormRequest
             'latitude'        => 'nullable|numeric|between:-90,90',
             'longitude'       => 'nullable|numeric|between:-180,180',
             'type'            => 'nullable|string|max:255',
-            'bin_slug'        => 'nullable|string|max:255',
             'group_slug'      => 'nullable|string|exists:groups,group_slug',
             'registration_fee' => 'sometimes|nullable|numeric|min:0',
             'profile_image'   => 'nullable|starts_with:data:,http://,https://',

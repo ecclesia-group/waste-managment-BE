@@ -127,7 +127,7 @@ Route::prefix("client")->group(function () {
         Route::get('get_purchases', [PurchaseController::class, 'listPurchases']);
         Route::get('get_single_purchase/{purchase}', [PurchaseController::class, 'getPurchaseDetails']);
         Route::get('get_items', [ClientController::class, 'myItems']);
-        Route::get('get_bins', [ClientController::class, 'myItems']); // alias
+        // Route::get('get_bins', [ClientController::class, 'myItems']); // alias
         Route::post('process_payment/{purchase}', [PurchaseController::class, 'processPayment']);
         Route::get('get_payment_history', [PurchaseController::class, 'getPaymentHistory']);
 

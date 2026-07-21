@@ -8,6 +8,7 @@ use App\Services\CalPay\CalPayPaymentResolver;
 use App\Services\CalPay\CalPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CalPayPaymentController extends Controller
@@ -35,23 +36,75 @@ class CalPayPaymentController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_contact' => ['required', 'string', 'max:50'],
-            'datacompleteurl' => ['required', 'url', 'max:500'],
-            'datacancelurl' => ['required', 'url', 'max:500'],
+            'datacompleteurl' => ['nullable', 'url', 'max:500'],
+            'datacancelurl' => ['nullable', 'url', 'max:500'],
+            'approveurl' => ['nullable', 'url', 'max:500'],
+            'network' => ['nullable', 'string', 'max:50'],
+            'payment_method' => ['nullable', 'string', 'max:50', Rule::in(['momo', 'card'])],
         ]);
 
-        if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE) {
+        if ($data['payment_method'] === 'momo' && empty($data['network'])) {
             return self::apiResponse(
-                true,
-                'Action Failed',
-                'Use POST /api/client/payments/registration for registration fee',
-                self::API_FAIL,
-                []
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'network is required when payment_method is momo',
+                status_code: self::API_FAIL,
+                data: []
             );
         }
+
+        // if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE) {
+        //     return self::apiResponse(
+        //         true,
+        //         'Action Failed',
+        //         'Use POST /api/client/payments/registration for registration fee',
+        //         self::API_FAIL,
+        //         []
+        //     );
+        // }
 
         if (! $request->user()) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
         }
+
+        // CalPay browser returns hit BACKEND first (like friend's redirect_url → then app).
+        $backendBase = rtrim((string) (
+            config('custom.urls.backend_url')
+            ?: config('app.url')
+        ), '/');
+
+        $callbackUrl = (string) config('services.calpay.callback_url');
+        if (
+            $callbackUrl !== ''
+            && (str_contains($backendBase, 'localhost') || str_contains($backendBase, '127.0.0.1'))
+        ) {
+            $backendBase = rtrim((string) preg_replace('#/api/payment_callback/?$#i', '', $callbackUrl), '/');
+        }
+
+        $completeUrl = $data['datacompleteurl'] ?? ($backendBase . '/payment/success');
+        $cancelUrl = $data['datacancelurl'] ?? ($backendBase . '/payment/cancelled');
+        // Docs require approveurl — URL after successful payment (same as complete by default).
+        $approveUrl = $data['approveurl'] ?? $completeUrl;
+
+        Log::info('CalPay payment redirect URLs', [
+            'backend_base' => $backendBase,
+            'client_base' => config('custom.urls.client_url'),
+            'datacompleteurl' => $completeUrl,
+            'datacancelurl' => $cancelUrl,
+            'approveurl' => $approveUrl,
+            'callback_url' => $callbackUrl,
+        ]);
+
+        $checkoutData = [
+            'payment_method' => $data['payment_method'],
+            'network' => $data['network'] ?? ($data['payment_method'] === 'card' ? 'card' : null),
+            'customer_name' => $data['customer_name'] ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')),
+            'customer_email' => $data['customer_email'] ?? $request->user()->email,
+            'customer_contact' => $data['customer_contact'] ?? $request->user()->phone_number,
+            'datacompleteurl' => $completeUrl,
+            'datacancelurl' => $cancelUrl,
+            'approveurl' => $approveUrl,
+        ];
 
         try {
             $ctx = app(CalPayPaymentResolver::class)->resolve(
@@ -78,23 +131,13 @@ class CalPayPaymentController extends Controller
             ->first();
 
         if ($existing) {
-            return self::apiResponse(
-                in_error: false,
-                message: 'Action Successful',
-                reason: 'Pending CalPay payment already exists',
-                status_code: self::API_SUCCESS,
-                data: [
-                    'payment' => $existing->toArray(),
-                    'order_code' => data_get($existing->gateway_payload, 'request_order_code') ?? $existing->calpay_order_code,
-                    'checkout_url' => data_get($existing->gateway_payload, 'checkout_url'),
-                    'payment_code' => data_get($existing->gateway_payload, 'payment_code'),
-                    'payment_token' => data_get($existing->gateway_payload, 'payment_token'),
-                ]
-            );
+            $existing->update([
+                'status' => Payment::STATUS_CANCELLED,
+            ]);
         }
 
         try {
-            $result = DB::transaction(function () use ($ctx, $data) {
+            $result = DB::transaction(function () use ($ctx, $checkoutData) {
                 $payment = Payment::create([
                     'client_slug' => $ctx->clientSlug,
                     'provider_slug' => $ctx->providerSlug ?: 'platform',
@@ -102,11 +145,11 @@ class CalPayPaymentController extends Controller
                     'payable_reference' => $ctx->payableReference,
                     'transaction_id' => $ctx->orderCode,
                     'calpay_order_code' => $ctx->orderCode,
-                    'payment_method' => 'calpay',
-                    'network' => 'calpay',
-                    'phone_number' => $data['customer_contact'],
-                    'name' => $data['customer_name'],
-                    'client_email' => $data['customer_email'],
+                    'payment_method' => $checkoutData['payment_method'] ?? 'calpay',
+                    'network' => $checkoutData['network'] ?? 'calpay',
+                    'phone_number' => $checkoutData['customer_contact'],
+                    'name' => $checkoutData['customer_name'],
+                    'client_email' => $checkoutData['customer_email'],
                     'amount' => $ctx->amount,
                     'currency' => config('services.calpay.defaults.currency', 'GHS'),
                     'status' => Payment::STATUS_PENDING,
@@ -116,13 +159,13 @@ class CalPayPaymentController extends Controller
 
                 $invoice = app(CalPayService::class)->createInvoice(
                     $ctx,
-                    $data['customer_name'],
-                    $data['customer_email'],
-                    $data['customer_contact'],
-                    $data['datacompleteurl'],
-                    $data['datacancelurl'],
+                    $checkoutData['customer_name'],
+                    $checkoutData['customer_email'],
+                    $checkoutData['customer_contact'],
+                    $checkoutData['datacompleteurl'],
+                    $checkoutData['datacancelurl'],
                     null,
-                    $data['datacompleteurl'],
+                    $checkoutData['datacompleteurl'],
                 );
 
                 $gatewayPayload = array_merge(

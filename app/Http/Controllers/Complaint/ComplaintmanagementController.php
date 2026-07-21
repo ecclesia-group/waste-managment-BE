@@ -55,7 +55,7 @@ class ComplaintmanagementController extends Controller
             Complaint::query()
                 ->where('client_slug', $user->client_slug)
                 ->forProvider((string) $user->provider_slug)
-                ->with(['client', 'provider'])
+                // ->with(['client', 'provider'])
                 ->latest()
                 ->paginate($this->perPage(request())),
             'Complaints retrieved successfully'
