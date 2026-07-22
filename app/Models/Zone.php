@@ -16,7 +16,7 @@ class Zone extends Model
         'description',
         'locations',
         'status',
-        'district_assembly',
+        'district_assembly_slug',
         'admin_slug',
     ];
 
@@ -36,9 +36,9 @@ class Zone extends Model
         return $this->belongsToMany(
             Provider::class,
             'provider_zones',
-            'zone_id',
+            'zone_slug',
             'provider_slug',
-            'id',
+            'zone_slug',
             'provider_slug'
         )
             ->withPivot(['assigned_at', 'status'])
@@ -47,7 +47,7 @@ class Zone extends Model
 
     public function districtAssembly()
     {
-        return $this->belongsTo(DistrictAssembly::class, 'district_assembly', 'district_assembly_slug');
+        return $this->belongsTo(DistrictAssembly::class, 'district_assembly_slug', 'district_assembly_slug');
     }
 
     public function admin()
