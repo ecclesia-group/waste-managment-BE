@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
@@ -140,7 +141,7 @@ class ClientController extends Controller
             reason: 'Item assigned to client successfully',
             status_code: self::API_SUCCESS,
             data: [
-                'client' => $client->fresh(['fee', 'group', 'items.product'])->toArray(),
+                'client' => $client->fresh(['fee', 'group'])->toArray(),
                 'item' => $item->load('product')->toArray(),
             ]
         );

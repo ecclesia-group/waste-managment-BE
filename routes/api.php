@@ -92,7 +92,6 @@ Route::prefix("client")->group(function () {
         Route::get('bulk_waste_requests/{requestCode}', [PickupController::class, 'clientBulkWasteRequestShow']);
         Route::put('update_bulk_waste_request/{requestCode}', [PickupController::class, 'updateBulkWasteRequest']);
         Route::delete('delete_bulk_waste_request/{requestCode}', [PickupController::class, 'deleteBulkWasteRequest']);
-        Route::post('bulk_waste_requests/{requestCode}/pay', [PickupController::class, 'payBulkWasteRequest']);
 
         // Complaint Management
         Route::get('get_complaints', [ComplaintmanagementController::class, 'listComplaints']);
@@ -184,7 +183,7 @@ Route::prefix("provider")->group(function () {
         Route::put('fees/{fee}', [ProviderFeeController::class, 'update']);
         Route::delete('fees/{fee}', [ProviderFeeController::class, 'destroy']);
 
-        // Clients Management
+        // Clients Management done
         Route::post("register_client", [ClientController::class, "register"]);
         Route::post("assign_client_item", [ClientController::class, "assignItem"]);
         Route::post("assign_client_bin", [ClientController::class, "assignItem"]); // alias
@@ -194,7 +193,7 @@ Route::prefix("provider")->group(function () {
         Route::put("update_client_details/{client}", [ClientController::class, "updateClientProfile"]);
         Route::delete("delete_client/{client}", [ClientController::class, "deleteClient"]);
 
-        // Groups Management
+        // Groups Management done
         Route::post("add_group", [GroupController::class, "register"]);
         Route::get("all_groups", [GroupController::class, "allGroups"]);
         Route::get("get_single_group/{group}", [GroupController::class, "show"]);
@@ -209,7 +208,6 @@ Route::prefix("provider")->group(function () {
         Route::post("update_driver_status", [DriverController::class, "updateStatus"]);
         Route::put("update_driver_details/{driver}", [DriverController::class, "updateDriverProfile"]);
         Route::delete("delete_driver/{driver}", [DriverController::class, "deleteDriver"]);
-        Route::post("update_driver_location", [DriverController::class, "updateLocation"]);
 
         // Route Planner
         Route::get("plan_options", [RoutePlannerManagement::class, "planOptions"]);

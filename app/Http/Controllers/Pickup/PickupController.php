@@ -149,7 +149,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request submitted and pending provider approval",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->load('client')->toArray()
+            data: $bulkRequest->toArray()
         );
     }
 
@@ -160,7 +160,7 @@ class PickupController extends Controller
         $bulkRequest = BulkWasteRequest::query()
             ->where('request_code', $requestCode)
             ->where('client_slug', $user->client_slug)
-            ->with('client')
+            // ->with('client')
             ->first();
         if (! $bulkRequest) {
             return self::apiResponse(
@@ -195,7 +195,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request updated successfully",
             status_code: self::API_SUCCESS,
-            data: $bulkRequest->load('client')->toArray()
+            data: $bulkRequest->toArray()
         );
     }
 
@@ -205,7 +205,7 @@ class PickupController extends Controller
 
         return $this->paginatedApiResponse(
             BulkWasteRequest::query()
-                ->with('client')
+                // ->with('client')
                 ->where('client_slug', $clientSlug)
                 ->orderByDesc('created_at')
                 ->paginate($this->perPage($request)),
@@ -230,7 +230,7 @@ class PickupController extends Controller
             message: "Action Successful",
             reason: "Bulk waste request retrieved successfully",
             status_code: self::API_SUCCESS,
-            data: $item->load('client')->toArray()
+            data: $item->toArray()
         );
     }
 
@@ -807,113 +807,5 @@ class PickupController extends Controller
             'Pickup schedules retrieved successfully',
             fn(Pickup $pickup) => self::enrichPickupForPickupUi($pickup)
         );
-    }
-
-    public function payBulkWasteRequest(Request $request, string $requestCode)
-    {
-        $user = $request->user();
-        $data = $request->validate([
-            'payment_method' => 'required|string|in:momo,card',
-            'network' => 'nullable|string',
-            'phone_number' => 'nullable|string',
-            'name' => 'required|string',
-            'client_email' => 'nullable|email',
-        ]);
-
-        $bulkRequest = BulkWasteRequest::query()
-            ->where('request_code', $requestCode)
-            ->where('client_slug', $user->client_slug)
-            ->first();
-
-        if (! $bulkRequest) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Bulk waste request not found",
-                status_code: self::API_NOT_FOUND,
-                data: []
-            );
-        }
-
-        $amount = (float) ($bulkRequest->amount ?? 0);
-        if ($amount <= 0) {
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Bulk request has no price set yet",
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        if (($bulkRequest->payment_status ?? 'unpaid') === 'paid') {
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Bulk waste request is already paid",
-                status_code: self::API_SUCCESS,
-                data: $bulkRequest->toArray()
-            );
-        }
-
-        // CalPay browser returns hit BACKEND first (like friend's redirect_url → then app).
-        $backendBase = rtrim((string) (
-            config('custom.urls.backend_url')
-            ?: config('app.url')
-        ), '/');
-
-        $callbackUrl = (string) config('services.calpay.callback_url');
-        if (
-            $callbackUrl !== ''
-            && (str_contains($backendBase, 'localhost') || str_contains($backendBase, '127.0.0.1'))
-        ) {
-            $backendBase = rtrim((string) preg_replace('#/api/payment_callback/?$#i', '', $callbackUrl), '/');
-        }
-
-        $completeUrl = $data['datacompleteurl'] ?? ($backendBase . '/payment/success');
-        $cancelUrl = $data['datacancelurl'] ?? ($backendBase . '/payment/cancelled');
-        // Docs require approveurl — URL after successful payment (same as complete by default).
-        $approveUrl = $data['approveurl'] ?? $completeUrl;
-
-        Log::info('Bulk waste request payment redirect URLs', [
-            'backend_base' => $backendBase,
-            'client_base' => config('custom.urls.client_url'),
-            'datacompleteurl' => $completeUrl,
-            'datacancelurl' => $cancelUrl,
-            'approveurl' => $approveUrl,
-            'callback_url' => $callbackUrl,
-        ]);
-
-        $checkoutData = [
-            'payment_method' => $data['payment_method'],
-            'network' => $data['network'] ?? ($data['payment_method'] === 'card' ? 'card' : null),
-            'customer_name' => $data['customer_name'] ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
-            'customer_email' => $data['customer_email'] ?? $user->email,
-            'customer_contact' => $data['customer_contact'] ?? $user->phone_number,
-            'datacompleteurl' => $completeUrl,
-            'datacancelurl' => $cancelUrl,
-            'approveurl' => $approveUrl,
-        ];
-
-        try {
-            $checkout = app(BulkWasteRequestCheckoutService::class)->startCheckout($user, $bulkRequest, $checkoutData);
-
-            return self::apiResponse(
-                in_error: false,
-                message: "Action Successful",
-                reason: "Bulk waste request payment initiated successfully",
-                status_code: self::API_SUCCESS,
-                data: $checkout
-            );
-        } catch (\Throwable $e) {
-            Log::error('Bulk waste request payment failed', ['error' => $e->getMessage()]);
-            return self::apiResponse(
-                in_error: true,
-                message: "Action Failed",
-                reason: "Payment failed: " . $e->getMessage(),
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
     }
 }

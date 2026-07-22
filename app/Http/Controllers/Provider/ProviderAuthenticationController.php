@@ -1,11 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Models\Provider;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class ProviderAuthenticationController extends Controller
@@ -62,14 +62,21 @@ class ProviderAuthenticationController extends Controller
                     data: $data
                 );
             }
+
+            return self::apiResponse(
+                in_error: true,
+                message: "Action Unsuccessful",
+                reason: "Invalid credentials",
+                status_code: self::API_FAIL,
+                data: []
+            );
         }
 
         return self::apiResponse(
             in_error: true,
             message: "Action Unsuccessful",
             reason: "Provider cannot be found",
-            status_code:
-            self::API_FAIL,
+            status_code: self::API_FAIL,
             data: []
         );
     }

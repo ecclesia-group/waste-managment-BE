@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Requests\Client;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,33 +22,37 @@ class UpdateClientProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $client_slug = $this->route('client');
-        return [
-            'first_name'      => 'required|string|max:255',
-            'last_name'       => 'nullable|string|max:255',
+        $routeClient = $this->route('client');
+        $clientSlug = $routeClient instanceof \App\Models\Client
+            ? $routeClient->client_slug
+            : (string) $routeClient;
 
-            'email'           => [
+        // Partial updates allowed (provider or client may send only changed fields).
+        return [
+            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email' => [
+                'sometimes',
                 'required',
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('clients', 'email')->ignore($client_slug, 'client_slug'),
+                Rule::unique('clients', 'email')->ignore($clientSlug, 'client_slug'),
             ],
-
-            'phone_number'    => [
+            'phone_number' => [
+                'sometimes',
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('clients', 'phone_number')->ignore($client_slug, 'client_slug'),
+                Rule::unique('clients', 'phone_number')->ignore($clientSlug, 'client_slug'),
             ],
-
-            'gps_address'     => 'required|string|max:255',
-            'latitude'        => 'nullable|numeric|between:-90,90',
-            'longitude'       => 'nullable|numeric|between:-180,180',
-            'type'            => 'nullable|string|max:255',
-            'group_slug'      => 'nullable|string|exists:groups,group_slug',
-            'registration_fee' => 'sometimes|nullable|numeric|min:0',
-            'profile_image'   => 'nullable|starts_with:data:,http://,https://',
+            'gps_address' => ['sometimes', 'required', 'string', 'max:255'],
+            'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'type' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'group_slug' => ['sometimes', 'nullable', 'string', 'exists:groups,group_slug'],
+            'fee_id' => ['sometimes', 'nullable', 'integer', 'exists:provider_fees,id'],
+            'profile_image' => ['sometimes', 'nullable', 'starts_with:data:,http://,https://'],
         ];
     }
 }

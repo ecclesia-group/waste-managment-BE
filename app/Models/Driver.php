@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Traits\ScopesProviderOrganisation;
@@ -24,7 +25,6 @@ class Driver extends Model
         'license_date_issued',
         'license_expiry_issued',
         'email',
-        'password',
         'phone_number',
         'address',
         'emergency_contact_name',
@@ -33,14 +33,7 @@ class Driver extends Model
         'license_front_image',
         'license_back_image',
         'profile_image',
-        'status',
-        'latitude',
-        'longitude',
-        'last_location_at',
-    ];
-
-    protected $hidden = [
-        'password',
+        'status'
     ];
 
     protected $casts = [
@@ -53,10 +46,6 @@ class Driver extends Model
         'profile_image'         => 'array',
         'license_back_image'    => 'array',
         'license_front_image'   => 'array',
-        "password"              => "hashed",
-        'latitude'              => 'float',
-        'longitude'             => 'float',
-        'last_location_at'      => 'datetime',
     ];
 
     public function getRouteKeyName(): string

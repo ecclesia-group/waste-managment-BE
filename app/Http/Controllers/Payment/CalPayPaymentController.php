@@ -33,35 +33,16 @@ class CalPayPaymentController extends Controller
                 ]),
             ],
             'reference' => ['required', 'string', 'max:128'],
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_contact' => ['required', 'string', 'max:50'],
+            // required if payment_method is card
+            'customer_name' => ['required_if:payment_method,card', 'string', 'max:255'],
+            'customer_email' => ['required_if:payment_method,card', 'email', 'max:255'],
+            'customer_contact' => ['required_if:payment_method,momo', 'string', 'max:50'],
             'datacompleteurl' => ['nullable', 'url', 'max:500'],
             'datacancelurl' => ['nullable', 'url', 'max:500'],
             'approveurl' => ['nullable', 'url', 'max:500'],
-            'network' => ['nullable', 'string', 'max:50'],
-            'payment_method' => ['nullable', 'string', 'max:50', Rule::in(['momo', 'card'])],
+            'network' => ['required_if:payment_method,momo', 'string', 'max:50'],
+            'payment_method' => ['required', 'string', 'max:50', Rule::in(['momo', 'card'])],
         ]);
-
-        if ($data['payment_method'] === 'momo' && empty($data['network'])) {
-            return self::apiResponse(
-                in_error: true,
-                message: 'Action Failed',
-                reason: 'network is required when payment_method is momo',
-                status_code: self::API_FAIL,
-                data: []
-            );
-        }
-
-        // if ($data['payment_type'] === Payment::PAYMENT_TYPE_REGISTRATION_FEE) {
-        //     return self::apiResponse(
-        //         true,
-        //         'Action Failed',
-        //         'Use POST /api/client/payments/registration for registration fee',
-        //         self::API_FAIL,
-        //         []
-        //     );
-        // }
 
         if (! $request->user()) {
             return self::apiResponse(true, 'Action Failed', 'Unauthorized', self::API_FAIL, []);
