@@ -36,9 +36,9 @@ class Zone extends Model
         return $this->belongsToMany(
             Provider::class,
             'provider_zones',
-            'zone_slug',
+            'zone_id',
             'provider_slug',
-            'zone_slug',
+            'id',
             'provider_slug'
         )
             ->withPivot(['assigned_at', 'status'])
