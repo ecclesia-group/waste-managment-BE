@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Controller;
@@ -45,7 +46,7 @@ class PurchaseController extends Controller
             );
         }
 
-        $purchase->load('items', 'payment');
+        $purchase->load('items');
         return self::apiResponse(
             in_error: false,
             message: "Action Successful",
@@ -219,7 +220,7 @@ class PurchaseController extends Controller
             // Generate QR code for the bin if this is a bin purchase
             // $client = Client::where('client_slug', $user->client_slug)->first();
             // $qrcodeUrl = null;
-            // if ($client) {               
+            // if ($client) {
             //     $qrcodeUrl = static::generateQRCode($user->client_slug, $client);
             //     if ($qrcodeUrl) {
             //         $qrcodeArray = $client->qrcode ?? [];

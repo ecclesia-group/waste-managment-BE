@@ -194,7 +194,7 @@ class ProviderController extends Controller
             message: "Action Successful",
             reason: "Provider details updated successfully",
             status_code: self::API_SUCCESS,
-            data: request()->user()->toArray()
+            data: request()->user()->fresh()->toArray()
         );
     }
 

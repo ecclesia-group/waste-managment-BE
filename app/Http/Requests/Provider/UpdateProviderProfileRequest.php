@@ -49,7 +49,7 @@ class UpdateProviderProfileRequest extends FormRequest
             ],
             'business_name'                    => 'nullable|string|max:255',
             'gps_address'                      => 'required|string|max:255',
-            'district_assembly'                => 'nullable|exists:district_assemblies,district_assembly_slug',
+            'district_assembly_slug'           => 'nullable|exists:district_assemblies,district_assembly_slug',
 
             'business_certificate_image'       => 'nullable|starts_with:data:,http://,https://',
             'district_assembly_contract_image' => 'nullable|starts_with:data:,http://,https://',

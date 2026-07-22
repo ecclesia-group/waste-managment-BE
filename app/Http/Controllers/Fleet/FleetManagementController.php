@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Fleet;
 
 use App\Http\Controllers\Controller;

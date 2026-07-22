@@ -32,7 +32,6 @@ class UpdateFleetRequest extends FormRequest
             'owner_last_name'                        => 'sometimes|string',
             'owner_phone_number'                     => 'sometimes|string',
             'owner_address'                          => 'sometimes|string',
-            'provider_slug'                          => 'sometimes|string|exists:providers,provider_slug',
             'insurance_expiry_date'                  => 'sometimes|date',
             'insurance_policy_number'                => 'sometimes|string|unique:fleets,insurance_policy_number,' . $this->fleet->id,
             'vehicle_images'                         => 'sometimes',
