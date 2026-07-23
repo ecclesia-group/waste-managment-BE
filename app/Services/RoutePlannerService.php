@@ -100,9 +100,15 @@ class RoutePlannerService
 
         $this->assertValidPickupTypeSelection($pickupType, $groupSlugs, $bulkCodes);
 
-        if (! $this->authorizePlanResources($data['provider_slug'], $data['driver_slug'], $data['fleet_slug'], $pickupType, $groupSlugs, $bulkCodes, ['approved'])) {
-            throw new InvalidArgumentException('Driver, fleet, group, or bulk request is not valid for this provider');
-        }
+        $this->assertPlanResourcesAuthorized(
+            $data['provider_slug'],
+            $data['driver_slug'],
+            $data['fleet_slug'],
+            $pickupType,
+            $groupSlugs,
+            $bulkCodes,
+            ['approved']
+        );
 
         [$clients, $bulkByClient] = $this->resolvePlanClients(
             $data['provider_slug'],
@@ -226,19 +232,17 @@ class RoutePlannerService
             $driverSlug = $data['driver_slug'] ?? $plan->driver_slug;
             $fleetSlug = $data['fleet_slug'] ?? $plan->fleet_slug;
 
-            // if ($selectionTouched || isset($data['driver_slug']) || isset($data['fleet_slug'])) {
-            //     if (! $this->authorizePlanResources(
-            //         $plan->provider_slug,
-            //         $driverSlug,
-            //         $fleetSlug,
-            //         $pickupType,
-            //         $groupSlugs,
-            //         $bulkCodes,
-            //         ['approved', 'scheduled']
-            //     )) {
-            //         throw new InvalidArgumentException('Driver, fleet, group, or bulk request is not valid for this provider');
-            //     }
-            // }
+            if ($selectionTouched || isset($data['driver_slug']) || isset($data['fleet_slug'])) {
+                $this->assertPlanResourcesAuthorized(
+                    $plan->provider_slug,
+                    $driverSlug,
+                    $fleetSlug,
+                    $pickupType,
+                    $groupSlugs,
+                    $bulkCodes,
+                    ['approved', 'scheduled']
+                );
+            }
 
             $pickupDate = isset($data['pickup_date'])
                 ? Carbon::parse($data['pickup_date'])
@@ -619,7 +623,7 @@ class RoutePlannerService
     /**
      * @param  list<string>  $allowedBulkStatuses
      */
-    private function authorizePlanResources(
+    private function assertPlanResourcesAuthorized(
         string $providerSlug,
         string $driverSlug,
         string $fleetSlug,
@@ -627,19 +631,19 @@ class RoutePlannerService
         Collection $groupSlugs,
         Collection $bulkCodes,
         array $allowedBulkStatuses = ['approved']
-    ): bool {
+    ): void {
         if (! Driver::query()
             ->where('driver_slug', $driverSlug)
             ->forProvider($providerSlug)
             ->exists()) {
-            return false;
+            throw new InvalidArgumentException('Driver is not valid for this provider');
         }
 
         if (! Fleet::query()
             ->where('fleet_slug', $fleetSlug)
             ->forProvider($providerSlug)
             ->exists()) {
-            return false;
+            throw new InvalidArgumentException('Fleet is not valid for this provider');
         }
 
         if ($pickupType === self::PICKUP_TYPE_NORMAL) {
@@ -648,16 +652,33 @@ class RoutePlannerService
                 ->forProvider($providerSlug)
                 ->count();
 
-            return $count === $groupSlugs->count();
+            if ($count !== $groupSlugs->count()) {
+                throw new InvalidArgumentException('One or more groups are not valid for this provider');
+            }
+
+            return;
         }
 
-        $bulkCount = BulkWasteRequest::query()
+        $found = BulkWasteRequest::query()
             ->forProvider($providerSlug)
-            ->whereIn('status', $allowedBulkStatuses)
             ->whereIn('request_code', $bulkCodes->all())
-            ->count();
+            ->get(['request_code', 'status']);
 
-        return $bulkCount === $bulkCodes->count();
+        if ($found->count() !== $bulkCodes->count()) {
+            throw new InvalidArgumentException('One or more bulk waste request codes were not found for this provider');
+        }
+
+        $notReady = $found
+            ->reject(fn (BulkWasteRequest $bulk) => in_array($bulk->status, $allowedBulkStatuses, true))
+            ->map(fn (BulkWasteRequest $bulk) => "{$bulk->request_code} ({$bulk->status})")
+            ->values();
+
+        if ($notReady->isNotEmpty()) {
+            $allowed = implode(', ', $allowedBulkStatuses);
+            throw new InvalidArgumentException(
+                'Bulk waste request must be '.$allowed.' before scheduling. Not ready: '.$notReady->implode(', ')
+            );
+        }
     }
 
     /**

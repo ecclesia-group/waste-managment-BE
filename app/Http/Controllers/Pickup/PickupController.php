@@ -799,7 +799,7 @@ class PickupController extends Controller
 
         return $this->paginatedApiResponseMapped(
             Pickup::query()
-                ->with(['routePlanner'])
+                ->with(['client.group'])
                 ->where('client_slug', $user->client_slug)
                 ->whereNotNull('pickup_date')
                 ->orderByDesc('pickup_date')

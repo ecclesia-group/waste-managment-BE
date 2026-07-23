@@ -66,7 +66,7 @@ trait HasClientMapPayload
      */
     protected static function manualScanPickupPayload(Pickup $pickup, ?string $itemCode = null): array
     {
-        $pickup->loadMissing(['client.group', 'routePlanner']);
+        $pickup->loadMissing(['client.group']);
         $client = $pickup->client;
         $resolvedItemCode = $itemCode ?? $client?->item_code;
 
@@ -95,46 +95,61 @@ trait HasClientMapPayload
     }
 
     /**
-     * Pickups + Route Planner map UI: pickup row with customer, group tag, and coordinates.
+     * Client pickup schedules / list UI: flat readable pickup without route_planner nest.
      */
     protected static function enrichPickupForPickupUi(Pickup $pickup): array
     {
-        $pickup->loadMissing(['client.group', 'routePlanner']);
+        $pickup->loadMissing(['client.group']);
         $client = $pickup->client;
-        $coords = static::clientCoordinatesForMap($client);
+        // $coords = static::clientCoordinatesForMap($client);
         $isBulk = ! empty($pickup->bulk_waste_request_code);
-        $pickupType = $pickup->routePlanner?->pickup_type
-            ?? ($isBulk ? 'bulk_waste_request' : 'normal');
+        $pickupType = $isBulk ? 'bulk_waste_request' : 'normal';
 
-        $payment = \App\Models\Payment::query()
-            ->where('pickup_id', (string) $pickup->id)
-            ->where('payment_type', \App\Models\Payment::PAYMENT_TYPE_PICKUP)
-            ->latest()
-            ->first();
+        // $payment = \App\Models\Payment::query()
+        //     ->where('pickup_id', (string) $pickup->id)
+        //     ->where('payment_type', \App\Models\Payment::PAYMENT_TYPE_PICKUP)
+        //     ->latest()
+        //     ->first();
 
-        $bulkPaymentStatus = null;
-        if ($isBulk && $pickup->bulk_waste_request_code) {
-            $bulkPaymentStatus = \App\Models\BulkWasteRequest::query()
-                ->where('request_code', $pickup->bulk_waste_request_code)
-                ->value('payment_status');
-        }
+        // $bulkPaymentStatus = null;
+        // if ($isBulk) {
+        //     $bulkPaymentStatus = \App\Models\BulkWasteRequest::query()
+        //         ->where('request_code', $pickup->bulk_waste_request_code)
+        //         ->value('payment_status');
+        // }
 
-        $isPaid = $pickup->status === 'paid'
-            || in_array($payment?->status, [\App\Models\Payment::STATUS_PAID, \App\Models\Payment::STATUS_SUCCESSFUL], true)
-            || ($isBulk && $bulkPaymentStatus === 'paid');
+        // $paymentStatus = $payment?->status ?? $bulkPaymentStatus;
+        // $isPaid = $pickup->status === 'paid'
+        //     || in_array($payment?->status, [\App\Models\Payment::STATUS_PAID, \App\Models\Payment::STATUS_SUCCESSFUL], true)
+        //     || ($isBulk && $bulkPaymentStatus === 'paid');
 
-        return array_merge($pickup->toArray(), [
+        return [
+            'id' => $pickup->id,
+            'code' => $pickup->code,
+            'title' => $pickup->title,
+            'description' => $pickup->description,
+            'category' => $pickup->category,
             'pickup_type' => $pickupType,
-            'map' => [
-                'coordinates' => $coords,
-                'gps_address' => $client?->gps_address,
-                'pickup_location' => $client?->pickup_location,
-            ],
-            'requires_payment' => (float) ($pickup->amount ?? 0) > 0 && ! $isPaid,
-            'payment_status' => $payment?->status ?? $bulkPaymentStatus,
-            'is_paid' => $isPaid,
-            'requires_payment_before_pickup' => $isBulk && $bulkPaymentStatus !== 'paid',
-            'provider' => $pickup->provider?->toArray(),
-        ]);
+            'amount' => $pickup->amount !== null ? (float) $pickup->amount : null,
+            'status' => $pickup->status,
+            'scan_status' => $pickup->scan_status,
+            'location' => $pickup->location,
+            'images' => $pickup->images ?? [],
+            'pickup_date' => $pickup->pickup_date,
+            'bulk_waste_request_code' => $pickup->bulk_waste_request_code,
+            // 'group_slug' => $pickup->group_slug ?? $client?->group_slug,
+            // 'group_name' => $client?->group?->name,
+            // 'requires_payment' => (float) ($pickup->amount ?? 0) > 0 && ! $isPaid,
+            // 'requires_payment_before_pickup' => $isBulk && $bulkPaymentStatus !== 'paid',
+            // 'payment_status' => $paymentStatus,
+            // 'is_paid' => $isPaid,
+            // 'scanned_at' => $pickup->scanned_at,
+            // 'client' => static::clientBriefForManualScan($client)
+            // 'map' => [
+            //     'coordinates' => $coords,
+            //     'gps_address' => $client?->gps_address,
+            //     'pickup_location' => $client?->pickup_location ?? $pickup->location,
+            // ],
+        ];
     }
 }
