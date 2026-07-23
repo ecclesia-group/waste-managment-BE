@@ -36,6 +36,7 @@ return new class extends Migration
             $table->text('corrective_action')->nullable();
             $table->timestamp('suspended_at')->nullable();
             $table->string('status')->default('active');
+            $table->decimal('registration_fee', 10, 2)->nullable();
             $table->string('region')->nullable();
             $table->string('location')->nullable();
             $table->longText('profile_image')->nullable();

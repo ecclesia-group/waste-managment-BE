@@ -27,7 +27,7 @@ class ClientRegistrationCheckoutService
             $this->abandonPendingRegistrationPayments($client);
 
             $amount = round((float) $client->registration_fee, 2);
-            $feeName = $client->fee?->name ?? 'Registration fee';
+            $feeName = 'Registration fee';
             $purchase = $this->resolveRegistrationPurchase($client, $amount, $feeName);
 
             $ctx = app(CalPayPaymentResolver::class)->resolve(

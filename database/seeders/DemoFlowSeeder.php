@@ -81,6 +81,7 @@ class DemoFlowSeeder extends Seeder
             'status' => 'active',
             'region' => 'Greater Accra',
             'location' => 'Accra',
+            'registration_fee' => 0.10,
         ]);
         $provider->save();
         $this->syncRole($provider, 'provider', 'Provider Administrator');

@@ -44,7 +44,7 @@ class ClientPaymentController extends Controller
         /** @var Client $client */
         $client = Client::query()
             ->where('client_slug', $request->user()->client_slug)
-            ->with(['fee'])
+            ->with([])
             ->firstOrFail();
 
         if (! $client->requiresRegistrationPayment()) {

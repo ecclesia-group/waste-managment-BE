@@ -26,13 +26,11 @@ return new class extends Migration
             $table->string('group_slug')->nullable();
             $table->decimal('registration_fee', 10, 2)->nullable();
             $table->boolean('registration_status')->default(false);
-            $table->string('fee_id')->nullable();
             $table->longText('profile_image')->nullable();
             $table->softDeletes();
             $table->timestamps();
 
             $table->index('provider_slug', 'clients_provider_idx');
-            $table->index('fee_id', 'clients_fee_idx');
         });
     }
 

@@ -58,7 +58,9 @@ class UpdateProviderProfileRequest extends FormRequest
 
             'region'                           => 'required|string|max:100',
             'location'                         => 'required|string|max:255',
-            'profile_image'                    => 'nullable|starts_with:data:,http://,https://'
+            'profile_image'                    => 'nullable|starts_with:data:,http://,https://',
+            // Provider sets this after onboarding (also allowed on admin/MMDA update)
+            'registration_fee'                 => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
             // 'zone_ids'                       => 'nullable|array',
             // 'zone_ids.*'                     => 'required|integer|distinct|exists:zones,id',

@@ -23,6 +23,7 @@ class Provider extends Actor
         'tax_certificate_image',
         'epa_permit_image',
         'status',
+        'registration_fee',
         'suspension_reason',
         'corrective_action',
         'suspended_at',
@@ -47,6 +48,7 @@ class Provider extends Actor
         'updated_at'                       => 'datetime',
         'suspended_at'                     => 'datetime',
         'is_main'                          => 'boolean',
+        'registration_fee'                 => 'float',
         "business_certificate_image"       => "array",
         "district_assembly_contract_image" => "array",
         "tax_certificate_image"            => "array",
@@ -127,8 +129,8 @@ class Provider extends Actor
         return $this->belongsTo(Admin::class, 'admin_slug', 'admin_slug');
     }
 
-    public function fees()
+    public function hasRegistrationFeeConfigured(): bool
     {
-        return $this->hasMany(ProviderFee::class, 'provider_slug', 'provider_slug');
+        return $this->registration_fee !== null;
     }
 }

@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use App\Models\Provider;
-use App\Models\ProviderFee;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -22,17 +21,9 @@ class ProviderCatalogSeeder extends Seeder
 
         $providerSlug = (string) $provider->provider_slug;
 
-        $fees = [
-            ['name' => 'Registration', 'amount' => 0.10],
-            ['name' => 'Bin replacement', 'amount' => 0.10],
-            ['name' => 'Reconnection', 'amount' => 0.10],
-        ];
-
-        foreach ($fees as $fee) {
-            ProviderFee::query()->updateOrCreate(
-                ['provider_slug' => $providerSlug, 'name' => $fee['name']],
-                ['amount' => $fee['amount']]
-            );
+        if ($provider->registration_fee === null) {
+            $provider->registration_fee = 0.10;
+            $provider->save();
         }
 
         $binProducts = [
@@ -103,7 +94,7 @@ class ProviderCatalogSeeder extends Seeder
             ]);
         }
 
-        $this->command?->info("ProviderCatalogSeeder: seeded fees and products for provider {$provider->email} ({$providerSlug}).");
+        $this->command?->info("ProviderCatalogSeeder: seeded registration_fee and products for provider {$provider->email} ({$providerSlug}).");
     }
 
     private function resolveProvider(): ?Provider

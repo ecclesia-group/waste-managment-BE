@@ -51,7 +51,6 @@ class UpdateClientProfileRequest extends FormRequest
             'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
             'type' => ['sometimes', 'nullable', 'string', 'max:255'],
             'group_slug' => ['sometimes', 'nullable', 'string', 'exists:groups,group_slug'],
-            'fee_id' => ['sometimes', 'nullable', 'integer', 'exists:provider_fees,id'],
             'profile_image' => ['sometimes', 'nullable', 'starts_with:data:,http://,https://'],
         ];
     }

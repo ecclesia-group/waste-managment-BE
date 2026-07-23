@@ -30,11 +30,6 @@ class RegisterRequest extends FormRequest
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'type' => 'required|string',
-            'fee_id' => [
-                'required',
-                'integer',
-                Rule::exists('provider_fees', 'id')->where('provider_slug', $scopeSlug),
-            ],
             'group_slug' => [
                 'required',
                 'string',

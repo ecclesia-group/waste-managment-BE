@@ -9,7 +9,7 @@ use App\Http\Requests\Client\UpdateClientProfileRequest;
 use App\Models\Client;
 use App\Models\Item;
 use App\Models\Product;
-use App\Models\ProviderFee;
+use App\Models\Provider;
 use App\Services\ClientLocationGeocodingService;
 use App\Services\ItemService;
 use App\Traits\PaginatesApiResults;
@@ -28,26 +28,25 @@ class ClientController extends Controller
         $data = static::formatPhoneNumbersInData($request->validated());
         $providerSlug = (string) self::providerScopeSlug($user);
 
-        if (! ProviderFee::query()->forProvider($providerSlug)->exists()) {
+        $provider = Provider::query()
+            ->where('provider_slug', $providerSlug)
+            ->first();
+
+        if (! $provider || $provider->registration_fee === null) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
-                reason: 'Set up registration fees before onboarding clients',
+                reason: 'Set your registration fee on the provider profile before onboarding clients',
                 status_code: self::API_FAIL,
                 data: []
             );
         }
 
-        $fee = ProviderFee::query()
-            ->where('id', $data['fee_id'])
-            ->forProvider($providerSlug)
-            ->firstOrFail();
-
         $data['client_slug'] = Str::uuid();
         $data['password'] = $password;
         $data['provider_slug'] = $providerSlug;
         $data['email_verified_at'] = now();
-        $data['registration_fee'] = round((float) $fee->amount, 2);
+        $data['registration_fee'] = round((float) $provider->registration_fee, 2);
         $data['registration_status'] = $data['registration_fee'] <= 0;
 
         $image_fields = ['profile_image'];
@@ -55,7 +54,7 @@ class ClientController extends Controller
         $data = $this->applyGeocodedCoordinates($data);
 
         // Item is assigned by provider after registration payment succeeds.
-        $client = Client::create($data)->fresh(['fee', 'group', 'items.product']);
+        $client = Client::create($data)->fresh(['group', 'items.product']);
 
         self::sendEmail(
             $client->email,
@@ -141,7 +140,7 @@ class ClientController extends Controller
             reason: 'Item assigned to client successfully',
             status_code: self::API_SUCCESS,
             data: [
-                'client' => $client->fresh(['fee', 'group'])->toArray(),
+                'client' => $client->fresh(['group'])->toArray(),
                 'item' => $item->load('product')->toArray(),
             ]
         );

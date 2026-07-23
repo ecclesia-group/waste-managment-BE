@@ -30,7 +30,6 @@ use App\Http\Controllers\Pickup\PickupController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Provider\ProviderAuthenticationController;
 use App\Http\Controllers\Provider\ProviderController;
-use App\Http\Controllers\Provider\ProviderFeeController;
 use App\Http\Controllers\Provider\ProviderPasswordController;
 use App\Http\Controllers\Purchase\PurchaseController;
 use App\Http\Controllers\Reports\ReportsController;
@@ -176,13 +175,6 @@ Route::prefix("provider")->group(function () {
         Route::get('get_single_product/{product}', [ProductController::class, 'getProductDetails']);
         Route::put('update_product/{product}', [ProductController::class, 'updateProduct']);
         Route::delete('delete_product/{product}', [ProductController::class, 'deleteProduct']);
-
-        // Provider fee catalogue (registration, etc.)
-        Route::get('fees', [ProviderFeeController::class, 'index']);
-        Route::get('get_single_fee/{fee}', [ProviderFeeController::class, 'show']);
-        Route::post('fees', [ProviderFeeController::class, 'store']);
-        Route::put('update_fee/{fee}', [ProviderFeeController::class, 'update']);
-        Route::delete('delete_fee/{fee}', [ProviderFeeController::class, 'destroy']);
 
         // Clients Management done
         Route::post("register_client", [ClientController::class, "register"]);

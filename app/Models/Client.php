@@ -28,7 +28,6 @@ class Client extends Actor
         'group_slug',
         'registration_fee',
         'registration_status',
-        'fee_id',
         'profile_image',
     ];
 
@@ -96,11 +95,6 @@ class Client extends Actor
     public function provider()
     {
         return $this->belongsTo(Provider::class, 'provider_slug', 'provider_slug');
-    }
-
-    public function fee()
-    {
-        return $this->belongsTo(ProviderFee::class, 'fee_id');
     }
 
     public function getRouteKeyName(): string
