@@ -23,6 +23,28 @@ class ProviderFeeController extends Controller
         );
     }
 
+    public function show(string $fee)
+    {
+        $provider = auth('provider')->user();
+        $fee = ProviderFee::where('provider_slug', (string) self::providerScopeSlug($provider))->where('id', $fee)->first();
+        if (!$fee) {
+            return self::apiResponse(
+                in_error: true,
+                message: 'Action Failed',
+                reason: 'Provider fee not found',
+                status_code: self::API_FAIL,
+                data: []
+            );
+        }
+        return self::apiResponse(
+            in_error: false,
+            message: 'Action Successful',
+            reason: 'Provider fee retrieved successfully',
+            status_code: self::API_SUCCESS,
+            data: $fee->toArray()
+        );
+    }
+
     public function store(StoreProviderFeeRequest $request)
     {
         $fee = ProviderFee::create([
@@ -40,13 +62,15 @@ class ProviderFeeController extends Controller
         );
     }
 
-    public function update(UpdateProviderFeeRequest $request, ProviderFee $fee)
+    public function update(UpdateProviderFeeRequest $request, string $fee)
     {
-        if ((string) $fee->provider_slug !== (string) self::providerScopeSlug($request->user())) {
+        $provider = auth('provider')->user();
+        $fee = ProviderFee::where('provider_slug', (string) self::providerScopeSlug($provider))->where('id', $fee)->first();
+        if (!$fee) {
             return self::apiResponse(
                 in_error: true,
                 message: 'Action Failed',
-                reason: 'Unauthorized to update this fee',
+                reason: 'Provider fee not found',
                 status_code: self::API_FAIL,
                 data: []
             );

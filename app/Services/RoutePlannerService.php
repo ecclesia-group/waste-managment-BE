@@ -37,7 +37,7 @@ class RoutePlannerService
         $groups = Group::query()
             ->forProvider($providerSlug)
             ->where('status', 'active')
-            ->with(['clients' => fn ($query) => $query
+            ->with(['clients' => fn($query) => $query
                 ->forProvider($providerSlug)
                 ->where('status', 'active')])
             ->orderBy('name')
@@ -55,7 +55,7 @@ class RoutePlannerService
             'normal' => [
                 'label' => 'Normal pickup (select groups)',
                 'description' => 'Choose one or more groups. All active clients in those groups become route stops.',
-                'groups' => $groups->map(fn (Group $group) => [
+                'groups' => $groups->map(fn(Group $group) => [
                     'group_slug' => $group->group_slug,
                     'name' => $group->name,
                     'clients_count' => $group->clients->count(),
@@ -64,7 +64,7 @@ class RoutePlannerService
             'bulk_waste_request' => [
                 'label' => 'Bulk waste pickup (select request codes)',
                 'description' => 'Choose approved bulk waste request codes. Clients behind those requests become route stops.',
-                'bulk_waste_requests' => $bulkRequests->map(fn (BulkWasteRequest $bulk) => [
+                'bulk_waste_requests' => $bulkRequests->map(fn(BulkWasteRequest $bulk) => [
                     'request_code' => $bulk->request_code,
                     'title' => $bulk->title,
                     'status' => $bulk->status,
@@ -162,11 +162,11 @@ class RoutePlannerService
             ? Carbon::parse($plan->pickup_date)->toDateTimeString()
             : 'scheduled';
         $type = $plan->pickup_type ?? 'normal';
-        $message = "Route assigned: {$type} pickup on {$pickupDate}. Fleet: ".($plan->fleet_slug ?? 'N/A');
+        $message = "Route assigned: {$type} pickup on {$pickupDate}. Fleet: " . ($plan->fleet_slug ?? 'N/A');
 
         Notification::create([
             'actor' => 'driver',
-            'admin_slug' => auth('admin')->user()->admin_slug ?? null,
+            'admin_slug' => auth('provider')->user()->provider_slug ?? null,
             'actor_slug' => $driver->driver_slug,
             'title' => 'New route assignment',
             'message' => $message,
@@ -226,19 +226,19 @@ class RoutePlannerService
             $driverSlug = $data['driver_slug'] ?? $plan->driver_slug;
             $fleetSlug = $data['fleet_slug'] ?? $plan->fleet_slug;
 
-            if ($selectionTouched || isset($data['driver_slug']) || isset($data['fleet_slug'])) {
-                if (! $this->authorizePlanResources(
-                    $plan->provider_slug,
-                    $driverSlug,
-                    $fleetSlug,
-                    $pickupType,
-                    $groupSlugs,
-                    $bulkCodes,
-                    ['approved', 'scheduled']
-                )) {
-                    throw new InvalidArgumentException('Driver, fleet, group, or bulk request is not valid for this provider');
-                }
-            }
+            // if ($selectionTouched || isset($data['driver_slug']) || isset($data['fleet_slug'])) {
+            //     if (! $this->authorizePlanResources(
+            //         $plan->provider_slug,
+            //         $driverSlug,
+            //         $fleetSlug,
+            //         $pickupType,
+            //         $groupSlugs,
+            //         $bulkCodes,
+            //         ['approved', 'scheduled']
+            //     )) {
+            //         throw new InvalidArgumentException('Driver, fleet, group, or bulk request is not valid for this provider');
+            //     }
+            // }
 
             $pickupDate = isset($data['pickup_date'])
                 ? Carbon::parse($data['pickup_date'])
@@ -275,7 +275,7 @@ class RoutePlannerService
             } elseif (isset($data['pickup_date'])) {
                 Pickup::query()
                     ->where('route_planner_id', $plan->id)
-                    ->where(fn ($query) => $query->whereNull('scan_status')->orWhere('scan_status', '!=', 'scanned'))
+                    ->where(fn($query) => $query->whereNull('scan_status')->orWhere('scan_status', '!=', 'scanned'))
                     ->update(['pickup_date' => $pickupDate]);
             }
 
@@ -294,7 +294,7 @@ class RoutePlannerService
                 ->where('route_planner_id', $plan->id)
                 ->get();
 
-            $pickupIds = $pickups->pluck('id')->map(fn ($id) => (string) $id)->all();
+            $pickupIds = $pickups->pluck('id')->map(fn($id) => (string) $id)->all();
             $bulkCodes = $pickups->pluck('bulk_waste_request_code')->filter()->unique()->values()->all();
 
             if ($pickupIds !== []) {
@@ -483,7 +483,7 @@ class RoutePlannerService
 
         Pickup::query()
             ->where('route_planner_id', $plan->id)
-            ->where(fn ($query) => $query->whereNull('scan_status')->orWhere('scan_status', '!=', 'scanned'))
+            ->where(fn($query) => $query->whereNull('scan_status')->orWhere('scan_status', '!=', 'scanned'))
             ->delete();
 
         $clientsNeedingPickups = $clients
@@ -571,7 +571,7 @@ class RoutePlannerService
             : Client::query()->where('client_slug', $pickup->client_slug)->first();
 
         $name = $client
-            ? trim(($client->first_name ?? '').' '.($client->last_name ?? ''))
+            ? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? ''))
             : 'Client';
 
         Payment::create([
@@ -579,7 +579,7 @@ class RoutePlannerService
             'provider_slug' => $pickup->provider_slug,
             'payment_type' => Payment::PAYMENT_TYPE_PICKUP,
             'payable_reference' => $pickup->code,
-            'transaction_id' => 'PUP-'.Str::upper(Str::random(12)),
+            'transaction_id' => 'PUP-' . Str::upper(Str::random(12)),
             'payment_method' => 'pending',
             'network' => 'unknown',
             'name' => $name !== '' ? $name : 'Client',

@@ -179,9 +179,10 @@ Route::prefix("provider")->group(function () {
 
         // Provider fee catalogue (registration, etc.)
         Route::get('fees', [ProviderFeeController::class, 'index']);
+        Route::get('get_single_fee/{fee}', [ProviderFeeController::class, 'show']);
         Route::post('fees', [ProviderFeeController::class, 'store']);
-        Route::put('fees/{fee}', [ProviderFeeController::class, 'update']);
-        Route::delete('fees/{fee}', [ProviderFeeController::class, 'destroy']);
+        Route::put('update_fee/{fee}', [ProviderFeeController::class, 'update']);
+        Route::delete('delete_fee/{fee}', [ProviderFeeController::class, 'destroy']);
 
         // Clients Management done
         Route::post("register_client", [ClientController::class, "register"]);
@@ -210,7 +211,7 @@ Route::prefix("provider")->group(function () {
         Route::delete("delete_driver/{driver}", [DriverController::class, "deleteDriver"]);
 
         // Route Planner
-        Route::get("plan_options", [RoutePlannerManagement::class, "planOptions"]);
+        // Route::get("plan_options", [RoutePlannerManagement::class, "planOptions"]);
         Route::post("create_plan", [RoutePlannerManagement::class, "register"]);
         Route::get("all_plans", [RoutePlannerManagement::class, "allPlans"]);
         Route::get("get_single_plan/{plan}", [RoutePlannerManagement::class, "show"]);

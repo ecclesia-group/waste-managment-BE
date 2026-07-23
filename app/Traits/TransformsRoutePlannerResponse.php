@@ -17,10 +17,14 @@ trait TransformsRoutePlannerResponse
 
     protected static function transformRoutePlannerSummary(RoutePlanner $plan): array
     {
-        $plan->loadMissing(['driver', 'fleet']);
+        // withTrashed: historical plans may reference soft-deleted driver/fleet
+        $plan->loadMissing([
+            'driver' => fn ($q) => $q->withTrashed(),
+            'fleet' => fn ($q) => $q->withTrashed(),
+        ]);
         $plan->loadCount([
             'pickups as total_pickups',
-            'pickups as scanned_pickups' => fn ($query) => $query->where('scan_status', 'scanned'),
+            'pickups as scanned_pickups' => fn ($q) => $q->where('scan_status', 'scanned'),
         ]);
 
         $pickupType = $plan->pickup_type
@@ -35,6 +39,8 @@ trait TransformsRoutePlannerResponse
             'pickup_type' => $pickupType,
             'pickup_date' => $plan->pickup_date?->toISOString(),
             'provider_slug' => $plan->provider_slug,
+            'driver_slug' => $plan->driver_slug,
+            'fleet_slug' => $plan->fleet_slug,
             'driver' => ($d = $plan->driver) ? static::transformRoutePlannerDriverBrief($d) : null,
             'fleet' => ($f = $plan->fleet) ? static::transformRoutePlannerFleetBrief($f) : null,
             'summary' => [
@@ -179,6 +185,7 @@ trait TransformsRoutePlannerResponse
             'email' => $driver->email,
             'display_label' => $full !== '' ? $full : $driver->driver_slug,
             'profile_image' => $profileUrl,
+            'is_deleted' => $driver->trashed(),
         ];
     }
 
@@ -190,6 +197,7 @@ trait TransformsRoutePlannerResponse
             'vehicle_make' => $fleet->vehicle_make,
             'model' => $fleet->model,
             'display_label' => $fleet->license_plate ? (string) $fleet->license_plate : $fleet->fleet_slug,
+            'is_deleted' => $fleet->trashed(),
         ];
     }
 }

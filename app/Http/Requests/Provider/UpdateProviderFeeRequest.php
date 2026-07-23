@@ -15,8 +15,17 @@ class UpdateProviderFeeRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var ProviderFee|null $fee */
-        $fee = $this->route('fee');
+        $provider = auth('provider')->user();
+        $scopeSlug = (bool) ($provider->is_main ?? true)
+            ? (string) $provider->provider_slug
+            : (string) ($provider->parent_slug ?: $provider->provider_slug);
+
+        // Route param is the fee id (string), not a bound ProviderFee model.
+        $feeId = $this->route('fee');
+        $fee = ProviderFee::query()
+            ->where('provider_slug', $scopeSlug)
+            ->where('id', $feeId)
+            ->first();
 
         return [
             'name' => [
@@ -24,7 +33,7 @@ class UpdateProviderFeeRequest extends FormRequest
                 'string',
                 'max:100',
                 Rule::unique('provider_fees', 'name')
-                    ->where('provider_slug', $fee?->provider_slug)
+                    ->where('provider_slug', $scopeSlug)
                     ->ignore($fee?->id),
             ],
             'amount' => ['sometimes', 'numeric', 'min:0'],
